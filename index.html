@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Endlos Labyrinth</title>
+  <link rel="stylesheet" href="style.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div id="menu" class="screen">
+    <div class="branding">
+      <div class="logo">∞</div>
+      <h1>Endlos Labyrinth</h1>
+      <p class="tagline">Finde den Weg – oder erschaffe ihn.</p>
+    </div>
+    <div class="menu-buttons">
+      <button id="start-game">Spiel starten</button>
+      <button id="options">Einstellungen</button>
+      <button id="tutorial">Lehrmodus</button>
+    </div>
+    <div id="menu-info" class="menu-info" hidden>
+      <h2>Einstellungen</h2>
+      <p>Nutze WASD zum Bewegen, Umschalttaste zum Sprinten (nach Einsammeln), Leertaste zum Springen.</p>
+      <p>Aktiviere oder deaktiviere Audio und Partikeleffekte in einer späteren Version.</p>
+      <button class="close-info">Zurück</button>
+    </div>
+    <div id="tutorial-info" class="menu-info" hidden>
+      <h2>Lehrmodus</h2>
+      <p>Erkunde das Labyrinth ohne Gegnerdruck. Sammle Items ein, um ihre Effekte zu erlernen.</p>
+      <ul>
+        <li><strong>Sprinten:</strong> Erhöht deine Geschwindigkeit kurzfristig.</li>
+        <li><strong>Verlangsamer:</strong> Reduziert vorübergehend deine Geschwindigkeit.</li>
+        <li><strong>Sprung:</strong> Erlaubt einen Sprung über Hindernisse.</li>
+      </ul>
+      <button class="close-info">Zurück</button>
+    </div>
+  </div>
+
+  <canvas id="game" width="960" height="540" class="hidden" aria-label="Endlos Labyrinth Spielbereich"></canvas>
+  <div id="hud" class="hidden">
+    <div class="status">
+      <span id="speed-status">Geschwindigkeit: Normal</span>
+      <span id="jump-status">Sprung bereit: Nein</span>
+    </div>
+  </div>
+
+  <template id="toast-template">
+    <div class="toast"></div>
+  </template>
+
+  <script type="module" src="assets/js/game.js"></script>
+</body>
+</html>
