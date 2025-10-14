@@ -19,3 +19,16 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
+
+-------------------------------------------------------------------------------
+
+This project includes portions of source code originally derived from
+"Astray" (https://github.com/wwwtyro/Astray) by wwwtyro, which was released
+under the Unlicense (public domain). These portions have been refactored,
+rewritten, and extended by Mermaid Architect AI as part of the
+"EndlosLabyrinth" project.
+
+Original Astray License (Unlicense):
+
+This is free and unencumbered software released into the public domain.
+For more information, please refer to <https://unlicense.org>.
