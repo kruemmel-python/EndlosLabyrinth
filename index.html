@@ -24,6 +24,14 @@
                 ballMesh       = undefined,
                 ballRadius     = 0.25,
                 keyAxis        = [0, 0],
+                tiltAxis       = [0, 0],
+                tiltTargetAxis = [0, 0],
+                tiltControlEnabled = false,
+                tiltPermissionState = 'unknown',
+                tiltControlSupported = (typeof window !== 'undefined' && typeof window.DeviceOrientationEvent !== 'undefined'),
+                tiltSmoothingFactor = 0.2,
+                tiltMaxAngle = 35,
+                tiltDeadZone = 3,
                 ironTexture    = undefined,
                 planeTexture   = undefined,
                 brickTexture   = undefined,
@@ -100,9 +108,14 @@
                         settings: {
                             title: 'Einstellungen',
                             victoryLlm: 'KI-Glückwunschtexte aktivieren',
+                            tiltControl: 'Bewegungssteuerung aktivieren',
                             language: 'Sprache',
                             save: 'Speichern',
-                            cancel: 'Abbrechen'
+                            cancel: 'Abbrechen',
+                            tiltEnabled: 'Bewegungssteuerung ist aktiv. Neige dein Gerät, um die Kugel zu steuern.',
+                            tiltDisabled: 'Bewegungssteuerung ist deaktiviert.',
+                            tiltUnavailable: 'Bewegungssteuerung wird auf diesem Gerät nicht unterstützt.',
+                            tiltNeedsPermission: 'Tippe, um die Bewegungssteuerung zu aktivieren (Erlaubnis erforderlich).'
                         },
                         language: {
                             de: 'Deutsch',
@@ -119,7 +132,7 @@
                             entry: '{rank}. {name} - Level {level} ({time})'
                         },
                         instructions: {
-                            text: '<strong>So spielst du Astray:</strong><br><br>Nutze die Pfeiltasten, um die Kugel zu steuern und den Ausgang zu finden.<br><br>Vim-Fans: h, j, k, l'
+                            text: '<strong>So spielst du Astray:</strong><br><br>Nutze die Pfeiltasten, um die Kugel zu steuern und den Ausgang zu finden.<br><br>Auf Geräten mit Bewegungssensor kannst du dein Gerät neigen, um die Kugel zu bewegen.<br><br>Vim-Fans: h, j, k, l'
                         },
                         help: 'Halte die Taste "I" für Anweisungen gedrückt.',
                         victory: {
@@ -191,9 +204,14 @@
                         settings: {
                             title: 'Settings',
                             victoryLlm: 'Enable AI victory messages',
+                            tiltControl: 'Enable motion controls',
                             language: 'Language',
                             save: 'Save',
-                            cancel: 'Cancel'
+                            cancel: 'Cancel',
+                            tiltEnabled: 'Motion controls are enabled. Tilt your device to move the ball.',
+                            tiltDisabled: 'Motion controls are off.',
+                            tiltUnavailable: 'Motion controls are not supported on this device.',
+                            tiltNeedsPermission: 'Tap to enable motion controls (permission required).'
                         },
                         language: {
                             de: 'German',
@@ -210,7 +228,7 @@
                             entry: '{rank}. {name} - Level {level} ({time})'
                         },
                         instructions: {
-                            text: '<strong>How to play Astray:</strong><br><br>Use the arrow keys to move the ball and find the exit.<br><br>Vim trainees: h, j, k, l'
+                            text: '<strong>How to play Astray:</strong><br><br>Use the arrow keys to move the ball and find the exit.<br><br>Devices with motion sensors let you tilt to move the ball.<br><br>Vim trainees: h, j, k, l'
                         },
                         help: 'Hold down the "I" key for instructions.',
                         victory: {
@@ -331,7 +349,8 @@
 
             var defaultSettings = {
                 victoryLlmEnabled: true,
-                language: 'de'
+                language: 'de',
+                tiltControlEnabled: false
             };
 
             var players = [],
@@ -466,6 +485,7 @@
 
                 jQuery('#settings-title').text(t('settings.title'));
                 jQuery('#settings-victory-text').text(t('settings.victoryLlm'));
+                jQuery('#settings-tilt-label').text(t('settings.tiltControl'));
                 jQuery('#settings-language-label').text(t('settings.language'));
                 jQuery('#settings-save').text(t('settings.save'));
                 jQuery('#settings-cancel').text(t('settings.cancel'));
@@ -484,6 +504,7 @@
                 if (jQuery.fn && typeof jQuery.fn.center === 'function') {
                     jQuery('#instructions').center();
                 }
+                updateTiltUi();
             }
 
 
@@ -1162,6 +1183,18 @@
                     }
                 }
                 victoryLlmConfig.enabled = !!gameSettings.victoryLlmEnabled;
+                if (gameSettings.tiltControlEnabled) {
+                    enableTiltControl({ silent: true }, function(success) {
+                        if (!success && gameSettings && gameSettings.tiltControlEnabled) {
+                            gameSettings.tiltControlEnabled = false;
+                            saveSettings();
+                        }
+                        updateTiltUi();
+                    });
+                } else {
+                    disableTiltControl({ skipPreference: true, skipSave: true });
+                    updateTiltUi();
+                }
             }
 
 
@@ -1301,6 +1334,240 @@
                     } else {
                         $info.text(t('menu.currentNone'));
                     }
+                }
+            }
+
+
+            function requiresTiltPermission() {
+                return typeof window !== 'undefined' &&
+                    typeof window.DeviceOrientationEvent !== 'undefined' &&
+                    typeof window.DeviceOrientationEvent.requestPermission === 'function';
+            }
+
+
+            function getDeviceOrientationAngle() {
+                if (typeof window === 'undefined') {
+                    return 0;
+                }
+                if (typeof window.orientation === 'number') {
+                    return window.orientation;
+                }
+                if (window.screen && window.screen.orientation && typeof window.screen.orientation.angle === 'number') {
+                    return window.screen.orientation.angle;
+                }
+                return 0;
+            }
+
+
+            function normalizeTiltInput(angle) {
+                if (typeof angle !== 'number' || isNaN(angle)) {
+                    return 0;
+                }
+                if (angle > 180 || angle < -180) {
+                    angle = ((angle + 180) % 360 + 360) % 360 - 180;
+                }
+                var maxAngle = Math.max(tiltMaxAngle, tiltDeadZone + 0.01);
+                var clamped = Math.max(-maxAngle, Math.min(maxAngle, angle));
+                if (Math.abs(clamped) <= tiltDeadZone) {
+                    return 0;
+                }
+                var range = maxAngle - tiltDeadZone;
+                if (range <= 0) {
+                    return 0;
+                }
+                var sign = clamped < 0 ? -1 : 1;
+                var adjusted = (Math.abs(clamped) - tiltDeadZone) / range;
+                if (!isFinite(adjusted)) {
+                    adjusted = 0;
+                }
+                adjusted = Math.max(0, Math.min(1, adjusted));
+                return adjusted * sign;
+            }
+
+
+            function handleDeviceOrientation(event) {
+                if (!tiltControlEnabled) {
+                    return;
+                }
+                var gamma = (event && typeof event.gamma === 'number') ? event.gamma : 0;
+                var beta = (event && typeof event.beta === 'number') ? event.beta : 0;
+                var angle = getDeviceOrientationAngle();
+                var targetX;
+                var targetY;
+                switch (angle) {
+                    case 90:
+                    case -270:
+                        targetX = normalizeTiltInput(beta);
+                        targetY = normalizeTiltInput(-gamma);
+                        break;
+                    case -90:
+                    case 270:
+                        targetX = normalizeTiltInput(-beta);
+                        targetY = normalizeTiltInput(gamma);
+                        break;
+                    case 180:
+                    case -180:
+                        targetX = normalizeTiltInput(-gamma);
+                        targetY = normalizeTiltInput(-beta);
+                        break;
+                    default:
+                        targetX = normalizeTiltInput(gamma);
+                        targetY = normalizeTiltInput(beta);
+                        break;
+                }
+                tiltTargetAxis[0] = targetX;
+                tiltTargetAxis[1] = targetY;
+            }
+
+
+            function enableTiltControl(options, callback) {
+                options = options || {};
+                var onResult = (typeof callback === 'function') ? callback : function() {};
+                if (!tiltControlSupported) {
+                    tiltControlEnabled = false;
+                    tiltPermissionState = 'unavailable';
+                    updateTiltUi();
+                    onResult(false);
+                    return;
+                }
+                if (tiltControlEnabled) {
+                    if (gameSettings && !gameSettings.tiltControlEnabled) {
+                        gameSettings.tiltControlEnabled = true;
+                        saveSettings();
+                    }
+                    tiltPermissionState = 'granted';
+                    updateTiltUi();
+                    onResult(true);
+                    return;
+                }
+
+                function finishEnable() {
+                    if (typeof window !== 'undefined' && typeof window.addEventListener === 'function') {
+                        window.addEventListener('deviceorientation', handleDeviceOrientation, true);
+                    }
+                    tiltControlEnabled = true;
+                    tiltPermissionState = 'granted';
+                    tiltAxis[0] = 0;
+                    tiltAxis[1] = 0;
+                    tiltTargetAxis[0] = 0;
+                    tiltTargetAxis[1] = 0;
+                    if (gameSettings && !gameSettings.tiltControlEnabled) {
+                        gameSettings.tiltControlEnabled = true;
+                        saveSettings();
+                    }
+                    updateTiltUi();
+                    onResult(true);
+                }
+
+                if (requiresTiltPermission()) {
+                    if (tiltPermissionState === 'denied') {
+                        updateTiltUi();
+                        onResult(false);
+                        return;
+                    }
+                    if (options.silent && tiltPermissionState !== 'granted') {
+                        updateTiltUi();
+                        onResult(false);
+                        return;
+                    }
+                    try {
+                        var permissionPromise = window.DeviceOrientationEvent.requestPermission();
+                        if (permissionPromise && typeof permissionPromise.then === 'function') {
+                            permissionPromise.then(function(state) {
+                                tiltPermissionState = state;
+                                if (state === 'granted') {
+                                    finishEnable();
+                                } else {
+                                    disableTiltControl({ skipPreference: true, skipUiUpdate: true, skipSave: true });
+                                    if (state === 'denied') {
+                                        tiltPermissionState = 'denied';
+                                    }
+                                    updateTiltUi();
+                                    onResult(false);
+                                }
+                            }).catch(function(err) {
+                                console.warn('Motion control permission request failed.', err);
+                                tiltPermissionState = 'denied';
+                                disableTiltControl({ skipPreference: true, skipUiUpdate: true, skipSave: true });
+                                updateTiltUi();
+                                onResult(false);
+                            });
+                        } else if (permissionPromise === 'granted') {
+                            finishEnable();
+                        } else {
+                            if (typeof permissionPromise === 'string') {
+                                tiltPermissionState = permissionPromise;
+                            }
+                            disableTiltControl({ skipPreference: true, skipUiUpdate: true, skipSave: true });
+                            updateTiltUi();
+                            onResult(false);
+                        }
+                    } catch (err) {
+                        console.warn('Motion control permission request threw an error.', err);
+                        tiltPermissionState = 'denied';
+                        disableTiltControl({ skipPreference: true, skipUiUpdate: true, skipSave: true });
+                        updateTiltUi();
+                        onResult(false);
+                    }
+                } else {
+                    finishEnable();
+                }
+            }
+
+
+            function disableTiltControl(options) {
+                options = options || {};
+                if (tiltControlEnabled && typeof window !== 'undefined' && typeof window.removeEventListener === 'function') {
+                    window.removeEventListener('deviceorientation', handleDeviceOrientation, true);
+                }
+                tiltControlEnabled = false;
+                tiltAxis[0] = 0;
+                tiltAxis[1] = 0;
+                tiltTargetAxis[0] = 0;
+                tiltTargetAxis[1] = 0;
+                if (!options.skipPreference && gameSettings && gameSettings.tiltControlEnabled) {
+                    gameSettings.tiltControlEnabled = false;
+                    if (!options.skipSave) {
+                        saveSettings();
+                    }
+                }
+                if (!options.skipUiUpdate) {
+                    updateTiltUi();
+                }
+            }
+
+
+            function updateTiltUi() {
+                if (!window.jQuery) {
+                    return;
+                }
+                var $checkbox = jQuery('#settings-tilt-control');
+                var $note = jQuery('#settings-tilt-note');
+                if (!$checkbox.length) {
+                    return;
+                }
+                if (!tiltControlSupported) {
+                    $checkbox.prop('checked', false);
+                    $checkbox.prop('disabled', true);
+                    if ($note.length) {
+                        $note.text(t('settings.tiltUnavailable'));
+                    }
+                    return;
+                }
+                $checkbox.prop('disabled', false);
+                $checkbox.prop('checked', !!(gameSettings && gameSettings.tiltControlEnabled));
+                if ($note.length) {
+                    var noteKey;
+                    if (tiltControlEnabled || (gameSettings && gameSettings.tiltControlEnabled && tiltPermissionState === 'granted')) {
+                        noteKey = 'settings.tiltEnabled';
+                    } else if (requiresTiltPermission() && tiltPermissionState !== 'granted') {
+                        noteKey = 'settings.tiltNeedsPermission';
+                    } else if (gameSettings && gameSettings.tiltControlEnabled) {
+                        noteKey = 'settings.tiltEnabled';
+                    } else {
+                        noteKey = 'settings.tiltDisabled';
+                    }
+                    $note.text(t(noteKey));
                 }
             }
 
@@ -1497,6 +1764,7 @@
             function openSettingsMenu() {
                 jQuery('#settings-victory-llm').prop('checked', !!gameSettings.victoryLlmEnabled);
                 jQuery('#settings-language').val(gameSettings.language || defaultSettings.language);
+                updateTiltUi();
                 jQuery('#settings-menu').fadeIn(150);
             }
 
@@ -1799,15 +2067,33 @@
 
             function updatePhysicsWorld() {
 
-                // Apply "friction". 
+                // Apply "friction".
                 var lv = wBall.GetLinearVelocity();
                 lv.Multiply(currentFrictionFactor);
                 wBall.SetLinearVelocity(lv);
-                
+
                 // Apply user-directed force.
                 var impulseStrength = baseImpulseStrength * currentImpulseMultiplier;
-                var f = new b2Vec2(keyAxis[0] * wBall.GetMass() * impulseStrength, keyAxis[1] * wBall.GetMass() * impulseStrength);
-                wBall.ApplyImpulse(f, wBall.GetPosition());          
+                var axisX = keyAxis[0];
+                var axisY = keyAxis[1];
+                if (tiltControlEnabled) {
+                    tiltAxis[0] += (tiltTargetAxis[0] - tiltAxis[0]) * tiltSmoothingFactor;
+                    tiltAxis[1] += (tiltTargetAxis[1] - tiltAxis[1]) * tiltSmoothingFactor;
+                    if (Math.abs(tiltAxis[0]) < 0.02) {
+                        tiltAxis[0] = 0;
+                    }
+                    if (Math.abs(tiltAxis[1]) < 0.02) {
+                        tiltAxis[1] = 0;
+                    }
+                    axisX += tiltAxis[0];
+                    axisY += tiltAxis[1];
+                }
+                if (axisX > 1) { axisX = 1; }
+                if (axisX < -1) { axisX = -1; }
+                if (axisY > 1) { axisY = 1; }
+                if (axisY < -1) { axisY = -1; }
+                var f = new b2Vec2(axisX * wBall.GetMass() * impulseStrength, axisY * wBall.GetMass() * impulseStrength);
+                wBall.ApplyImpulse(f, wBall.GetPosition());
                 keyAxis = [0,0];
 
                 // Take a time step.
@@ -2057,6 +2343,20 @@
 
                 $('#settings-cancel').on('click', function() {
                     closeSettingsMenu(false);
+                });
+
+                $('#settings-tilt-control').on('change', function() {
+                    var $checkbox = $(this);
+                    if ($checkbox.is(':checked')) {
+                        enableTiltControl({}, function(success) {
+                            if (!success) {
+                                $checkbox.prop('checked', false);
+                                updateTiltUi();
+                            }
+                        });
+                    } else {
+                        disableTiltControl();
+                    }
                 });
 
                 $('#open-scoreboard').on('click', function() {
@@ -2324,6 +2624,13 @@
                 margin-bottom: 16px;
             }
 
+            #settings-menu .settings-note {
+                margin-top: 6px;
+                font-size: 13px;
+                color: #bbbbbb;
+                line-height: 1.4;
+            }
+
             #scoreboard-menu table {
                 width: 100%;
                 border-collapse: collapse;
@@ -2407,6 +2714,13 @@
                     <input type='checkbox' id='settings-victory-llm'>
                     <span id='settings-victory-text'></span>
                 </label>
+            </div>
+            <div class='settings-group'>
+                <label>
+                    <input type='checkbox' id='settings-tilt-control'>
+                    <span id='settings-tilt-label'></span>
+                </label>
+                <div id='settings-tilt-note' class='settings-note'></div>
             </div>
             <div class='settings-group'>
                 <label id='settings-language-label' for='settings-language'></label>
