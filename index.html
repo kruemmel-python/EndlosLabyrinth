@@ -37,26 +37,26 @@
                 displayVictoryRequested = false,
 
                 ballTexturePaths = [
-                    '/ball.png',
-                    '/ball1.png',
-                    '/ball2.png',
-                    '/ball3.png'
+                    '/balls/ball.png',
+                    '/balls/ball1.png',
+                    '/balls/ball2.png',
+                    '/balls/ball3.png'
                 ],
                 wallTexturePaths = [
-                    '/brick.png',
-                    '/brick1.png',
-                    '/brick2.png',
-                    '/brick3.png',
-                    '/brick4.png',
-                    '/brick5.png'
+                    '/walls/brick.png',
+                    '/walls/brick1.png',
+                    '/walls/brick2.png',
+                    '/walls/brick3.png',
+                    '/walls/brick4.png',
+                    '/walls/brick5.png'
                 ],
                 floorTexturePaths = [
-                    '/concrete.png',
-                    '/concrete1.png',
-                    '/concrete2.png',
-                    '/concrete3.png',
-                    '/concrete4.png',
-                    '/concrete5.png'
+                    '/ground/concrete.png',
+                    '/ground/concrete1.png',
+                    '/ground/concrete2.png',
+                    '/ground/concrete3.png',
+                    '/ground/concrete4.png',
+                    '/ground/concrete5.png'
                 ],
                 textureCache = {},
                 translations = {
@@ -82,14 +82,19 @@
                             messageNameEmpty: 'Name darf nicht leer sein.',
                             deleteConfirm: 'Möchtest du den Spieler "{name}" wirklich löschen?',
                             currentNone: 'Kein Spieler ausgewählt',
-                            currentWithLevel: 'Aktueller Spieler: {name} (Level {level})',
-                            menuButton: 'Menü'
+                            currentWithLevel: 'Aktueller Spieler: {name} (Level {level}, Gesamtzeit {time})',
+                            menuButton: 'Menü',
+                            saveGameButton: 'Spiel speichern',
+                            loadGameButton: 'Spiel laden',
+                            messageSaved: 'Spielstand gespeichert.',
+                            messageSaveUnavailable: 'Zum Speichern muss das Spiel laufen.',
+                            messageLoaded: 'Spielstand geladen.',
+                            messageNoSave: 'Kein Spielstand zum Laden vorhanden.'
                         },
                         settings: {
                             title: 'Einstellungen',
                             victoryLlm: 'KI-Glückwunschtexte aktivieren',
                             language: 'Sprache',
-                            camera: 'Kameraperspektive',
                             save: 'Speichern',
                             cancel: 'Abbrechen'
                         },
@@ -97,25 +102,23 @@
                             de: 'Deutsch',
                             en: 'Englisch'
                         },
-                        camera: {
-                            third: 'Dritte Person',
-                            first: 'Ego-Perspektive'
-                        },
                         scoreboard: {
                             title: 'Rangliste',
                             rank: 'Platz',
                             player: 'Spieler',
                             level: 'Höchstes Level',
+                            time: 'Gesamtzeit',
                             empty: 'Noch keine Spieler vorhanden.',
                             close: 'Schließen',
-                            entry: '{rank}. {name} - Level {level}'
+                            entry: '{rank}. {name} - Level {level} ({time})'
                         },
                         instructions: {
                             text: '<strong>So spielst du Astray:</strong><br><br>Nutze die Pfeiltasten, um die Kugel zu steuern und den Ausgang zu finden.<br><br>Vim-Fans: h, j, k, l'
                         },
                         help: 'Halte die Taste "I" für Anweisungen gedrückt.',
                         victory: {
-                            default: 'Glückwunsch! Du hast Level {level} erfolgreich gemeistert.'
+                            default: 'Glückwunsch! Du hast Level {level} erfolgreich gemeistert.',
+                            itemHint: 'Extras im nächsten Level: {summary}'
                         },
                         level: {
                             loading: 'Level {level} wird geladen...',
@@ -124,7 +127,24 @@
                         },
                         toplist: {
                             empty: 'Keine Einträge vorhanden.',
-                            entry: '{rank}. {name} - Level {level}'
+                            entry: '{rank}. {name} - Level {level} ({time})'
+                        },
+                        items: {
+                            coin: {
+                                singular: 'Münze',
+                                plural: 'Münzen'
+                            },
+                            summary: {
+                                coins: 'Im nächsten Level findest du {coinCount} {coinWord}.',
+                                boosters: 'Booster: {boosterList}.',
+                                none: 'Im nächsten Level warten keine besonderen Items.'
+                            }
+                        },
+                        boosters: {
+                            speed: { name: 'Tempo-Booster' },
+                            grip: { name: 'Gleit-Booster' },
+                            coinrush: { name: 'Münz-Multiplikator' },
+                            vision: { name: 'Licht-Booster' }
                         }
                     },
                     en: {
@@ -149,14 +169,19 @@
                             messageNameEmpty: 'Name must not be empty.',
                             deleteConfirm: 'Do you really want to delete the player "{name}"?',
                             currentNone: 'No player selected',
-                            currentWithLevel: 'Current player: {name} (Level {level})',
-                            menuButton: 'Menu'
+                            currentWithLevel: 'Current player: {name} (Level {level}, total time {time})',
+                            menuButton: 'Menu',
+                            saveGameButton: 'Save game',
+                            loadGameButton: 'Load game',
+                            messageSaved: 'Game saved.',
+                            messageSaveUnavailable: 'You need an active game to save.',
+                            messageLoaded: 'Game loaded.',
+                            messageNoSave: 'No saved game found.'
                         },
                         settings: {
                             title: 'Settings',
                             victoryLlm: 'Enable AI victory messages',
                             language: 'Language',
-                            camera: 'Camera perspective',
                             save: 'Save',
                             cancel: 'Cancel'
                         },
@@ -164,25 +189,23 @@
                             de: 'German',
                             en: 'English'
                         },
-                        camera: {
-                            third: 'Third-person',
-                            first: 'First-person'
-                        },
                         scoreboard: {
                             title: 'Leaderboard',
                             rank: 'Rank',
                             player: 'Player',
                             level: 'Highest level',
+                            time: 'Total time',
                             empty: 'No players yet.',
                             close: 'Close',
-                            entry: '{rank}. {name} - Level {level}'
+                            entry: '{rank}. {name} - Level {level} ({time})'
                         },
                         instructions: {
                             text: '<strong>How to play Astray:</strong><br><br>Use the arrow keys to move the ball and find the exit.<br><br>Vim trainees: h, j, k, l'
                         },
                         help: 'Hold down the "I" key for instructions.',
                         victory: {
-                            default: 'Congratulations! You cleared level {level}!'
+                            default: 'Congratulations! You cleared level {level}!',
+                            itemHint: 'Upcoming level perks: {summary}'
                         },
                         level: {
                             loading: 'Loading level {level}...',
@@ -191,15 +214,76 @@
                         },
                         toplist: {
                             empty: 'No entries yet.',
-                            entry: '{rank}. {name} - Level {level}'
+                            entry: '{rank}. {name} - Level {level} ({time})'
+                        },
+                        items: {
+                            coin: {
+                                singular: 'coin',
+                                plural: 'coins'
+                            },
+                            summary: {
+                                coins: 'The next level contains {coinCount} {coinWord}.',
+                                boosters: 'Boosters: {boosterList}.',
+                                none: 'No special items await in the next level.'
+                            }
+                        },
+                        boosters: {
+                            speed: { name: 'Speed boost' },
+                            grip: { name: 'Glide boost' },
+                            coinrush: { name: 'Coin multiplier' },
+                            vision: { name: 'Light boost' }
                         }
                     }
                 },
                 currentLanguage = 'de',
-                cameraMode = 'third',
-                lastCameraForward = new THREE.Vector3(1, 0, 0),
-                tempCameraVec = new THREE.Vector3(),
-                tempTargetVec = new THREE.Vector3(),
+                currentExitTarget = {x: null, y: null},
+                currentExitApproachCell = null,
+                boosterDefinitions = {
+                    speed: {
+                        id: 'speed',
+                        durationMs: 12000,
+                        apply: function() { currentImpulseMultiplier = 1.6; },
+                        reset: function() { currentImpulseMultiplier = 1.0; }
+                    },
+                    grip: {
+                        id: 'grip',
+                        durationMs: 12000,
+                        apply: function() { currentFrictionFactor = 0.985; },
+                        reset: function() { currentFrictionFactor = baseFrictionFactor; }
+                    },
+                    coinrush: {
+                        id: 'coinrush',
+                        durationMs: 15000,
+                        apply: function() { currentCoinMultiplier = 2; },
+                        reset: function() { currentCoinMultiplier = 1; }
+                    },
+                    vision: {
+                        id: 'vision',
+                        durationMs: 10000,
+                        apply: function() { visionBoostActive = true; if (light) { light.intensity = Math.min(defaultLightIntensity * 1.4, 1.6); } },
+                        reset: function() { visionBoostActive = false; if (light) { light.intensity = defaultLightIntensity; } }
+                    }
+                },
+                boosterOrder = ['speed', 'grip', 'coinrush', 'vision'],
+                activeItems = [],
+                currentLevelConfig = null,
+                nextLevelConfig = null,
+                currentRunStats = null,
+                currentLevelStartTime = null,
+                currentImpulseMultiplier = 1,
+                currentFrictionFactor = 0.95,
+                currentCoinMultiplier = 1,
+                baseImpulseStrength = 0.25,
+                baseFrictionFactor = 0.95,
+                boosterTimeouts = {},
+                defaultLightIntensity = 1,
+                visionBoostActive = false,
+                itemResources = {
+                    coinGeometry: null,
+                    coinMaterial: null,
+                    boosterGeometry: null,
+                    boosterMaterials: {}
+                },
 
             // Box2D shortcuts
                 b2World        = Box2D.Dynamics.b2World,
@@ -233,8 +317,7 @@
 
             var defaultSettings = {
                 victoryLlmEnabled: true,
-                language: 'de',
-                cameraPerspective: 'third'
+                language: 'de'
             };
 
             var players = [],
@@ -299,6 +382,40 @@
             }
 
 
+            function formatDuration(ms) {
+                if (!ms || ms < 0) {
+                    return '0:00';
+                }
+                var totalSeconds = Math.floor(ms / 1000);
+                var hours = Math.floor(totalSeconds / 3600);
+                var minutes = Math.floor((totalSeconds % 3600) / 60);
+                var seconds = totalSeconds % 60;
+                if (hours > 0) {
+                    return hours + ':' + String(minutes).padStart(2, '0') + ':' + String(seconds).padStart(2, '0');
+                }
+                return minutes + ':' + String(seconds).padStart(2, '0');
+            }
+
+
+            function deepClone(obj) {
+                if (!obj) {
+                    return null;
+                }
+                try {
+                    return JSON.parse(JSON.stringify(obj));
+                } catch (err) {
+                    return null;
+                }
+            }
+
+
+            function showMenuMessage(text) {
+                if (window.jQuery) {
+                    jQuery('#menu-message').text(text || '');
+                }
+            }
+
+
             function t(key, params) {
                 var raw = resolveTranslation(currentLanguage, key);
                 if (typeof raw === 'function') {
@@ -327,6 +444,8 @@
                 jQuery('#top-players-heading').text(t('menu.topPlayers'));
                 jQuery('#start-game').text(t('menu.startButton'));
                 jQuery('#resume-game').text(t('menu.resumeButton'));
+                jQuery('#save-game').text(t('menu.saveGameButton'));
+                jQuery('#load-game').text(t('menu.loadGameButton'));
                 jQuery('#open-settings').text(t('menu.settingsButton'));
                 jQuery('#open-scoreboard').text(t('menu.scoreboardButton'));
                 jQuery('#menu-button').text(t('menu.menuButton'));
@@ -334,18 +453,16 @@
                 jQuery('#settings-title').text(t('settings.title'));
                 jQuery('#settings-victory-text').text(t('settings.victoryLlm'));
                 jQuery('#settings-language-label').text(t('settings.language'));
-                jQuery('#settings-camera-label').text(t('settings.camera'));
                 jQuery('#settings-save').text(t('settings.save'));
                 jQuery('#settings-cancel').text(t('settings.cancel'));
                 jQuery('#settings-language option[value="de"]').text(t('language.de'));
                 jQuery('#settings-language option[value="en"]').text(t('language.en'));
-                jQuery('#settings-camera option[value="third"]').text(t('camera.third'));
-                jQuery('#settings-camera option[value="first"]').text(t('camera.first'));
 
                 jQuery('#scoreboard-title').text(t('scoreboard.title'));
                 jQuery('#scoreboard-th-rank').text(t('scoreboard.rank'));
                 jQuery('#scoreboard-th-player').text(t('scoreboard.player'));
                 jQuery('#scoreboard-th-level').text(t('scoreboard.level'));
+                jQuery('#scoreboard-th-time').text(t('scoreboard.time'));
                 jQuery('#scoreboard-close').text(t('scoreboard.close'));
 
                 jQuery('#instructions').html(t('instructions.text'));
@@ -363,6 +480,7 @@
                 }
                 currentLanguage = lang;
                 applyLanguageToDom();
+                scoreboardNeedsRender = true;
                 if (!options.skipPlayerRefresh) {
                     renderPlayerSelect();
                     renderScoreboard();
@@ -374,38 +492,6 @@
                 }
                 if (!options.skipSave) {
                     saveSettings();
-                }
-            }
-
-
-            function applyCameraMode() {
-                cameraMode = (gameSettings && gameSettings.cameraPerspective === 'first') ? 'first' : 'third';
-                if (cameraMode === 'first') {
-                    lastCameraForward.set(1, 0, 0);
-                }
-                if (!camera) {
-                    return;
-                }
-                if (cameraMode === 'first' && ballMesh) {
-                    tempCameraVec.set(
-                        ballMesh.position.x - lastCameraForward.x * 0.6,
-                        ballMesh.position.y - lastCameraForward.y * 0.6,
-                        ballRadius * 1.8
-                    );
-                    camera.position.copy(tempCameraVec);
-                    tempTargetVec.set(
-                        ballMesh.position.x + lastCameraForward.x * 2,
-                        ballMesh.position.y + lastCameraForward.y * 2,
-                        ballRadius * 0.5
-                    );
-                    camera.lookAt(tempTargetVec);
-                    if (light) {
-                        light.position.copy(camera.position);
-                    }
-                } else if (light) {
-                    light.position.x = camera.position.x;
-                    light.position.y = camera.position.y;
-                    light.position.z = camera.position.z - 3.7;
                 }
             }
 
@@ -459,8 +545,274 @@
             }
 
 
-            function defaultVictoryMessage(level) {
-                return t('victory.default', {level: level});
+            function shuffleArray(array) {
+                for (var i = array.length - 1; i > 0; i--) {
+                    var j = Math.floor(Math.random() * (i + 1));
+                    var temp = array[i];
+                    array[i] = array[j];
+                    array[j] = temp;
+                }
+                return array;
+            }
+
+
+            function getBoosterName(id, lang) {
+                var langData = translations[lang] && translations[lang].boosters;
+                if (langData && langData[id] && langData[id].name) {
+                    return langData[id].name;
+                }
+                return id;
+            }
+
+
+            function buildItemSummary(config, lang) {
+                if (!config) {
+                    return '';
+                }
+                var itemsLang = translations[lang] && translations[lang].items;
+                if (!itemsLang) {
+                    return '';
+                }
+                var parts = [];
+                if (config.coinCount > 0) {
+                    var coinWord = config.coinCount === 1 ? itemsLang.coin.singular : itemsLang.coin.plural;
+                    parts.push(formatTranslation(itemsLang.summary.coins, {
+                        coinCount: config.coinCount,
+                        coinWord: coinWord
+                    }));
+                }
+                if (config.boosters && config.boosters.length > 0) {
+                    var boosterNames = config.boosters.map(function(id) {
+                        return getBoosterName(id, lang);
+                    });
+                    parts.push(formatTranslation(itemsLang.summary.boosters, {
+                        boosterList: boosterNames.join(', ')
+                    }));
+                }
+                if (parts.length === 0) {
+                    return itemsLang.summary.none;
+                }
+                return parts.join(' ');
+            }
+
+
+            function getItemSummaryText(config, lang) {
+                if (!config) {
+                    return '';
+                }
+                lang = lang || currentLanguage;
+                if (config.summaries && config.summaries[lang]) {
+                    return config.summaries[lang];
+                }
+                return buildItemSummary(config, lang);
+            }
+
+
+            function generateItemsForLevel(level) {
+                var coinCount = Math.max(3, 4 + Math.floor(level / 2) + Math.floor(Math.random() * 3));
+                var boosterPool = shuffleArray(boosterOrder.slice(0));
+                var boosterCount = Math.min(boosterPool.length, 1 + Math.floor(Math.random() * boosterPool.length));
+                var boostersForLevel = boosterPool.slice(0, boosterCount);
+                var config = {
+                    level: level,
+                    coinCount: coinCount,
+                    boosters: boostersForLevel
+                };
+                config.summaries = {
+                    de: buildItemSummary(config, 'de'),
+                    en: buildItemSummary(config, 'en')
+                };
+                return config;
+            }
+
+
+            function clearActiveItems() {
+                if (!activeItems || activeItems.length === 0) {
+                    return;
+                }
+                for (var i = 0; i < activeItems.length; i++) {
+                    if (activeItems[i].mesh && scene) {
+                        scene.remove(activeItems[i].mesh);
+                    }
+                }
+                activeItems = [];
+            }
+
+
+            function collectWalkableCells(field) {
+                var cells = [];
+                var dimension = field.dimension || field.length;
+                for (var x = 1; x < dimension - 1; x++) {
+                    for (var y = 1; y < dimension - 1; y++) {
+                        if (field[x][y] === false) {
+                            cells.push({x: x, y: y});
+                        }
+                    }
+                }
+                return cells;
+            }
+
+
+            function spawnItemsForCurrentLevel(field) {
+                clearActiveItems();
+                if (!currentLevelConfig || !scene || !field) {
+                    return;
+                }
+                if (!itemResources.coinGeometry) {
+                    itemResources.coinGeometry = new THREE.CubeGeometry(0.35, 0.35, 0.1, 1, 1, 1);
+                }
+                if (!itemResources.coinMaterial) {
+                    itemResources.coinMaterial = new THREE.MeshPhongMaterial({color: 0xffd700});
+                }
+                if (!itemResources.boosterGeometry) {
+                    itemResources.boosterGeometry = new THREE.CubeGeometry(0.35, 0.35, 0.35, 1, 1, 1);
+                }
+                var dimension = field.dimension || field.length;
+                var cells = collectWalkableCells(field).filter(function(cell) {
+                    if ((cell.x === 1 && cell.y === 1)) {
+                        return false;
+                    }
+                    if (currentExitApproachCell && cell.x === currentExitApproachCell.x && cell.y === currentExitApproachCell.y) {
+                        return false;
+                    }
+                    if (cell.x <= 0 || cell.y <= 0 || cell.x >= dimension - 1 || cell.y >= dimension - 1) {
+                        return false;
+                    }
+                    return true;
+                });
+                function takeCell() {
+                    if (cells.length === 0) {
+                        return null;
+                    }
+                    var index = Math.floor(Math.random() * cells.length);
+                    return cells.splice(index, 1)[0];
+                }
+                // Coins
+                for (var i = 0; i < currentLevelConfig.coinCount; i++) {
+                    var coinCell = takeCell();
+                    if (!coinCell) {
+                        break;
+                    }
+                    var coinMesh = new THREE.Mesh(itemResources.coinGeometry, itemResources.coinMaterial);
+                    coinMesh.position.set(coinCell.x, coinCell.y, 0.3);
+                    scene.add(coinMesh);
+                    activeItems.push({
+                        kind: 'coin',
+                        mesh: coinMesh,
+                        value: 1,
+                        cell: coinCell
+                    });
+                }
+                // Boosters
+                for (var b = 0; b < currentLevelConfig.boosters.length; b++) {
+                    var boosterId = currentLevelConfig.boosters[b];
+                    var boosterCell = takeCell();
+                    if (!boosterCell) {
+                        break;
+                    }
+                    if (!itemResources.boosterMaterials[boosterId]) {
+                        var color;
+                        switch (boosterId) {
+                            case 'speed':
+                                color = 0xff4444;
+                                break;
+                            case 'grip':
+                                color = 0x44ff88;
+                                break;
+                            case 'coinrush':
+                                color = 0xffaa00;
+                                break;
+                            case 'vision':
+                                color = 0x4488ff;
+                                break;
+                            default:
+                                color = 0xffffff;
+                        }
+                        itemResources.boosterMaterials[boosterId] = new THREE.MeshPhongMaterial({color: color, emissive: 0x222222});
+                    }
+                    var boosterMesh = new THREE.Mesh(itemResources.boosterGeometry, itemResources.boosterMaterials[boosterId]);
+                    boosterMesh.position.set(boosterCell.x, boosterCell.y, 0.4);
+                    scene.add(boosterMesh);
+                    activeItems.push({
+                        kind: 'booster',
+                        boosterId: boosterId,
+                        mesh: boosterMesh,
+                        cell: boosterCell
+                    });
+                }
+            }
+
+
+            function collectItemByIndex(index) {
+                var item = activeItems[index];
+                if (!item) {
+                    return;
+                }
+                if (item.mesh && scene) {
+                    scene.remove(item.mesh);
+                }
+                if (item.kind === 'coin') {
+                    var coinValue = Math.max(1, Math.round(item.value * currentCoinMultiplier));
+                    if (currentRunStats) {
+                        currentRunStats.coins = (currentRunStats.coins || 0) + coinValue;
+                    }
+                } else if (item.kind === 'booster' && item.boosterId) {
+                    activateBooster(item.boosterId);
+                    if (currentRunStats) {
+                        if (!currentRunStats.boosters) {
+                            currentRunStats.boosters = [];
+                        }
+                        currentRunStats.boosters.push(item.boosterId);
+                    }
+                }
+                activeItems.splice(index, 1);
+            }
+
+
+            function activateBooster(boosterId) {
+                var def = boosterDefinitions[boosterId];
+                if (!def) {
+                    return;
+                }
+                if (boosterTimeouts[boosterId]) {
+                    clearTimeout(boosterTimeouts[boosterId]);
+                }
+                if (def.apply) {
+                    def.apply();
+                }
+                boosterTimeouts[boosterId] = setTimeout(function() {
+                    if (def.reset) {
+                        def.reset();
+                    }
+                    boosterTimeouts[boosterId] = null;
+                }, def.durationMs || 10000);
+            }
+
+
+            function resetBoosterEffects() {
+                currentImpulseMultiplier = 1;
+                currentFrictionFactor = baseFrictionFactor;
+                currentCoinMultiplier = 1;
+                Object.keys(boosterTimeouts).forEach(function(key) {
+                    if (boosterTimeouts[key]) {
+                        clearTimeout(boosterTimeouts[key]);
+                    }
+                });
+                boosterTimeouts = {};
+                if (light) {
+                    light.intensity = defaultLightIntensity;
+                }
+                visionBoostActive = false;
+            }
+
+
+            function defaultVictoryMessage(level, upcomingConfig) {
+                var base = t('victory.default', {level: level});
+                var summaryText = getItemSummaryText(upcomingConfig, currentLanguage);
+                if (summaryText) {
+                    base += ' ' + formatTranslation(t('victory.itemHint'), {summary: summaryText});
+                }
+                return base;
             }
 
 
@@ -482,23 +834,34 @@
             }
 
 
-            function getVictoryPrompts(level) {
+            function getVictoryPrompts(level, upcomingConfig) {
+                var summaryText = getItemSummaryText(upcomingConfig, currentLanguage);
+                var summaryHint = summaryText ? formatTranslation(t('victory.itemHint'), {summary: summaryText}) : '';
                 if (currentLanguage === 'en') {
+                    var userTextEn = 'The player just completed level ' + level + '. Write an encouraging congratulations in at most two sentences in English. Mention the successful completion and motivate the next challenge.';
+                    if (summaryHint) {
+                        userTextEn += '\n\n' + summaryHint;
+                    }
                     return {
                         system: 'You are the narrator of a marble maze game. You produce short, friendly victory messages in English.',
-                        user: 'The player just completed level ' + level + '. Write an encouraging congratulations in at most two sentences in English. Mention the successful completion and motivate the next challenge.'
+                        user: userTextEn
                     };
+                }
+                var userTextDe = 'Der Spieler hat gerade Level ' + level + ' abgeschlossen. Formuliere einen motivierenden Glückwunsch in höchstens zwei Sätzen auf Deutsch. Erwähne den Erfolg des Levels und mache Lust auf die nächste Herausforderung.';
+                if (summaryHint) {
+                    userTextDe += '\n\n' + summaryHint;
                 }
                 return {
                     system: 'Du bist der Erzähler eines Geschicklichkeitsspiels. Du gibst kurze, freundliche Glückwunschbotschaften in deutscher Sprache aus.',
-                    user: 'Der Spieler hat gerade Level ' + level + ' abgeschlossen. Formuliere einen motivierenden Glückwunsch in höchstens zwei Sätzen auf Deutsch. Erwähne den Erfolg des Levels und mache Lust auf die nächste Herausforderung.'
+                    user: userTextDe
                 };
             }
 
 
-            function fetchVictoryMessage(level) {
+            function fetchVictoryMessage(level, upcomingConfig) {
+                var summaryText = getItemSummaryText(upcomingConfig, currentLanguage);
                 if (!victoryLlmConfig.enabled || typeof fetch !== 'function') {
-                    return Promise.resolve(defaultVictoryMessage(level));
+                    return Promise.resolve(defaultVictoryMessage(level, upcomingConfig));
                 }
                 var controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
                 var timeoutId = null;
@@ -507,7 +870,7 @@
                         controller.abort();
                     }, victoryLlmConfig.requestTimeoutMs);
                 }
-                var prompts = getVictoryPrompts(level);
+                var prompts = getVictoryPrompts(level, upcomingConfig);
                 var systemPrompt = prompts.system;
                 var userPrompt = prompts.user;
                 var payload;
@@ -566,20 +929,32 @@
                         if (!sanitized) {
                             throw new Error(currentLanguage === 'en' ? 'Victory model reply was empty.' : 'Victory LLM Antwort war leer.');
                         }
+                        if (summaryText) {
+                            sanitized += '\n' + formatTranslation(t('victory.itemHint'), {summary: summaryText});
+                        }
                         return sanitized;
                     })
                     .catch(function(err) {
                         console.warn(currentLanguage === 'en' ? 'Victory LLM failed:' : 'Victory LLM fehlgeschlagen:', err);
-                        return defaultVictoryMessage(level);
+                        return defaultVictoryMessage(level, upcomingConfig);
                     });
             }
 
 
-            function onLevelCompleted(completedLevel) {
-                updatePlayerProgress(completedLevel);
+            function onLevelCompleted(completedLevel, upcomingConfig) {
+                var levelDurationMs = null;
+                if (currentLevelStartTime) {
+                    levelDurationMs = Math.max(0, Date.now() - currentLevelStartTime);
+                    currentLevelStartTime = null;
+                }
+                if (currentRunStats) {
+                    currentRunStats.lastLevelDurationMs = levelDurationMs || 0;
+                    currentRunStats.totalTimeMs = (currentRunStats.totalTimeMs || 0) + (levelDurationMs || 0);
+                }
+                updatePlayerProgress(completedLevel, levelDurationMs || 0);
                 pendingVictoryMessage = null;
                 displayVictoryRequested = false;
-                pendingVictoryPromise = fetchVictoryMessage(completedLevel)
+                pendingVictoryPromise = fetchVictoryMessage(completedLevel, upcomingConfig)
                     .then(function(message) {
                         pendingVictoryMessage = message;
                         if (displayVictoryRequested) {
@@ -591,7 +966,7 @@
                         return message;
                     })
                     .catch(function(message) {
-                        var fallback = typeof message === 'string' ? message : defaultVictoryMessage(completedLevel);
+                        var fallback = typeof message === 'string' ? message : defaultVictoryMessage(completedLevel, upcomingConfig);
                         pendingVictoryMessage = fallback;
                         if (displayVictoryRequested) {
                             displayVictoryRequested = false;
@@ -630,6 +1005,7 @@
                                 players = parsedPlayers.map(function(player) {
                                     var name = '';
                                     var highest = 0;
+                                    var totalTime = 0;
                                     if (player && player.name) {
                                         name = player.name.toString().trim();
                                     }
@@ -639,9 +1015,17 @@
                                             highest = hl;
                                         }
                                     }
+                                    if (player && typeof player.totalTimeMs !== 'undefined') {
+                                        var tt = parseInt(player.totalTimeMs, 10);
+                                        if (!isNaN(tt) && tt >= 0) {
+                                            totalTime = tt;
+                                        }
+                                    }
                                     return {
                                         name: name.substring(0, 40),
-                                        highestLevel: highest
+                                        highestLevel: highest,
+                                        totalTimeMs: totalTime,
+                                        saveData: player && player.saveData ? deepClone(player.saveData) : null
                                     };
                                 }).filter(function(player) {
                                     return player.name.length > 0;
@@ -764,7 +1148,6 @@
                     }
                 }
                 victoryLlmConfig.enabled = !!gameSettings.victoryLlmEnabled;
-                applyCameraMode();
             }
 
 
@@ -803,6 +1186,11 @@
                     if (levelA !== levelB) {
                         return levelB - levelA;
                     }
+                    var timeA = typeof a.totalTimeMs === 'number' ? a.totalTimeMs : 0;
+                    var timeB = typeof b.totalTimeMs === 'number' ? b.totalTimeMs : 0;
+                    if (timeA !== timeB) {
+                        return timeA - timeB;
+                    }
                     var locale = currentLanguage === 'de' ? 'de' : 'en';
                     try {
                         return a.name.localeCompare(b.name, locale, {sensitivity: 'base'});
@@ -814,16 +1202,18 @@
                 if ($body.length) {
                     $body.empty();
                     if (sortedPlayers.length === 0) {
-                        $body.append('<tr><td colspan="3">' + t('scoreboard.empty') + '</td></tr>');
+                        $body.append('<tr><td colspan="4">' + t('scoreboard.empty') + '</td></tr>');
                     } else {
                         sortedPlayers.forEach(function(player, index) {
                             var tr = jQuery('<tr></tr>');
                             if (currentPlayer && currentPlayer.name === player.name) {
                                 tr.addClass('active-player');
                             }
+                            var timeText = formatDuration(player.totalTimeMs || 0);
                             tr.append('<td>' + (index + 1) + '</td>');
                             tr.append('<td>' + player.name + '</td>');
                             tr.append('<td>' + (player.highestLevel || 0) + '</td>');
+                            tr.append('<td>' + timeText + '</td>');
                             $body.append(tr);
                         });
                     }
@@ -838,7 +1228,8 @@
                             $toplist.append('<li>' + t('toplist.entry', {
                                 rank: idx + 1,
                                 name: player.name,
-                                level: player.highestLevel || 0
+                                level: player.highestLevel || 0,
+                                time: formatDuration(player.totalTimeMs || 0)
                             }) + '</li>');
                         });
                     }
@@ -850,6 +1241,8 @@
                 var $startButton = jQuery('#start-game');
                 var $resumeButton = jQuery('#resume-game');
                 var $deleteButton = jQuery('#delete-player');
+                var $saveButton = jQuery('#save-game');
+                var $loadButton = jQuery('#load-game');
                 var $select = jQuery('#player-select');
                 var $message = jQuery('#menu-message');
                 var hasPlayer = !!currentPlayer;
@@ -861,6 +1254,14 @@
                 }
                 if ($deleteButton.length) {
                     $deleteButton.prop('disabled', !hasPlayer);
+                }
+                if ($saveButton.length) {
+                    var canSave = hasPlayer && hasStartedGame && !!currentLevelConfig;
+                    $saveButton.prop('disabled', !canSave);
+                }
+                if ($loadButton.length) {
+                    var hasSave = hasPlayer && currentPlayer && currentPlayer.saveData;
+                    $loadButton.prop('disabled', !hasSave);
                 }
                 if ($select.length) {
                     $select.prop('disabled', players.length === 0);
@@ -880,7 +1281,8 @@
                     if (hasPlayer) {
                         $info.text(t('menu.currentWithLevel', {
                             name: currentPlayer.name,
-                            level: currentPlayer.highestLevel || 0
+                            level: currentPlayer.highestLevel || 0,
+                            time: formatDuration(currentPlayer.totalTimeMs || 0)
                         }));
                     } else {
                         $info.text(t('menu.currentNone'));
@@ -905,7 +1307,9 @@
                 }
                 var newPlayer = {
                     name: trimmed.substring(0, 40),
-                    highestLevel: 0
+                    highestLevel: 0,
+                    totalTimeMs: 0,
+                    saveData: null
                 };
                 players.push(newPlayer);
                 currentPlayer = newPlayer;
@@ -943,6 +1347,61 @@
             }
 
 
+            function saveCurrentPlayerState() {
+                if (!currentPlayer) {
+                    showMenuMessage(t('menu.messageSelectPlayer'));
+                    return;
+                }
+                if (!hasStartedGame || !currentLevelConfig) {
+                    showMenuMessage(t('menu.messageSaveUnavailable'));
+                    return;
+                }
+                var state = {
+                    mazeDimension: mazeDimension,
+                    levelIndex: levelIndex,
+                    currentLevelConfig: deepClone(currentLevelConfig),
+                    totalTimeMs: currentPlayer.totalTimeMs || 0
+                };
+                currentPlayer.saveData = state;
+                savePlayers();
+                showMenuMessage(t('menu.messageSaved'));
+                updateStartMenuState();
+            }
+
+
+            function loadCurrentPlayerState() {
+                if (!currentPlayer) {
+                    showMenuMessage(t('menu.messageSelectPlayer'));
+                    return;
+                }
+                if (!currentPlayer.saveData) {
+                    showMenuMessage(t('menu.messageNoSave'));
+                    return;
+                }
+                var state = currentPlayer.saveData;
+                showMenuMessage(t('menu.messageLoaded'));
+                clearActiveItems();
+                resetBoosterEffects();
+                mazeDimension = Math.max(11, state.mazeDimension || 11);
+                levelIndex = state.levelIndex || Math.max(1, Math.floor((mazeDimension - 1)/2 - 4));
+                nextLevelConfig = deepClone(state.currentLevelConfig) || generateItemsForLevel(levelIndex);
+                currentLevelConfig = null;
+                currentRunStats = {coins: 0, boosters: [], totalTimeMs: 0, lastLevelDurationMs: 0};
+                currentLevelStartTime = null;
+                if (typeof state.totalTimeMs === 'number') {
+                    currentPlayer.totalTimeMs = state.totalTimeMs;
+                }
+                scoreboardNeedsRender = true;
+                savePlayers();
+                renderScoreboard();
+                updateStartMenuState();
+                hasStartedGame = true;
+                previousGameState = null;
+                hideStartMenu({restore: false});
+                gameState = 'initialize';
+            }
+
+
             function resetGameStateForPlayer() {
                 mazeDimension = 11;
                 levelIndex = 1;
@@ -951,7 +1410,6 @@
                 pendingVictoryMessage = null;
                 pendingVictoryPromise = null;
                 displayVictoryRequested = false;
-                lastCameraForward.set(1, 0, 0);
                 if (victoryTimeout) {
                     clearTimeout(victoryTimeout);
                     victoryTimeout = null;
@@ -959,6 +1417,12 @@
                 if (window.jQuery) {
                     jQuery('#victory').hide();
                 }
+                clearActiveItems();
+                resetBoosterEffects();
+                currentLevelConfig = null;
+                nextLevelConfig = generateItemsForLevel(levelIndex);
+                currentRunStats = {coins: 0, boosters: [], totalTimeMs: 0, lastLevelDurationMs: 0};
+                currentLevelStartTime = null;
                 wWorld = undefined;
                 wBall = undefined;
                 maze = undefined;
@@ -1019,7 +1483,6 @@
             function openSettingsMenu() {
                 jQuery('#settings-victory-llm').prop('checked', !!gameSettings.victoryLlmEnabled);
                 jQuery('#settings-language').val(gameSettings.language || defaultSettings.language);
-                jQuery('#settings-camera').val(gameSettings.cameraPerspective || defaultSettings.cameraPerspective);
                 jQuery('#settings-menu').fadeIn(150);
             }
 
@@ -1028,7 +1491,6 @@
                 if (saveChanges) {
                     gameSettings.victoryLlmEnabled = jQuery('#settings-victory-llm').is(':checked');
                     gameSettings.language = jQuery('#settings-language').val() || defaultSettings.language;
-                    gameSettings.cameraPerspective = jQuery('#settings-camera').val() || defaultSettings.cameraPerspective;
                     applySettings();
                     setLanguage(gameSettings.language, {skipSave: true});
                     saveSettings();
@@ -1048,20 +1510,22 @@
             }
 
 
-            function updatePlayerProgress(level) {
+            function updatePlayerProgress(level, durationMs) {
                 if (!currentPlayer) {
                     return;
                 }
                 var numericLevel = parseInt(level, 10);
-                if (isNaN(numericLevel) || numericLevel <= 0) {
-                    return;
+                if (!isNaN(numericLevel) && numericLevel > 0) {
+                    if (!currentPlayer.highestLevel || currentPlayer.highestLevel < numericLevel) {
+                        currentPlayer.highestLevel = numericLevel;
+                    }
                 }
-                if (!currentPlayer.highestLevel || currentPlayer.highestLevel < numericLevel) {
-                    currentPlayer.highestLevel = numericLevel;
-                    savePlayers();
-                    renderScoreboard();
-                    updateStartMenuState();
+                if (typeof durationMs === 'number' && durationMs >= 0) {
+                    currentPlayer.totalTimeMs = (currentPlayer.totalTimeMs || 0) + durationMs;
                 }
+                savePlayers();
+                renderScoreboard();
+                updateStartMenuState();
             }
 
 
@@ -1080,24 +1544,75 @@
                 }
                 if (dimension > 2) {
                     field[1][1] = false;
-                    field[dimension-1][dimension-2] = false;
                 }
                 return field;
+            }
+
+
+            function configureExit(field) {
+                var dimension = field.dimension || field.length;
+                currentExitApproachCell = null;
+                var candidates = [];
+                function pushCandidate(boundaryX, boundaryY, neighborX, neighborY) {
+                    if (boundaryX < 0 || boundaryX >= dimension || boundaryY < 0 || boundaryY >= dimension) {
+                        return;
+                    }
+                    if (neighborX < 0 || neighborX >= dimension || neighborY < 0 || neighborY >= dimension) {
+                        return;
+                    }
+                    if (neighborX === 1 && neighborY === 1) {
+                        return;
+                    }
+                    candidates.push({
+                        bx: boundaryX,
+                        by: boundaryY,
+                        nx: neighborX,
+                        ny: neighborY
+                    });
+                }
+                for (var y = 1; y < dimension - 1; y += 2) {
+                    pushCandidate(dimension - 1, y, dimension - 2, y); // right edge
+                    pushCandidate(0, y, 1, y); // left edge
+                }
+                for (var x = 1; x < dimension - 1; x += 2) {
+                    pushCandidate(x, dimension - 1, x, dimension - 2); // bottom edge
+                    pushCandidate(x, 0, x, 1); // top edge
+                }
+                if (candidates.length === 0) {
+                    field[dimension-1][dimension-2] = false;
+                    if (dimension - 2 >= 0 && dimension - 2 < dimension) {
+                        field[dimension - 2][dimension - 2] = false;
+                        currentExitTarget.x = dimension - 2;
+                        currentExitTarget.y = dimension - 2;
+                        currentExitApproachCell = {x: dimension - 2, y: dimension - 2};
+                    } else {
+                        currentExitTarget.x = dimension - 1;
+                        currentExitTarget.y = dimension - 2;
+                    }
+                    return;
+                }
+                var chosen = candidates[Math.floor(Math.random() * candidates.length)];
+                field[chosen.bx][chosen.by] = false;
+                field[chosen.nx][chosen.ny] = false;
+                currentExitApproachCell = {x: chosen.nx, y: chosen.ny};
+                currentExitTarget.x = chosen.nx;
+                currentExitTarget.y = chosen.ny;
             }
 
 
             function startLevelWithField(field) {
                 randomizeLevelTextures();
                 lastMazeName = t('level.standardName');
-                lastCameraForward.set(1, 0, 0);
                 maze = ensureMazeOpenings(field);
+                configureExit(maze);
                 keyAxis = [0, 0];
                 createPhysicsWorld();
                 createRenderWorld();
                 camera.position.set(1, 1, 5);
                 light.position.set(1, 1, 1.3);
                 light.intensity = 0;
-                applyCameraMode();
+                spawnItemsForCurrentLevel(maze);
+                currentLevelStartTime = Date.now();
                 updateLevelLabel('ready');
                 gameState = 'fade in';
                 displayPendingVictory();
@@ -1120,6 +1635,18 @@
                 updateLevelLabel('loading');
                 var dimension = mazeDimension;
                 lastMazeName = t('level.standardName');
+                if (!nextLevelConfig) {
+                    nextLevelConfig = generateItemsForLevel(levelIndex);
+                }
+                currentLevelConfig = nextLevelConfig;
+                nextLevelConfig = null;
+                if (currentRunStats) {
+                    currentRunStats.coins = 0;
+                    currentRunStats.boosters = [];
+                    currentRunStats.lastLevelDurationMs = 0;
+                } else {
+                    currentRunStats = {coins: 0, boosters: [], totalTimeMs: 0, lastLevelDurationMs: 0};
+                }
                 startLevelWithField(generateSquareMaze(dimension));
                 isPreparingLevel = false;
             }
@@ -1206,6 +1733,7 @@
                 // Add the camera.
                 var aspect = window.innerWidth/window.innerHeight;
                 camera = new THREE.PerspectiveCamera(60, aspect, 1, 1000);
+                camera.up.set(0, 0, 1);
                 camera.position.set(1, 1, 5);
                 scene.add(camera);
 
@@ -1237,31 +1765,12 @@
 
                 // Apply "friction". 
                 var lv = wBall.GetLinearVelocity();
-                lv.Multiply(0.95);
+                lv.Multiply(currentFrictionFactor);
                 wBall.SetLinearVelocity(lv);
                 
                 // Apply user-directed force.
-                var impulseX = keyAxis[0];
-                var impulseY = keyAxis[1];
-                if (cameraMode === 'first') {
-                    var forwardX = lastCameraForward.x;
-                    var forwardY = lastCameraForward.y;
-                    var forwardLen = Math.sqrt(forwardX * forwardX + forwardY * forwardY);
-                    if (forwardLen < 0.0001) {
-                        forwardX = 1;
-                        forwardY = 0;
-                        forwardLen = 1;
-                    }
-                    forwardX /= forwardLen;
-                    forwardY /= forwardLen;
-                    var rightX = -forwardY;
-                    var rightY = forwardX;
-                    var transformedX = rightX * impulseX + forwardX * (-impulseY);
-                    var transformedY = rightY * impulseX + forwardY * (-impulseY);
-                    impulseX = transformedX;
-                    impulseY = transformedY;
-                }
-                var f = new b2Vec2(impulseX * wBall.GetMass()*0.25, impulseY * wBall.GetMass()*0.25);
+                var impulseStrength = baseImpulseStrength * currentImpulseMultiplier;
+                var f = new b2Vec2(keyAxis[0] * wBall.GetMass() * impulseStrength, keyAxis[1] * wBall.GetMass() * impulseStrength);
                 wBall.ApplyImpulse(f, wBall.GetPosition());          
                 keyAxis = [0,0];
 
@@ -1290,39 +1799,31 @@
                 ballMesh.rotation.getRotationFromMatrix(ballMesh.matrix);
                 
                 // Update camera and light positions.
-                if (cameraMode === 'first') {
-                    if (wBall) {
-                        var lv = wBall.GetLinearVelocity();
-                        if (lv) {
-                            var mag = Math.sqrt(lv.x * lv.x + lv.y * lv.y);
-                            if (mag > 0.01) {
-                                lastCameraForward.set(lv.x / mag, lv.y / mag, 0);
-                            }
+                camera.position.x += (ballMesh.position.x - camera.position.x) * 0.1;
+                camera.position.y += (ballMesh.position.y - camera.position.y) * 0.1;
+                camera.position.z += (5 - camera.position.z) * 0.1;
+                if (light) {
+                    light.position.x = camera.position.x;
+                    light.position.y = camera.position.y;
+                    light.position.z = camera.position.z - 3.7;
+                }
+                if (activeItems.length > 0) {
+                    for (var ai = activeItems.length - 1; ai >= 0; ai--) {
+                        var item = activeItems[ai];
+                        if (!item || !item.mesh) {
+                            continue;
                         }
-                    }
-                    tempCameraVec.set(
-                        ballMesh.position.x - lastCameraForward.x * 0.6,
-                        ballMesh.position.y - lastCameraForward.y * 0.6,
-                        ballRadius * 1.8
-                    );
-                    camera.position.lerp(tempCameraVec, 0.35);
-                    tempTargetVec.set(
-                        ballMesh.position.x + lastCameraForward.x * 2,
-                        ballMesh.position.y + lastCameraForward.y * 2,
-                        ballRadius * 0.5
-                    );
-                    camera.lookAt(tempTargetVec);
-                    if (light) {
-                        light.position.copy(camera.position);
-                    }
-                } else {
-                    camera.position.x += (ballMesh.position.x - camera.position.x) * 0.1;
-                    camera.position.y += (ballMesh.position.y - camera.position.y) * 0.1;
-                    camera.position.z += (5 - camera.position.z) * 0.1;
-                    if (light) {
-                        light.position.x = camera.position.x;
-                        light.position.y = camera.position.y;
-                        light.position.z = camera.position.z - 3.7;
+                        if (item.kind === 'coin') {
+                            item.mesh.rotation.y += 0.12;
+                        } else {
+                            item.mesh.rotation.y += 0.08;
+                            item.mesh.rotation.x += 0.04;
+                        }
+                        var dx = ballMesh.position.x - item.mesh.position.x;
+                        var dy = ballMesh.position.y - item.mesh.position.y;
+                        if ((dx * dx + dy * dy) <= 0.25) {
+                            collectItemByIndex(ai);
+                        }
                     }
                 }
             }
@@ -1365,9 +1866,16 @@
                         // Check for victory.
                         var mazeX = Math.floor(ballMesh.position.x + 0.5);
                         var mazeY = Math.floor(ballMesh.position.y + 0.5);
-                        if (mazeX == mazeDimension && mazeY == mazeDimension - 2) { 
+                        var exitX = typeof currentExitTarget.x === 'number' ? currentExitTarget.x : mazeDimension;
+                        var exitY = typeof currentExitTarget.y === 'number' ? currentExitTarget.y : (mazeDimension - 2);
+                        if (mazeX === exitX && mazeY === exitY) { 
                             var completedLevel = levelIndex;
-                            onLevelCompleted(completedLevel);
+                            var upcomingLevelIndex = levelIndex + 1;
+                            nextLevelConfig = generateItemsForLevel(upcomingLevelIndex);
+                            var upcomingConfig = nextLevelConfig;
+                            onLevelCompleted(completedLevel, upcomingConfig);
+                            clearActiveItems();
+                            resetBoosterEffects();
                             mazeDimension += 2;
                             gameState = 'fade out';
                         }
@@ -1493,6 +2001,14 @@
 
                 $('#resume-game').on('click', function() {
                     hideStartMenu({restore: true});
+                });
+
+                $('#save-game').on('click', function() {
+                    saveCurrentPlayerState();
+                });
+
+                $('#load-game').on('click', function() {
+                    loadCurrentPlayerState();
                 });
 
                 $('#open-settings').on('click', function() {
@@ -1839,6 +2355,8 @@
             <div class='menu-buttons'>
                 <button id='start-game' type='button'></button>
                 <button id='resume-game' type='button' class='secondary'></button>
+                <button id='save-game' type='button' class='secondary'></button>
+                <button id='load-game' type='button' class='secondary'></button>
                 <button id='open-settings' type='button' class='secondary'></button>
                 <button id='open-scoreboard' type='button' class='secondary'></button>
             </div>
@@ -1861,13 +2379,6 @@
                     <option value='en'></option>
                 </select>
             </div>
-            <div class='settings-group'>
-                <label id='settings-camera-label' for='settings-camera'></label>
-                <select id='settings-camera'>
-                    <option value='third'></option>
-                    <option value='first'></option>
-                </select>
-            </div>
             <div class='menu-buttons'>
                 <button id='settings-save' type='button'></button>
                 <button id='settings-cancel' type='button' class='secondary'></button>
@@ -1884,6 +2395,7 @@
                         <th id='scoreboard-th-rank'></th>
                         <th id='scoreboard-th-player'></th>
                         <th id='scoreboard-th-level'></th>
+                        <th id='scoreboard-th-time'></th>
                     </tr>
                 </thead>
                 <tbody id='scoreboard-body'></tbody>
