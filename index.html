@@ -24,6 +24,8 @@
                 ballMesh       = undefined,
                 ballRadius     = 0.25,
                 keyAxis        = [0, 0],
+                touchAxis      = [0, 0],
+                touchPointerAxes = {},
                 tiltAxis       = [0, 0],
                 tiltTargetAxis = [0, 0],
                 tiltControlEnabled = false,
@@ -132,7 +134,7 @@
                             entry: '{rank}. {name} - Level {level} ({time})'
                         },
                         instructions: {
-                            text: '<strong>So spielst du Astray:</strong><br><br>Nutze die Pfeiltasten, um die Kugel zu steuern und den Ausgang zu finden.<br><br>Auf Geräten mit Bewegungssensor kannst du dein Gerät neigen, um die Kugel zu bewegen.<br><br>Vim-Fans: h, j, k, l'
+                            text: '<strong>So spielst du Astray:</strong><br><br>Nutze die Pfeiltasten, um die Kugel zu steuern und den Ausgang zu finden.<br><br>Auf Geräten mit Bewegungssensor kannst du dein Gerät neigen, um die Kugel zu bewegen.<br><br>Auf Touch-Geräten findest du am unteren Bildschirmrand zusätzliche Pfeile zur Steuerung.<br><br>Vim-Fans: h, j, k, l'
                         },
                         help: 'Halte die Taste "I" für Anweisungen gedrückt.',
                         victory: {
@@ -228,7 +230,7 @@
                             entry: '{rank}. {name} - Level {level} ({time})'
                         },
                         instructions: {
-                            text: '<strong>How to play Astray:</strong><br><br>Use the arrow keys to move the ball and find the exit.<br><br>Devices with motion sensors let you tilt to move the ball.<br><br>Vim trainees: h, j, k, l'
+                            text: '<strong>How to play Astray:</strong><br><br>Use the arrow keys to move the ball and find the exit.<br><br>Devices with motion sensors let you tilt to move the ball.<br><br>Touch devices display small on-screen arrows near the bottom for easy steering.<br><br>Vim trainees: h, j, k, l'
                         },
                         help: 'Hold down the "I" key for instructions.',
                         victory: {
@@ -1710,6 +1712,7 @@
                 mazeDimension = 11;
                 levelIndex = 1;
                 keyAxis = [0, 0];
+                clearAllTouchPointers();
                 lastMazeName = t('level.standardName');
                 pendingVictoryMessage = null;
                 pendingVictoryPromise = null;
@@ -2097,8 +2100,8 @@
 
                 // Apply user-directed force.
                 var impulseStrength = baseImpulseStrength * currentImpulseMultiplier;
-                var axisX = keyAxis[0];
-                var axisY = keyAxis[1];
+                var axisX = keyAxis[0] + touchAxis[0];
+                var axisY = keyAxis[1] + touchAxis[1];
                 if (tiltControlEnabled) {
                     tiltAxis[0] += (tiltTargetAxis[0] - tiltAxis[0]) * tiltSmoothingFactor;
                     tiltAxis[1] += (tiltTargetAxis[1] - tiltAxis[1]) * tiltSmoothingFactor;
@@ -2256,7 +2259,176 @@
                 keyAxis = axis.slice(0);
             }
 
-            
+
+            function parseTouchControlAxis(element) {
+                if (!element || typeof element.getAttribute !== 'function') {
+                    return [0, 0];
+                }
+                var axisX = parseFloat(element.getAttribute('data-axis-x'));
+                var axisY = parseFloat(element.getAttribute('data-axis-y'));
+                if (isNaN(axisX)) { axisX = 0; }
+                if (isNaN(axisY)) { axisY = 0; }
+                return [axisX, axisY];
+            }
+
+
+            function recomputeTouchAxis() {
+                var axisX = 0;
+                var axisY = 0;
+                for (var pointerId in touchPointerAxes) {
+                    if (!Object.prototype.hasOwnProperty.call(touchPointerAxes, pointerId)) {
+                        continue;
+                    }
+                    axisX += touchPointerAxes[pointerId][0];
+                    axisY += touchPointerAxes[pointerId][1];
+                }
+                if (axisX > 1) { axisX = 1; }
+                if (axisX < -1) { axisX = -1; }
+                if (axisY > 1) { axisY = 1; }
+                if (axisY < -1) { axisY = -1; }
+                touchAxis[0] = axisX;
+                touchAxis[1] = axisY;
+            }
+
+
+            function registerTouchPointer(id, axis) {
+                if (!id) {
+                    return;
+                }
+                touchPointerAxes[id] = axis.slice ? axis.slice(0) : [axis[0], axis[1]];
+                recomputeTouchAxis();
+            }
+
+
+            function unregisterTouchPointer(id) {
+                if (!id || !Object.prototype.hasOwnProperty.call(touchPointerAxes, id)) {
+                    return;
+                }
+                delete touchPointerAxes[id];
+                recomputeTouchAxis();
+            }
+
+
+            function clearAllTouchPointers() {
+                touchPointerAxes = {};
+                touchAxis[0] = 0;
+                touchAxis[1] = 0;
+            }
+
+
+            function setupTouchControls() {
+                clearAllTouchPointers();
+                var container = document.getElementById('touch-controls');
+                if (!container) {
+                    return;
+                }
+                var buttons = container.querySelectorAll('.touch-control-button');
+                if (!buttons || buttons.length === 0) {
+                    return;
+                }
+
+                var usePointerEvents = typeof window !== 'undefined' && !!window.PointerEvent;
+
+                if (usePointerEvents) {
+                    var pointerStart = function(event) {
+                        if (event && typeof event.preventDefault === 'function') {
+                            event.preventDefault();
+                        }
+                        var axis = parseTouchControlAxis(event.currentTarget);
+                        var pointerId = (event && event.pointerId != null) ? ('p' + event.pointerId) : 'mouse';
+                        registerTouchPointer(pointerId, axis);
+                    };
+
+                    var pointerEnd = function(event) {
+                        if (event && typeof event.preventDefault === 'function') {
+                            event.preventDefault();
+                        }
+                        var pointerId = (event && event.pointerId != null) ? ('p' + event.pointerId) : 'mouse';
+                        unregisterTouchPointer(pointerId);
+                    };
+
+                    for (var i = 0; i < buttons.length; i++) {
+                        var button = buttons[i];
+                        button.addEventListener('pointerdown', pointerStart, false);
+                        button.addEventListener('pointerup', pointerEnd, false);
+                        button.addEventListener('pointercancel', pointerEnd, false);
+                        button.addEventListener('pointerleave', pointerEnd, false);
+                        button.addEventListener('pointerout', pointerEnd, false);
+                        button.addEventListener('contextmenu', function(event) {
+                            if (event && typeof event.preventDefault === 'function') {
+                                event.preventDefault();
+                            }
+                        }, false);
+                    }
+                } else {
+                    var touchStart = function(event) {
+                        if (event && typeof event.preventDefault === 'function') {
+                            event.preventDefault();
+                        }
+                        var axis = parseTouchControlAxis(event.currentTarget);
+                        var touches = (event && event.changedTouches) ? event.changedTouches : [];
+                        if (!touches || touches.length === 0) {
+                            registerTouchPointer('touch', axis);
+                            return;
+                        }
+                        for (var ti = 0; ti < touches.length; ti++) {
+                            var touchId = 't' + touches[ti].identifier;
+                            registerTouchPointer(touchId, axis);
+                        }
+                    };
+
+                    var touchEnd = function(event) {
+                        if (event && typeof event.preventDefault === 'function') {
+                            event.preventDefault();
+                        }
+                        var touches = (event && event.changedTouches) ? event.changedTouches : [];
+                        if (!touches || touches.length === 0) {
+                            unregisterTouchPointer('touch');
+                            return;
+                        }
+                        for (var ti = 0; ti < touches.length; ti++) {
+                            var touchId = 't' + touches[ti].identifier;
+                            unregisterTouchPointer(touchId);
+                        }
+                    };
+
+                    var mouseStart = function(event) {
+                        if (event && typeof event.preventDefault === 'function') {
+                            event.preventDefault();
+                        }
+                        var axis = parseTouchControlAxis(event.currentTarget);
+                        registerTouchPointer('mouse', axis);
+                    };
+
+                    var mouseEnd = function(event) {
+                        if (event && typeof event.preventDefault === 'function') {
+                            event.preventDefault();
+                        }
+                        unregisterTouchPointer('mouse');
+                    };
+
+                    for (var j = 0; j < buttons.length; j++) {
+                        var touchButton = buttons[j];
+                        touchButton.addEventListener('touchstart', touchStart, false);
+                        touchButton.addEventListener('touchend', touchEnd, false);
+                        touchButton.addEventListener('touchcancel', touchEnd, false);
+                        touchButton.addEventListener('mousedown', mouseStart, false);
+                        touchButton.addEventListener('mouseup', mouseEnd, false);
+                        touchButton.addEventListener('mouseleave', mouseEnd, false);
+                        touchButton.addEventListener('contextmenu', function(event) {
+                            if (event && typeof event.preventDefault === 'function') {
+                                event.preventDefault();
+                            }
+                        }, false);
+                    }
+                }
+
+                if (typeof window !== 'undefined' && typeof window.addEventListener === 'function') {
+                    window.addEventListener('blur', clearAllTouchPointers);
+                }
+            }
+
+
             jQuery.fn.centerv = function () {
                 wh = window.innerHeight;
                 h = this.outerHeight();
@@ -2302,7 +2474,8 @@
                 KeyboardJS.bind.axis('left', 'right', 'down', 'up', onMoveKey);
                 KeyboardJS.bind.axis('h', 'l', 'j', 'k', onMoveKey);
                 $(window).resize(onResize);
-                
+                setupTouchControls();
+
                 loadPersistentState();
                 setLanguage(gameSettings.language || defaultSettings.language, {
                     skipSave: true,
@@ -2514,6 +2687,89 @@
                 background: rgba(70, 70, 70, 0.8);
             }
 
+            #touch-controls {
+                position: fixed;
+                bottom: 16px;
+                left: 50%;
+                width: 160px;
+                height: 120px;
+                transform: translateX(-50%);
+                display: none;
+                z-index: 4200;
+                pointer-events: none;
+            }
+
+            #touch-controls .touch-control-button {
+                position: absolute;
+                width: 52px;
+                height: 52px;
+                border-radius: 50%;
+                background: rgba(0, 0, 0, 0.6);
+                color: #ffffff;
+                border: 1px solid rgba(255, 255, 255, 0.4);
+                font-size: 24px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                touch-action: none;
+                pointer-events: auto;
+                box-shadow: 0 3px 8px rgba(0, 0, 0, 0.45);
+                transition: background 0.15s ease, transform 0.15s ease;
+            }
+
+            #touch-controls .touch-control-button:active {
+                background: rgba(80, 80, 80, 0.85);
+                transform: scale(0.95) translateZ(0);
+            }
+
+            #touch-controls .touch-control-button:focus-visible {
+                outline: 2px solid #8cff8c;
+                outline-offset: 2px;
+            }
+
+            #touch-controls .touch-up {
+                top: 0;
+                left: 50%;
+                transform: translate(-50%, 0);
+            }
+
+            #touch-controls .touch-down {
+                bottom: 0;
+                left: 50%;
+                transform: translate(-50%, 0);
+            }
+
+            #touch-controls .touch-left {
+                left: 0;
+                top: 50%;
+                transform: translate(0, -50%);
+            }
+
+            #touch-controls .touch-right {
+                right: 0;
+                top: 50%;
+                transform: translate(0, -50%);
+            }
+
+            @media (hover: none) and (pointer: coarse) {
+                #touch-controls {
+                    display: block;
+                }
+            }
+
+            @media (max-width: 480px) {
+                #touch-controls {
+                    width: 140px;
+                    height: 110px;
+                }
+
+                #touch-controls .touch-control-button {
+                    width: 46px;
+                    height: 46px;
+                    font-size: 20px;
+                }
+            }
+
             .menu-overlay {
                 position: fixed;
                 top: 0;
@@ -2692,6 +2948,13 @@
     <div id='level'></div>
 
     <div id='menu-button'>
+    </div>
+
+    <div id='touch-controls' role='group' aria-label='Touch movement controls'>
+        <button type='button' class='touch-control-button touch-up' data-axis-x='0' data-axis-y='-1' aria-label='Move up'>&#9650;</button>
+        <button type='button' class='touch-control-button touch-left' data-axis-x='-1' data-axis-y='0' aria-label='Move left'>&#9664;</button>
+        <button type='button' class='touch-control-button touch-down' data-axis-x='0' data-axis-y='1' aria-label='Move down'>&#9660;</button>
+        <button type='button' class='touch-control-button touch-right' data-axis-x='1' data-axis-y='0' aria-label='Move right'>&#9654;</button>
     </div>
 
     <div id='start-menu' class='menu-overlay'>
