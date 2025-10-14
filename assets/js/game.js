@@ -40,6 +40,7 @@ let accumulator = 0;
 let lastTimestamp = 0;
 let running = false;
 let tutorialMode = false;
+let animationFrameId = null;
 
 function setupMenu() {
   document.getElementById('start-game').addEventListener('click', () => {
@@ -179,8 +180,26 @@ function startGame() {
   running = true;
   accumulator = 0;
   lastTimestamp = performance.now();
-  requestAnimationFrame(loop);
+  animationFrameId = requestAnimationFrame(loop);
   showToast(tutorialMode ? 'Lehrmodus aktiv.' : 'Viel Glück im Labyrinth!');
+}
+
+function showMenu() {
+  running = false;
+  if (animationFrameId !== null) {
+    cancelAnimationFrame(animationFrameId);
+    animationFrameId = null;
+  }
+  world = null;
+  player = null;
+  pickups = [];
+  npcs = [];
+  toastContainer.innerHTML = '';
+  speedStatus.textContent = 'Geschwindigkeit: Normal';
+  jumpStatus.textContent = 'Sprung bereit: Nein';
+  menu.classList.remove('hidden');
+  canvas.classList.add('hidden');
+  hud.classList.add('hidden');
 }
 
 function handleKey(event, isDown) {
@@ -217,6 +236,11 @@ function handleKey(event, isDown) {
 }
 
 window.addEventListener('keydown', (event) => {
+  if (event.code === 'Escape' && running) {
+    showMenu();
+    showToast('Zurück im Hauptmenü.');
+    return;
+  }
   handleKey(event, true);
 });
 window.addEventListener('keyup', (event) => {
@@ -239,7 +263,7 @@ function loop(timestamp) {
 
   render();
   updateHud();
-  requestAnimationFrame(loop);
+  animationFrameId = requestAnimationFrame(loop);
 }
 
 function updateHud() {
@@ -278,3 +302,4 @@ function drawArena() {
 }
 
 setupMenu();
+showMenu();
