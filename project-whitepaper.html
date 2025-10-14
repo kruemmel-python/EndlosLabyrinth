@@ -163,20 +163,17 @@
         </ul>
 
         <h3>4.2. Labyrinthgenerierungs-Modul</h3>
-        <p>Das Labyrinthgenerierungs-Modul besteht aus einer einzelnen Funktion <code>generateSquareMaze</code>, die einen rekursiven Backtracking-Algorithmus implementiert.</p>
+        <p>
+            Das Modul wurde zu einem umfassenden Werkzeugkasten ausgebaut. Neben der weiterhin vorhandenen
+            Legacy-Funktion <code>generateSquareMaze</code> steht nun das globale Objekt <code>MazeGenerator</code>
+            bereit, das mehrere Algorithmen, Analyse- und Visualisierungshilfen bündelt.
+        </p>
         <ul>
-            <li><strong>Initialisierung:</strong> Die Funktion erstellt ein zweidimensionales Array (<code>field</code>) der Größe <code>dimension x dimension</code>. Alle Zellen werden initial als "Wand" (<code>true</code>) markiert.</li>
-            <li><strong>Rekursiver Algorithmus (<code>iterate</code>):</strong>
-                <ul>
-                    <li>Die Funktion <code>iterate(field, x, y)</code> markiert die aktuelle Zelle <code>(x, y)</code> als "Weg" (<code>false</code>).</li>
-                    <li>Sie identifiziert alle benachbarten Zellen, die zwei Schritte entfernt sind und noch Wände sind (d.h., unbesucht sind). Dies sind die möglichen Richtungen, in die das Labyrinth erweitert werden kann.</li>
-                    <li>Wenn es keine solchen Richtungen gibt, ist der aktuelle Pfad beendet, und die Funktion kehrt zurück.</li>
-                    <li>Andernfalls wird zufällig eine Richtung ausgewählt. Die Zelle in dieser Richtung (zwei Schritte entfernt) wird als "Weg" markiert, und die Wand zwischen der aktuellen Zelle und der neu besuchten Zelle (ein Schritt entfernt) wird ebenfalls als "Weg" markiert.</li>
-                    <li>Die Funktion ruft sich rekursiv für die neu besuchte Zelle auf.</li>
-                </ul>
-            </li>
-            <li><strong>Startpunkt:</strong> Die Generierung beginnt typischerweise an der Zelle <code>(1, 1)</code>, um einen Rand von Wänden um das Labyrinth herum zu gewährleisten.</li>
-            <li><strong>Ausgabe:</strong> Die Funktion gibt das vollständig generierte <code>field</code>-Array zurück, wobei <code>true</code> Wände und <code>false</code> Wege repräsentiert.</li>
+            <li><strong>Mehrere Algorithmen:</strong> <code>generateDepthFirst</code> (Backtracking), <code>generatePrim</code> (Prim), <code>generateKruskal</code> (Minimum-Spanning-Tree) und <code>generateEller</code> (Streaming) erlauben es, unterschiedliche Labyrinthcharakteristika zu erzeugen. Parameter wie <code>width</code>/<code>height</code> werden bei Bedarf auf ungerade Werte angehoben.</li>
+            <li><strong>Hexagonale Topologie:</strong> <code>generateHex</code> erstellt Labyrinthe auf einer hexagonalen Gitterstruktur und liefert die Verbindungen zwischen axialen Koordinaten.</li>
+            <li><strong>High-Level-Builder:</strong> <code>MazeGenerator.build(options)</code> kapselt die Generierung und kann optional Start-/Endpunkte bestimmen, den kürzesten Pfad berechnen oder eine ASCII-Darstellung erzeugen.</li>
+            <li><strong>Analysefunktionen:</strong> <code>chooseEndpoints</code>, <code>solve</code> und <code>longestPath</code> unterstützen Feature-Ideen wie automatische Zielsetzung, Hilfesysteme oder Schwierigkeitsmetriken.</li>
+            <li><strong>Visualisierung:</strong> Mit <code>drawOnCanvas</code> lässt sich ein Labyrinth schnell auf einem HTML-Canvas darstellen, was Debugging und Prototyping erleichtert.</li>
         </ul>
 
         <h3>4.3. Systemarchitektur (Textuelle Beschreibung)</h3>
@@ -187,7 +184,7 @@
             <li><strong>KeyboardJS-Ereignis-Handler:</strong> Fangen diese Ereignisse ab, aktualisieren den internen Zustand (<code>activeKeys</code>).</li>
             <li><strong>Bindungs-Matching:</strong> <code>queryActiveBindings</code> identifiziert passende registrierte Tastenkombinationen.</li>
             <li><strong>Callback-Ausführung:</strong> Die registrierten <code>callback</code>-Funktionen (und <code>endCallback</code>s) werden von KeyboardJS aufgerufen, die dann die Anwendungslogik (z.B. Spielerbewegung im Labyrinth) ausführen können.</li>
-            <li><strong>Labyrinthgenerierung:</strong> Die Funktion <code>generateSquareMaze</code> wird einmalig oder bei Bedarf aufgerufen, um das Labyrinth-Datenmodell zu erstellen.</li>
+            <li><strong>Labyrinthgenerierung:</strong> Über <code>MazeGenerator.build(...)</code> oder direkte Algorithmus-Aufrufe wird das Labyrinth-Datenmodell erzeugt und bei Bedarf sofort mit Start-/Endpunkten sowie Lösungsweg versehen.</li>
             <li><strong>Anwendungslogik:</strong> Interpretiert das Labyrinth-Datenmodell (z.B. zur Darstellung auf einem Canvas) und reagiert auf die von KeyboardJS ausgelösten Ereignisse.</li>
         </ol>
         <p>Die Wahl von JavaScript als Implementierungssprache und die Ausführung im Browser sind durch die Natur von Webanwendungen bedingt. Die modulare Struktur ermöglicht eine einfache Integration in bestehende Projekte und fördert die Wiederverwendbarkeit der Komponenten.</p>
@@ -205,9 +202,10 @@
 
         <h3>5.2. Labyrinthgenerierung</h3>
         <ul>
-            <li><strong>Robustheit:</strong> Der rekursive Backtracking-Algorithmus ist ein etabliertes und robustes Verfahren zur Labyrinthgenerierung. Er garantiert die Erzeugung eines "perfekten" Labyrinths, d.h., es gibt immer einen Pfad zwischen zwei beliebigen Punkten und keine Schleifen. Die Implementierung ist direkt und folgt dem Standardansatz.</li>
-            <li><strong>Performance/Geschwindigkeit:</strong> Die Generierung erfolgt rekursiv und ist für typische Webanwendungsgrößen (z.B. 50x50 oder 100x100 Zellen) schnell genug. Die Komplexität ist proportional zur Anzahl der Zellen im Labyrinth. Für sehr große Labyrinthe (mehrere Tausend Zellen) könnte die Rekursionstiefe in manchen JavaScript-Engines ein Problem darstellen, ist aber in modernen Browsern selten ein Engpass.</li>
-            <li><strong>Benutzerfreundlichkeit (UX) für Entwickler:</strong> Die Funktion <code>generateSquareMaze(dimension)</code> ist einfach zu verwenden und erfordert nur einen Parameter. Die Ausgabe als zweidimensionales Boolean-Array ist klar strukturiert und leicht weiterzuverarbeiten (z.B. für die grafische Darstellung).</li>
+            <li><strong>Robustheit:</strong> Alle implementierten Algorithmen erzeugen perfekte Labyrinthe und sind bewährte Verfahren. Durch die Disjoint-Set-Struktur (Kruskal) und iterative Ansätze (Prim, Eller) wird die Gefahr von Stack-Overflows reduziert.</li>
+            <li><strong>Performance/Geschwindigkeit:</strong> Entwickler können je nach Bedarf den passenden Algorithmus wählen: Backtracking für klassische Muster, Prim für "organische" Labyrinthe, Eller für sehr hohe Labyrinthe mit geringer Speicherlast. Die Hex-Variante nutzt eine Prim-Variante auf axialen Koordinaten.</li>
+            <li><strong>Benutzerfreundlichkeit (UX) für Entwickler:</strong> <code>MazeGenerator.build</code> bietet eine Ein-Funktions-Schnittstelle inklusive optionaler Start-/Endpunktberechnung, Lösungsweg und ASCII-Ausgabe. Einzelne Helper lassen sich weiterhin gezielt einsetzen.</li>
+            <li><strong>Neue Einsatzmöglichkeiten:</strong> Die Analysefunktionen erleichtern Features wie automatische Zielbestimmung, Hint-Systeme oder Balancing basierend auf dem längsten Pfad.</li>
         </ul>
 
         <!-- 6. Vergleich mit anderen Tools -->
@@ -223,11 +221,12 @@
 
         <h3>6.2. Labyrinthgenerierung im Vergleich zu anderen Ansätzen</h3>
         <ul>
-            <li><strong>Manuelle Labyrinth-Erstellung:</strong> Die manuelle Erstellung von Labyrinthen ist für große oder dynamische Anwendungen nicht praktikabel. Der Algorithmus bietet eine skalierbare und schnelle Lösung.</li>
-            <li><strong>Andere Labyrinth-Algorithmen (z.B. Prim's, Kruskal's):</strong> Der verwendete rekursive Backtracking-Algorithmus ist einer der gängigsten und einfachsten Algorithmen zur Generierung von perfekten Labyrinthen. Andere Algorithmen wie Prim's oder Kruskal's erzeugen ebenfalls perfekte Labyrinthe, können aber unterschiedliche visuelle Eigenschaften (z.B. längere "Gänge" oder mehr "Verzweigungen") aufweisen. Die Implementierung ist hier auf Einfachheit und Effizienz ausgelegt, was für viele Anwendungsfälle ausreichend ist.</li>
-            <li><strong>Bibliotheken für prozedurale Generierung:</strong> Es gibt umfassendere Bibliotheken für prozedurale Generierung, die eine breitere Palette von Algorithmen und Funktionen bieten. Das vorliegende Modul ist jedoch leichtgewichtig und fokussiert sich ausschließlich auf die Generierung von quadratischen Labyrinthen, was für spezifische Anforderungen vorteilhaft sein kann, da es keine unnötigen Abhängigkeiten oder Overhead mit sich bringt.</li>
+            <li><strong>Manuelle Labyrinth-Erstellung:</strong> Die manuelle Erstellung von Labyrinthen ist für große oder dynamische Anwendungen nicht praktikabel. Die neuen Generatoren liefern schnell vielfältige Ergebnisse und lassen sich skriptgesteuert parametrisieren.</li>
+            <li><strong>Andere Labyrinth-Algorithmen:</strong> Statt sich auf einen Algorithmus zu beschränken, bündelt das Modul nun mehrere gängige Verfahren. Entwickler können gezielt das gewünschte Erscheinungsbild wählen, ohne zusätzliche Bibliotheken einbinden zu müssen.</li>
+            <li><strong>Bibliotheken für prozedurale Generierung:</strong> Größere Frameworks bieten zwar ähnliche Vielfalt, bringen aber oft Abhängigkeiten und komplexe APIs mit. <code>MazeGenerator</code> bleibt leichtgewichtig, liefert aber dennoch Komfortfunktionen wie Solver, Endpunktbestimmung und Canvas-Rendering.</li>
+            <li><strong>Alternative Topologien:</strong> Mit der hexagonalen Variante werden Einsatzszenarien abgedeckt, die klassische Gitternetze nicht bieten – etwa Roguelikes oder Puzzle-Spiele mit sechseckigen Tiles.</li>
         </ul>
-        <p>Zusammenfassend lässt sich sagen, dass KeyboardJS durch seine umfassende Zustandsverwaltung, die <code>endCallback</code>-Funktionalität und die <code>bindAxis</code>-Steuerung einzigartige Vorteile für interaktive Anwendungen bietet. Der Labyrinthgenerator ist eine schlanke, effiziente Implementierung eines bewährten Algorithmus, der sich durch seine Einfachheit und direkte Anwendbarkeit auszeichnet.</p>
+        <p>KeyboardJS bleibt dank seiner ausgefeilten Zustandsverwaltung ein Alleinstellungsmerkmal für Eingabelogik. Das Labyrinthmodul ergänzt dies nun um einen flexiblen Generator-Baukasten, der unterschiedliche Algorithmen, Analysefunktionen und Visualisierung vereint.</p>
 
         <!-- 7. Kernkonzepte und Innovationen -->
         <h2 class="section-title">7. Kernkonzepte und Innovationen</h2>
