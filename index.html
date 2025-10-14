@@ -1,0 +1,1901 @@
+<html>
+
+    <head>
+        <meta charset="utf-8">
+    
+        <script src='Box2dWeb.min.js'></script>
+        <script src="Three.js"></script>
+        <script src="keyboard.js"></script>
+        <script src="jquery.js"></script>
+        <script src="maze.js"></script>
+
+        <script>
+
+            var camera         = undefined, 
+                scene          = undefined, 
+                renderer       = undefined, 
+                light          = undefined,
+                mouseX         = undefined, 
+                mouseY         = undefined,
+                maze           = undefined, 
+                mazeMesh       = undefined,
+                mazeDimension  = 11,
+                planeMesh      = undefined,
+                ballMesh       = undefined,
+                ballRadius     = 0.25,
+                keyAxis        = [0, 0],
+                ironTexture    = undefined,
+                planeTexture   = undefined,
+                brickTexture   = undefined,
+                gameState      = undefined,
+                levelIndex     = 1,
+                isPreparingLevel = false,
+                lastMazeName   = '',
+                victoryTimeout = null,
+                pendingVictoryPromise = null,
+                pendingVictoryMessage = null,
+                displayVictoryRequested = false,
+
+                ballTexturePaths = [
+                    '/ball.png',
+                    '/ball1.png',
+                    '/ball2.png',
+                    '/ball3.png'
+                ],
+                wallTexturePaths = [
+                    '/brick.png',
+                    '/brick1.png',
+                    '/brick2.png',
+                    '/brick3.png',
+                    '/brick4.png',
+                    '/brick5.png'
+                ],
+                floorTexturePaths = [
+                    '/concrete.png',
+                    '/concrete1.png',
+                    '/concrete2.png',
+                    '/concrete3.png',
+                    '/concrete4.png',
+                    '/concrete5.png'
+                ],
+                textureCache = {},
+                translations = {
+                    de: {
+                        menu: {
+                            title: 'Astray',
+                            playerSelectLabel: 'Spieler auswählen',
+                            deletePlayer: 'Spieler löschen',
+                            createPlayerHeading: 'Neuen Spieler erstellen',
+                            playerPlaceholder: 'Spielername eingeben...',
+                            createPlayerButton: 'Spieler erstellen',
+                            topPlayers: 'Top Spieler',
+                            startButton: 'Spiel starten',
+                            resumeButton: 'Zurück ins Spiel',
+                            settingsButton: 'Einstellungen',
+                            scoreboardButton: 'Rangliste anzeigen',
+                            noPlayersOption: 'Keine Spieler vorhanden',
+                            messageCreateFirst: 'Lege zuerst einen Spieler an, um zu starten.',
+                            messageSelectPlayer: 'Bitte wähle einen Spieler aus.',
+                            messagePlayerCreated: 'Neuer Spieler angelegt.',
+                            messageNameTooShort: 'Der Name muss mindestens 3 Zeichen lang sein.',
+                            messageNameExists: 'Dieser Spielername existiert bereits.',
+                            messageNameEmpty: 'Name darf nicht leer sein.',
+                            deleteConfirm: 'Möchtest du den Spieler "{name}" wirklich löschen?',
+                            currentNone: 'Kein Spieler ausgewählt',
+                            currentWithLevel: 'Aktueller Spieler: {name} (Level {level})',
+                            menuButton: 'Menü'
+                        },
+                        settings: {
+                            title: 'Einstellungen',
+                            victoryLlm: 'KI-Glückwunschtexte aktivieren',
+                            language: 'Sprache',
+                            camera: 'Kameraperspektive',
+                            save: 'Speichern',
+                            cancel: 'Abbrechen'
+                        },
+                        language: {
+                            de: 'Deutsch',
+                            en: 'Englisch'
+                        },
+                        camera: {
+                            third: 'Dritte Person',
+                            first: 'Ego-Perspektive'
+                        },
+                        scoreboard: {
+                            title: 'Rangliste',
+                            rank: 'Platz',
+                            player: 'Spieler',
+                            level: 'Höchstes Level',
+                            empty: 'Noch keine Spieler vorhanden.',
+                            close: 'Schließen',
+                            entry: '{rank}. {name} - Level {level}'
+                        },
+                        instructions: {
+                            text: '<strong>So spielst du Astray:</strong><br><br>Nutze die Pfeiltasten, um die Kugel zu steuern und den Ausgang zu finden.<br><br>Vim-Fans: h, j, k, l'
+                        },
+                        help: 'Halte die Taste "I" für Anweisungen gedrückt.',
+                        victory: {
+                            default: 'Glückwunsch! Du hast Level {level} erfolgreich gemeistert.'
+                        },
+                        level: {
+                            loading: 'Level {level} wird geladen...',
+                            prefix: 'Level',
+                            standardName: 'Standard-Labyrinth'
+                        },
+                        toplist: {
+                            empty: 'Keine Einträge vorhanden.',
+                            entry: '{rank}. {name} - Level {level}'
+                        }
+                    },
+                    en: {
+                        menu: {
+                            title: 'Astray',
+                            playerSelectLabel: 'Select player',
+                            deletePlayer: 'Delete player',
+                            createPlayerHeading: 'Create new player',
+                            playerPlaceholder: 'Enter player name...',
+                            createPlayerButton: 'Create player',
+                            topPlayers: 'Top players',
+                            startButton: 'Start game',
+                            resumeButton: 'Return to game',
+                            settingsButton: 'Settings',
+                            scoreboardButton: 'Show leaderboard',
+                            noPlayersOption: 'No players available',
+                            messageCreateFirst: 'Create a player first to start.',
+                            messageSelectPlayer: 'Please select a player.',
+                            messagePlayerCreated: 'New player created.',
+                            messageNameTooShort: 'The name must be at least 3 characters long.',
+                            messageNameExists: 'This player name already exists.',
+                            messageNameEmpty: 'Name must not be empty.',
+                            deleteConfirm: 'Do you really want to delete the player "{name}"?',
+                            currentNone: 'No player selected',
+                            currentWithLevel: 'Current player: {name} (Level {level})',
+                            menuButton: 'Menu'
+                        },
+                        settings: {
+                            title: 'Settings',
+                            victoryLlm: 'Enable AI victory messages',
+                            language: 'Language',
+                            camera: 'Camera perspective',
+                            save: 'Save',
+                            cancel: 'Cancel'
+                        },
+                        language: {
+                            de: 'German',
+                            en: 'English'
+                        },
+                        camera: {
+                            third: 'Third-person',
+                            first: 'First-person'
+                        },
+                        scoreboard: {
+                            title: 'Leaderboard',
+                            rank: 'Rank',
+                            player: 'Player',
+                            level: 'Highest level',
+                            empty: 'No players yet.',
+                            close: 'Close',
+                            entry: '{rank}. {name} - Level {level}'
+                        },
+                        instructions: {
+                            text: '<strong>How to play Astray:</strong><br><br>Use the arrow keys to move the ball and find the exit.<br><br>Vim trainees: h, j, k, l'
+                        },
+                        help: 'Hold down the "I" key for instructions.',
+                        victory: {
+                            default: 'Congratulations! You cleared level {level}!'
+                        },
+                        level: {
+                            loading: 'Loading level {level}...',
+                            prefix: 'Level',
+                            standardName: 'Standard maze'
+                        },
+                        toplist: {
+                            empty: 'No entries yet.',
+                            entry: '{rank}. {name} - Level {level}'
+                        }
+                    }
+                },
+                currentLanguage = 'de',
+                cameraMode = 'third',
+                lastCameraForward = new THREE.Vector3(1, 0, 0),
+                tempCameraVec = new THREE.Vector3(),
+                tempTargetVec = new THREE.Vector3(),
+
+            // Box2D shortcuts
+                b2World        = Box2D.Dynamics.b2World,
+                b2FixtureDef   = Box2D.Dynamics.b2FixtureDef,
+                b2BodyDef      = Box2D.Dynamics.b2BodyDef,
+                b2Body		   = Box2D.Dynamics.b2Body,
+                b2CircleShape  = Box2D.Collision.Shapes.b2CircleShape,
+                b2PolygonShape = Box2D.Collision.Shapes.b2PolygonShape,
+                b2Settings     = Box2D.Common.b2Settings,
+                b2Vec2         = Box2D.Common.Math.b2Vec2,
+
+            // Box2D world variables 
+                wWorld         = undefined,
+                wBall          = undefined;
+
+
+            var victoryLlmDefaults = {
+                enabled: true,
+                endpoint: 'http://localhost:1234/v1/chat/completions',
+                model: 'victory-narrator',
+                temperature: 0.7,
+                maxTokens: 120,
+                requestTimeoutMs: 6000
+            };
+
+            var victoryDisplayDurationMs = 10000;
+
+            var STORAGE_KEY_PLAYERS = 'astrayPlayers',
+                STORAGE_KEY_SETTINGS = 'astraySettings',
+                STORAGE_KEY_CURRENT_PLAYER = 'astrayCurrentPlayer';
+
+            var defaultSettings = {
+                victoryLlmEnabled: true,
+                language: 'de',
+                cameraPerspective: 'third'
+            };
+
+            var players = [],
+                currentPlayer = null,
+                hasStartedGame = false,
+                previousGameState = null,
+                gameSettings = {},
+                scoreboardNeedsRender = true;
+
+            var victoryLlmConfig = {};
+            for (var victoryKey in victoryLlmDefaults) {
+                if (victoryLlmDefaults.hasOwnProperty(victoryKey)) {
+                    victoryLlmConfig[victoryKey] = victoryLlmDefaults[victoryKey];
+                }
+            }
+            if (window.astrayVictoryConfig) {
+                for (var victoryUserKey in window.astrayVictoryConfig) {
+                    if (window.astrayVictoryConfig.hasOwnProperty(victoryUserKey)) {
+                        victoryLlmConfig[victoryUserKey] = window.astrayVictoryConfig[victoryUserKey];
+                    }
+                }
+            }
+
+
+            function updateLevelLabel(state) {
+                if (!window.jQuery) {
+                    return;
+                }
+                var label = t('level.prefix') + ' ' + levelIndex;
+                if (state === 'loading') {
+                    label = t('level.loading', {level: levelIndex});
+                } else if (lastMazeName) {
+                    label += ' - ' + lastMazeName;
+                }
+                jQuery('#level').text(label);
+            }
+
+
+            function resolveTranslation(lang, key) {
+                var data = translations[lang] || translations.de;
+                var parts = key.split('.');
+                for (var i = 0; i < parts.length; i++) {
+                    if (data === undefined || data === null) {
+                        break;
+                    }
+                    data = data[parts[i]];
+                }
+                if (typeof data === 'undefined' && lang !== 'de') {
+                    return resolveTranslation('de', key);
+                }
+                return data;
+            }
+
+
+            function formatTranslation(value, params) {
+                if (!params) {
+                    return value;
+                }
+                return value.replace(/\{(\w+)\}/g, function(match, token) {
+                    return Object.prototype.hasOwnProperty.call(params, token) ? params[token] : match;
+                });
+            }
+
+
+            function t(key, params) {
+                var raw = resolveTranslation(currentLanguage, key);
+                if (typeof raw === 'function') {
+                    return raw(params || {});
+                }
+                if (typeof raw === 'undefined') {
+                    raw = resolveTranslation('de', key);
+                }
+                if (typeof raw === 'string') {
+                    return formatTranslation(raw, params);
+                }
+                return raw;
+            }
+
+
+            function applyLanguageToDom() {
+                if (!window.jQuery) {
+                    return;
+                }
+                jQuery('#menu-title').text(t('menu.title'));
+                jQuery('#player-select-label').text(t('menu.playerSelectLabel'));
+                jQuery('#delete-player').text(t('menu.deletePlayer'));
+                jQuery('#create-player-heading').text(t('menu.createPlayerHeading'));
+                jQuery('#player-name-input').attr('placeholder', t('menu.playerPlaceholder'));
+                jQuery('#create-player').text(t('menu.createPlayerButton'));
+                jQuery('#top-players-heading').text(t('menu.topPlayers'));
+                jQuery('#start-game').text(t('menu.startButton'));
+                jQuery('#resume-game').text(t('menu.resumeButton'));
+                jQuery('#open-settings').text(t('menu.settingsButton'));
+                jQuery('#open-scoreboard').text(t('menu.scoreboardButton'));
+                jQuery('#menu-button').text(t('menu.menuButton'));
+
+                jQuery('#settings-title').text(t('settings.title'));
+                jQuery('#settings-victory-text').text(t('settings.victoryLlm'));
+                jQuery('#settings-language-label').text(t('settings.language'));
+                jQuery('#settings-camera-label').text(t('settings.camera'));
+                jQuery('#settings-save').text(t('settings.save'));
+                jQuery('#settings-cancel').text(t('settings.cancel'));
+                jQuery('#settings-language option[value="de"]').text(t('language.de'));
+                jQuery('#settings-language option[value="en"]').text(t('language.en'));
+                jQuery('#settings-camera option[value="third"]').text(t('camera.third'));
+                jQuery('#settings-camera option[value="first"]').text(t('camera.first'));
+
+                jQuery('#scoreboard-title').text(t('scoreboard.title'));
+                jQuery('#scoreboard-th-rank').text(t('scoreboard.rank'));
+                jQuery('#scoreboard-th-player').text(t('scoreboard.player'));
+                jQuery('#scoreboard-th-level').text(t('scoreboard.level'));
+                jQuery('#scoreboard-close').text(t('scoreboard.close'));
+
+                jQuery('#instructions').html(t('instructions.text'));
+                jQuery('#help').text(t('help'));
+                if (jQuery.fn && typeof jQuery.fn.center === 'function') {
+                    jQuery('#instructions').center();
+                }
+            }
+
+
+            function setLanguage(lang, options) {
+                options = options || {};
+                if (!translations[lang]) {
+                    lang = 'de';
+                }
+                currentLanguage = lang;
+                applyLanguageToDom();
+                if (!options.skipPlayerRefresh) {
+                    renderPlayerSelect();
+                    renderScoreboard();
+                }
+                updateStartMenuState();
+                updateLevelLabel(gameState === 'loading' ? 'loading' : 'ready');
+                if (!options.skipSettingsUpdate) {
+                    gameSettings.language = lang;
+                }
+                if (!options.skipSave) {
+                    saveSettings();
+                }
+            }
+
+
+            function applyCameraMode() {
+                cameraMode = (gameSettings && gameSettings.cameraPerspective === 'first') ? 'first' : 'third';
+                if (cameraMode === 'first') {
+                    lastCameraForward.set(1, 0, 0);
+                }
+                if (!camera) {
+                    return;
+                }
+                if (cameraMode === 'first' && ballMesh) {
+                    tempCameraVec.set(
+                        ballMesh.position.x - lastCameraForward.x * 0.6,
+                        ballMesh.position.y - lastCameraForward.y * 0.6,
+                        ballRadius * 1.8
+                    );
+                    camera.position.copy(tempCameraVec);
+                    tempTargetVec.set(
+                        ballMesh.position.x + lastCameraForward.x * 2,
+                        ballMesh.position.y + lastCameraForward.y * 2,
+                        ballRadius * 0.5
+                    );
+                    camera.lookAt(tempTargetVec);
+                    if (light) {
+                        light.position.copy(camera.position);
+                    }
+                } else if (light) {
+                    light.position.x = camera.position.x;
+                    light.position.y = camera.position.y;
+                    light.position.z = camera.position.z - 3.7;
+                }
+            }
+
+
+            function sanitizeModelContent(content) {
+                if (typeof content !== 'string') {
+                    return '';
+                }
+                return content.replace(/```(?:json)?/gi, '```').replace(/```/g, '');
+            }
+
+
+            function pickRandomPath(paths) {
+                if (!paths || paths.length === 0) {
+                    return null;
+                }
+                var index = Math.floor(Math.random() * paths.length);
+                return paths[Math.max(0, Math.min(paths.length - 1, index))];
+            }
+
+
+            function getCachedTexture(path) {
+                if (!path) {
+                    return null;
+                }
+                if (!textureCache[path]) {
+                    textureCache[path] = THREE.ImageUtils.loadTexture(path);
+                }
+                return textureCache[path];
+            }
+
+
+            function loadTextureFromPath(path, fallbackPath) {
+                var selectedPath = path || fallbackPath;
+                var texture = getCachedTexture(selectedPath);
+                if (!texture && fallbackPath && fallbackPath !== selectedPath) {
+                    texture = getCachedTexture(fallbackPath);
+                }
+                return texture;
+            }
+
+
+            function randomizeLevelTextures() {
+                var ballPath = pickRandomPath(ballTexturePaths) || ballTexturePaths[0];
+                var wallPath = pickRandomPath(wallTexturePaths) || wallTexturePaths[0];
+                var floorPath = pickRandomPath(floorTexturePaths) || floorTexturePaths[0];
+
+                ironTexture = loadTextureFromPath(ballPath, ballTexturePaths[0]);
+                brickTexture = loadTextureFromPath(wallPath, wallTexturePaths[0]);
+                planeTexture = loadTextureFromPath(floorPath, floorTexturePaths[0]);
+            }
+
+
+            function defaultVictoryMessage(level) {
+                return t('victory.default', {level: level});
+            }
+
+
+            function showVictoryMessage(message) {
+                if (!window.jQuery) {
+                    return;
+                }
+                var $victory = jQuery('#victory');
+                if ($victory.length === 0) {
+                    return;
+                }
+                $victory.stop(true, true).text(message).fadeIn(200);
+                if (victoryTimeout) {
+                    clearTimeout(victoryTimeout);
+                }
+                victoryTimeout = setTimeout(function() {
+                    $victory.fadeOut(400);
+                }, victoryDisplayDurationMs);
+            }
+
+
+            function getVictoryPrompts(level) {
+                if (currentLanguage === 'en') {
+                    return {
+                        system: 'You are the narrator of a marble maze game. You produce short, friendly victory messages in English.',
+                        user: 'The player just completed level ' + level + '. Write an encouraging congratulations in at most two sentences in English. Mention the successful completion and motivate the next challenge.'
+                    };
+                }
+                return {
+                    system: 'Du bist der Erzähler eines Geschicklichkeitsspiels. Du gibst kurze, freundliche Glückwunschbotschaften in deutscher Sprache aus.',
+                    user: 'Der Spieler hat gerade Level ' + level + ' abgeschlossen. Formuliere einen motivierenden Glückwunsch in höchstens zwei Sätzen auf Deutsch. Erwähne den Erfolg des Levels und mache Lust auf die nächste Herausforderung.'
+                };
+            }
+
+
+            function fetchVictoryMessage(level) {
+                if (!victoryLlmConfig.enabled || typeof fetch !== 'function') {
+                    return Promise.resolve(defaultVictoryMessage(level));
+                }
+                var controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
+                var timeoutId = null;
+                if (controller && victoryLlmConfig.requestTimeoutMs > 0) {
+                    timeoutId = setTimeout(function() {
+                        controller.abort();
+                    }, victoryLlmConfig.requestTimeoutMs);
+                }
+                var prompts = getVictoryPrompts(level);
+                var systemPrompt = prompts.system;
+                var userPrompt = prompts.user;
+                var payload;
+                if (victoryLlmConfig.endpoint.indexOf('/chat/') !== -1) {
+                    payload = {
+                        model: victoryLlmConfig.model,
+                        messages: [
+                            {role: 'system', content: systemPrompt},
+                            {role: 'user', content: userPrompt}
+                        ],
+                        temperature: victoryLlmConfig.temperature,
+                        max_tokens: victoryLlmConfig.maxTokens
+                    };
+                } else {
+                    payload = {
+                        model: victoryLlmConfig.model,
+                        prompt: systemPrompt + '\n\nSpieler:\n' + userPrompt,
+                        temperature: victoryLlmConfig.temperature,
+                        max_tokens: victoryLlmConfig.maxTokens
+                    };
+                }
+                var fetchOptions = {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify(payload)
+                };
+                if (controller) {
+                    fetchOptions.signal = controller.signal;
+                }
+                return fetch(victoryLlmConfig.endpoint, fetchOptions)
+                    .then(function(response) {
+                        if (timeoutId) {
+                            clearTimeout(timeoutId);
+                        }
+                        if (!response.ok) {
+                            throw new Error((currentLanguage === 'en' ? 'Victory LLM HTTP status ' : 'Victory LLM HTTP-Status ') + response.status);
+                        }
+                        return response.json();
+                    })
+                    .then(function(data) {
+                        var content = '';
+                        if (data && data.choices && data.choices.length > 0) {
+                            if (data.choices[0].message && data.choices[0].message.content) {
+                                content = data.choices[0].message.content;
+                            } else if (typeof data.choices[0].text === 'string') {
+                                content = data.choices[0].text;
+                            }
+                        }
+                        if (!content) {
+                            throw new Error(currentLanguage === 'en' ? 'No response from the victory model.' : 'Keine Antwort vom Victory LLM erhalten.');
+                        }
+                        var sanitized = sanitizeModelContent(content).trim();
+                        if (!sanitized) {
+                            throw new Error(currentLanguage === 'en' ? 'Victory model reply was empty.' : 'Victory LLM Antwort war leer.');
+                        }
+                        return sanitized;
+                    })
+                    .catch(function(err) {
+                        console.warn(currentLanguage === 'en' ? 'Victory LLM failed:' : 'Victory LLM fehlgeschlagen:', err);
+                        return defaultVictoryMessage(level);
+                    });
+            }
+
+
+            function onLevelCompleted(completedLevel) {
+                updatePlayerProgress(completedLevel);
+                pendingVictoryMessage = null;
+                displayVictoryRequested = false;
+                pendingVictoryPromise = fetchVictoryMessage(completedLevel)
+                    .then(function(message) {
+                        pendingVictoryMessage = message;
+                        if (displayVictoryRequested) {
+                            displayVictoryRequested = false;
+                            showVictoryMessage(message);
+                            pendingVictoryMessage = null;
+                            pendingVictoryPromise = null;
+                        }
+                        return message;
+                    })
+                    .catch(function(message) {
+                        var fallback = typeof message === 'string' ? message : defaultVictoryMessage(completedLevel);
+                        pendingVictoryMessage = fallback;
+                        if (displayVictoryRequested) {
+                            displayVictoryRequested = false;
+                            showVictoryMessage(fallback);
+                            pendingVictoryMessage = null;
+                            pendingVictoryPromise = null;
+                        }
+                        return fallback;
+                    });
+                return pendingVictoryPromise;
+            }
+
+
+            function displayPendingVictory() {
+                if (!pendingVictoryPromise) {
+                    return;
+                }
+                displayVictoryRequested = true;
+                if (pendingVictoryMessage) {
+                    displayVictoryRequested = false;
+                    showVictoryMessage(pendingVictoryMessage);
+                    pendingVictoryMessage = null;
+                    pendingVictoryPromise = null;
+                }
+            }
+
+
+            function loadPersistentState() {
+                players = [];
+                try {
+                    if (window.localStorage) {
+                        var rawPlayers = localStorage.getItem(STORAGE_KEY_PLAYERS);
+                        if (rawPlayers) {
+                            var parsedPlayers = JSON.parse(rawPlayers);
+                            if (Array.isArray(parsedPlayers)) {
+                                players = parsedPlayers.map(function(player) {
+                                    var name = '';
+                                    var highest = 0;
+                                    if (player && player.name) {
+                                        name = player.name.toString().trim();
+                                    }
+                                    if (player && typeof player.highestLevel !== 'undefined') {
+                                        var hl = parseInt(player.highestLevel, 10);
+                                        if (!isNaN(hl) && hl > 0) {
+                                            highest = hl;
+                                        }
+                                    }
+                                    return {
+                                        name: name.substring(0, 40),
+                                        highestLevel: highest
+                                    };
+                                }).filter(function(player) {
+                                    return player.name.length > 0;
+                                });
+                            }
+                        }
+                    }
+                } catch (err) {
+                    console.warn('Spieler konnten nicht geladen werden.', err);
+                    players = [];
+                }
+                if (!Array.isArray(players)) {
+                    players = [];
+                }
+                try {
+                    if (window.localStorage) {
+                        var rawSettings = localStorage.getItem(STORAGE_KEY_SETTINGS);
+                        if (rawSettings) {
+                            var parsedSettings = JSON.parse(rawSettings);
+                            if (parsedSettings && typeof parsedSettings === 'object') {
+                                gameSettings = {};
+                                for (var key in defaultSettings) {
+                                    if (defaultSettings.hasOwnProperty(key)) {
+                                        if (typeof parsedSettings[key] !== 'undefined') {
+                                            gameSettings[key] = parsedSettings[key];
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                } catch (errSettings) {
+                    console.warn('Einstellungen konnten nicht geladen werden.', errSettings);
+                }
+                for (var defKey in defaultSettings) {
+                    if (defaultSettings.hasOwnProperty(defKey) && typeof gameSettings[defKey] === 'undefined') {
+                        gameSettings[defKey] = defaultSettings[defKey];
+                    }
+                }
+                applySettings();
+                var storedName = null;
+                try {
+                    if (window.localStorage) {
+                        storedName = localStorage.getItem(STORAGE_KEY_CURRENT_PLAYER);
+                    }
+                } catch (errCurrent) {
+                    console.warn('Aktueller Spieler konnte nicht geladen werden.', errCurrent);
+                }
+                if (storedName) {
+                    setCurrentPlayerByName(storedName);
+                }
+                if (!currentPlayer && players.length > 0) {
+                    currentPlayer = players[0];
+                }
+            }
+
+
+            function savePlayers() {
+                try {
+                    if (window.localStorage) {
+                        localStorage.setItem(STORAGE_KEY_PLAYERS, JSON.stringify(players));
+                    }
+                } catch (err) {
+                    console.warn('Spieler konnten nicht gespeichert werden.', err);
+                }
+                scoreboardNeedsRender = true;
+            }
+
+
+            function saveSettings() {
+                try {
+                    if (window.localStorage) {
+                        localStorage.setItem(STORAGE_KEY_SETTINGS, JSON.stringify(gameSettings));
+                    }
+                } catch (err) {
+                    console.warn('Einstellungen konnten nicht gespeichert werden.', err);
+                }
+            }
+
+
+            function persistCurrentPlayerName() {
+                try {
+                    if (window.localStorage) {
+                        if (currentPlayer) {
+                            localStorage.setItem(STORAGE_KEY_CURRENT_PLAYER, currentPlayer.name);
+                        } else {
+                            localStorage.removeItem(STORAGE_KEY_CURRENT_PLAYER);
+                        }
+                    }
+                } catch (err) {
+                    console.warn('Aktueller Spieler konnte nicht gespeichert werden.', err);
+                }
+            }
+
+
+            function setCurrentPlayerByName(name) {
+                currentPlayer = null;
+                if (name) {
+                    for (var i = 0; i < players.length; i++) {
+                        if (players[i].name === name) {
+                            currentPlayer = players[i];
+                            break;
+                        }
+                    }
+                }
+                persistCurrentPlayerName();
+                renderPlayerSelect();
+                renderScoreboard();
+                updateStartMenuState();
+            }
+
+
+            function applySettings() {
+                if (!gameSettings) {
+                    gameSettings = {};
+                }
+                for (var key in defaultSettings) {
+                    if (defaultSettings.hasOwnProperty(key) && typeof gameSettings[key] === 'undefined') {
+                        gameSettings[key] = defaultSettings[key];
+                    }
+                }
+                victoryLlmConfig.enabled = !!gameSettings.victoryLlmEnabled;
+                applyCameraMode();
+            }
+
+
+            function renderPlayerSelect() {
+                var $select = jQuery('#player-select');
+                if (!$select.length) {
+                    return;
+                }
+                $select.empty();
+                if (players.length === 0) {
+                    $select.append('<option value="">' + t('menu.noPlayersOption') + '</option>');
+                    $select.prop('disabled', true);
+                } else {
+                    $select.prop('disabled', false);
+                    players.forEach(function(player) {
+                        var option = jQuery('<option></option>')
+                            .attr('value', player.name)
+                            .text(player.name);
+                        if (currentPlayer && player.name === currentPlayer.name) {
+                            option.prop('selected', true);
+                        }
+                        $select.append(option);
+                    });
+                }
+            }
+
+
+            function renderScoreboard() {
+                if (!scoreboardNeedsRender) {
+                    // Still update UI in case new elements were added.
+                }
+                scoreboardNeedsRender = false;
+                var sortedPlayers = players.slice().sort(function(a, b) {
+                    var levelA = a.highestLevel || 0;
+                    var levelB = b.highestLevel || 0;
+                    if (levelA !== levelB) {
+                        return levelB - levelA;
+                    }
+                    var locale = currentLanguage === 'de' ? 'de' : 'en';
+                    try {
+                        return a.name.localeCompare(b.name, locale, {sensitivity: 'base'});
+                    } catch (e) {
+                        return a.name.localeCompare(b.name);
+                    }
+                });
+                var $body = jQuery('#scoreboard-body');
+                if ($body.length) {
+                    $body.empty();
+                    if (sortedPlayers.length === 0) {
+                        $body.append('<tr><td colspan="3">' + t('scoreboard.empty') + '</td></tr>');
+                    } else {
+                        sortedPlayers.forEach(function(player, index) {
+                            var tr = jQuery('<tr></tr>');
+                            if (currentPlayer && currentPlayer.name === player.name) {
+                                tr.addClass('active-player');
+                            }
+                            tr.append('<td>' + (index + 1) + '</td>');
+                            tr.append('<td>' + player.name + '</td>');
+                            tr.append('<td>' + (player.highestLevel || 0) + '</td>');
+                            $body.append(tr);
+                        });
+                    }
+                }
+                var $toplist = jQuery('#start-menu-toplist');
+                if ($toplist.length) {
+                    $toplist.empty();
+                    if (sortedPlayers.length === 0) {
+                        $toplist.append('<li>' + t('toplist.empty') + '</li>');
+                    } else {
+                        sortedPlayers.slice(0, 5).forEach(function(player, idx) {
+                            $toplist.append('<li>' + t('toplist.entry', {
+                                rank: idx + 1,
+                                name: player.name,
+                                level: player.highestLevel || 0
+                            }) + '</li>');
+                        });
+                    }
+                }
+            }
+
+
+            function updateStartMenuState() {
+                var $startButton = jQuery('#start-game');
+                var $resumeButton = jQuery('#resume-game');
+                var $deleteButton = jQuery('#delete-player');
+                var $select = jQuery('#player-select');
+                var $message = jQuery('#menu-message');
+                var hasPlayer = !!currentPlayer;
+                if ($startButton.length) {
+                    $startButton.prop('disabled', !hasPlayer);
+                }
+                if ($resumeButton.length) {
+                    $resumeButton.toggle(hasStartedGame);
+                }
+                if ($deleteButton.length) {
+                    $deleteButton.prop('disabled', !hasPlayer);
+                }
+                if ($select.length) {
+                    $select.prop('disabled', players.length === 0);
+                }
+                if ($message.length) {
+                    if (!hasPlayer) {
+                        $message.text(players.length === 0 ? t('menu.messageCreateFirst') : t('menu.messageSelectPlayer'));
+                    } else {
+                        var currentText = $message.text();
+                        if (currentText === t('menu.messageCreateFirst') || currentText === t('menu.messageSelectPlayer')) {
+                            $message.text('');
+                        }
+                    }
+                }
+                var $info = jQuery('#current-player-info');
+                if ($info.length) {
+                    if (hasPlayer) {
+                        $info.text(t('menu.currentWithLevel', {
+                            name: currentPlayer.name,
+                            level: currentPlayer.highestLevel || 0
+                        }));
+                    } else {
+                        $info.text(t('menu.currentNone'));
+                    }
+                }
+            }
+
+
+            function createPlayer(name) {
+                if (!name) {
+                    return { ok: false, message: t('menu.messageNameEmpty') };
+                }
+                var trimmed = name.toString().trim();
+                if (trimmed.length < 3) {
+                    return { ok: false, message: t('menu.messageNameTooShort') };
+                }
+                var upper = trimmed.toUpperCase();
+                for (var i = 0; i < players.length; i++) {
+                    if (players[i].name.toUpperCase() === upper) {
+                        return { ok: false, message: t('menu.messageNameExists') };
+                    }
+                }
+                var newPlayer = {
+                    name: trimmed.substring(0, 40),
+                    highestLevel: 0
+                };
+                players.push(newPlayer);
+                currentPlayer = newPlayer;
+                hasStartedGame = false;
+                savePlayers();
+                persistCurrentPlayerName();
+                renderPlayerSelect();
+                renderScoreboard();
+                updateStartMenuState();
+                return { ok: true, message: t('menu.messagePlayerCreated') };
+            }
+
+
+            function deleteCurrentPlayer() {
+                if (!currentPlayer) {
+                    return;
+                }
+                if (!window.confirm(t('menu.deleteConfirm', {name: currentPlayer.name}))) {
+                    return;
+                }
+                var nameToDelete = currentPlayer.name;
+                players = players.filter(function(player) {
+                    return player.name !== nameToDelete;
+                });
+                currentPlayer = players.length > 0 ? players[0] : null;
+                hasStartedGame = false;
+                savePlayers();
+                persistCurrentPlayerName();
+                renderPlayerSelect();
+                renderScoreboard();
+                updateStartMenuState();
+                showStartMenu(false);
+                gameState = 'menu';
+                resetGameStateForPlayer();
+            }
+
+
+            function resetGameStateForPlayer() {
+                mazeDimension = 11;
+                levelIndex = 1;
+                keyAxis = [0, 0];
+                lastMazeName = t('level.standardName');
+                pendingVictoryMessage = null;
+                pendingVictoryPromise = null;
+                displayVictoryRequested = false;
+                lastCameraForward.set(1, 0, 0);
+                if (victoryTimeout) {
+                    clearTimeout(victoryTimeout);
+                    victoryTimeout = null;
+                }
+                if (window.jQuery) {
+                    jQuery('#victory').hide();
+                }
+                wWorld = undefined;
+                wBall = undefined;
+                maze = undefined;
+                mazeMesh = undefined;
+                scene = undefined;
+                planeMesh = undefined;
+                light = undefined;
+                ballMesh = undefined;
+            }
+
+
+            function startGameForCurrentPlayer() {
+                if (!currentPlayer) {
+                    updateStartMenuState();
+                    return;
+                }
+                hasStartedGame = true;
+                previousGameState = null;
+                hideStartMenu({ restore: false });
+                resetGameStateForPlayer();
+                if (window.jQuery) {
+                    jQuery('#menu-message').text('');
+                }
+                gameState = 'initialize';
+            }
+
+
+            function showStartMenu(fromPause) {
+                updateStartMenuState();
+                if (fromPause) {
+                    previousGameState = gameState;
+                } else {
+                    previousGameState = null;
+                }
+                gameState = 'menu';
+                jQuery('#menu-button').hide();
+                jQuery('#start-menu').fadeIn(150);
+            }
+
+
+            function hideStartMenu(options) {
+                options = options || {};
+                jQuery('#start-menu').fadeOut(150);
+                if (options.restore && previousGameState && previousGameState !== 'menu') {
+                    gameState = previousGameState;
+                }
+                if (!options.keepPrevious) {
+                    previousGameState = null;
+                }
+                if (hasStartedGame) {
+                    jQuery('#menu-button').fadeIn(150);
+                } else {
+                    jQuery('#menu-button').hide();
+                }
+            }
+
+
+            function openSettingsMenu() {
+                jQuery('#settings-victory-llm').prop('checked', !!gameSettings.victoryLlmEnabled);
+                jQuery('#settings-language').val(gameSettings.language || defaultSettings.language);
+                jQuery('#settings-camera').val(gameSettings.cameraPerspective || defaultSettings.cameraPerspective);
+                jQuery('#settings-menu').fadeIn(150);
+            }
+
+
+            function closeSettingsMenu(saveChanges) {
+                if (saveChanges) {
+                    gameSettings.victoryLlmEnabled = jQuery('#settings-victory-llm').is(':checked');
+                    gameSettings.language = jQuery('#settings-language').val() || defaultSettings.language;
+                    gameSettings.cameraPerspective = jQuery('#settings-camera').val() || defaultSettings.cameraPerspective;
+                    applySettings();
+                    setLanguage(gameSettings.language, {skipSave: true});
+                    saveSettings();
+                }
+                jQuery('#settings-menu').fadeOut(150);
+            }
+
+
+            function openScoreboardMenu() {
+                renderScoreboard();
+                jQuery('#scoreboard-menu').fadeIn(150);
+            }
+
+
+            function closeScoreboardMenu() {
+                jQuery('#scoreboard-menu').fadeOut(150);
+            }
+
+
+            function updatePlayerProgress(level) {
+                if (!currentPlayer) {
+                    return;
+                }
+                var numericLevel = parseInt(level, 10);
+                if (isNaN(numericLevel) || numericLevel <= 0) {
+                    return;
+                }
+                if (!currentPlayer.highestLevel || currentPlayer.highestLevel < numericLevel) {
+                    currentPlayer.highestLevel = numericLevel;
+                    savePlayers();
+                    renderScoreboard();
+                    updateStartMenuState();
+                }
+            }
+
+
+            function ensureMazeOpenings(field) {
+                var dimension = field.dimension || field.length;
+                field.dimension = dimension;
+                for (var x = 0; x < dimension; x++) {
+                    if (!field[x]) {
+                        field[x] = new Array(dimension);
+                    }
+                    for (var y = 0; y < dimension; y++) {
+                        if (typeof field[x][y] === 'undefined') {
+                            field[x][y] = true;
+                        }
+                    }
+                }
+                if (dimension > 2) {
+                    field[1][1] = false;
+                    field[dimension-1][dimension-2] = false;
+                }
+                return field;
+            }
+
+
+            function startLevelWithField(field) {
+                randomizeLevelTextures();
+                lastMazeName = t('level.standardName');
+                lastCameraForward.set(1, 0, 0);
+                maze = ensureMazeOpenings(field);
+                keyAxis = [0, 0];
+                createPhysicsWorld();
+                createRenderWorld();
+                camera.position.set(1, 1, 5);
+                light.position.set(1, 1, 1.3);
+                light.intensity = 0;
+                applyCameraMode();
+                updateLevelLabel('ready');
+                gameState = 'fade in';
+                displayPendingVictory();
+            }
+
+
+            function prepareLevel() {
+                if (isPreparingLevel) {
+                    return;
+                }
+                isPreparingLevel = true;
+                if (victoryTimeout) {
+                    clearTimeout(victoryTimeout);
+                    victoryTimeout = null;
+                }
+                if (window.jQuery) {
+                    jQuery('#victory').hide();
+                }
+                levelIndex = Math.max(1, Math.floor((mazeDimension - 1) / 2 - 4));
+                updateLevelLabel('loading');
+                var dimension = mazeDimension;
+                lastMazeName = t('level.standardName');
+                startLevelWithField(generateSquareMaze(dimension));
+                isPreparingLevel = false;
+            }
+
+            
+            function createPhysicsWorld() {
+                // Create the world object.
+                wWorld = new b2World(new b2Vec2(0, 0), true);
+
+                // Create the ball.
+                var bodyDef = new b2BodyDef();
+                bodyDef.type = b2Body.b2_dynamicBody;
+                bodyDef.position.Set(1, 1);
+                wBall = wWorld.CreateBody(bodyDef);
+                var fixDef = new b2FixtureDef();
+                fixDef.density = 1.0;
+                fixDef.friction = 0.0;
+                fixDef.restitution = 0.25;
+                fixDef.shape = new b2CircleShape(ballRadius);
+                wBall.CreateFixture(fixDef);
+
+                // Create the maze.
+                bodyDef.type = b2Body.b2_staticBody;
+                fixDef.shape = new b2PolygonShape();
+                fixDef.shape.SetAsBox(0.5, 0.5);
+                for (var i = 0; i < maze.dimension; i++) {
+                    for (var j = 0; j < maze.dimension; j++) {
+                        if (maze[i][j]) {
+                            bodyDef.position.x = i;
+                            bodyDef.position.y = j;
+                            wWorld.CreateBody(bodyDef).CreateFixture(fixDef);
+                        }
+                    }
+                }
+            }
+            
+            
+            function generate_maze_mesh(field) {
+                var dummy = new THREE.Geometry();
+                for (var i = 0; i < field.dimension; i++) {
+                    for (var j = 0; j < field.dimension; j++) {
+                        if (field[i][j]) {
+                            var geometry = new THREE.CubeGeometry(1,1,1,1,1,1);
+                            var mesh_ij = new THREE.Mesh(geometry);
+                            mesh_ij.position.x = i;
+                            mesh_ij.position.y = j;
+                            mesh_ij.position.z = 0.5;
+                            THREE.GeometryUtils.merge(dummy, mesh_ij);
+                        }
+                    }
+                }
+                if (brickTexture) {
+                    brickTexture.wrapS = brickTexture.wrapT = THREE.RepeatWrapping;
+                    brickTexture.needsUpdate = true;
+                }
+                var wallMaterialOptions = brickTexture ? {map: brickTexture} : {color: 0x8a6f4d};
+                var material = new THREE.MeshPhongMaterial(wallMaterialOptions);
+                var mesh = new THREE.Mesh(dummy, material)
+                return mesh;
+            }
+
+
+            function createRenderWorld() {
+
+                // Create the scene object.
+                scene = new THREE.Scene();
+
+                // Add the light.
+                light= new THREE.PointLight(0xffffff, 1);
+                light.position.set(1, 1, 1.3);
+                scene.add(light);
+                
+                // Add the ball.
+                g = new THREE.SphereGeometry(ballRadius, 32, 16);
+                if (ironTexture) {
+                    ironTexture.needsUpdate = true;
+                }
+                var ballMaterialOptions = ironTexture ? {map: ironTexture} : {color: 0xffffff};
+                m = new THREE.MeshPhongMaterial(ballMaterialOptions);
+                ballMesh = new THREE.Mesh(g, m);
+                ballMesh.position.set(1, 1, ballRadius);
+                scene.add(ballMesh);
+
+                // Add the camera.
+                var aspect = window.innerWidth/window.innerHeight;
+                camera = new THREE.PerspectiveCamera(60, aspect, 1, 1000);
+                camera.position.set(1, 1, 5);
+                scene.add(camera);
+
+                // Add the maze.
+                mazeMesh = generate_maze_mesh(maze);
+                scene.add(mazeMesh);
+
+                // Add the ground.
+                g = new THREE.PlaneGeometry(mazeDimension*10, mazeDimension*10, mazeDimension, mazeDimension);
+                var planeMaterial;
+                if (planeTexture) {
+                    planeTexture.wrapS = planeTexture.wrapT = THREE.RepeatWrapping;
+                    planeTexture.repeat.set(mazeDimension*5, mazeDimension*5);
+                    planeTexture.needsUpdate = true;
+                    planeMaterial = new THREE.MeshPhongMaterial({map: planeTexture});
+                } else {
+                    planeMaterial = new THREE.MeshPhongMaterial({color: 0x333333});
+                }
+                m = planeMaterial;
+                planeMesh = new THREE.Mesh(g, m);
+                planeMesh.position.set((mazeDimension-1)/2, (mazeDimension-1)/2, 0);
+                planeMesh.rotation.set(Math.PI/2, 0, 0);
+                scene.add(planeMesh);                
+
+            }
+
+
+            function updatePhysicsWorld() {
+
+                // Apply "friction". 
+                var lv = wBall.GetLinearVelocity();
+                lv.Multiply(0.95);
+                wBall.SetLinearVelocity(lv);
+                
+                // Apply user-directed force.
+                var impulseX = keyAxis[0];
+                var impulseY = keyAxis[1];
+                if (cameraMode === 'first') {
+                    var forwardX = lastCameraForward.x;
+                    var forwardY = lastCameraForward.y;
+                    var forwardLen = Math.sqrt(forwardX * forwardX + forwardY * forwardY);
+                    if (forwardLen < 0.0001) {
+                        forwardX = 1;
+                        forwardY = 0;
+                        forwardLen = 1;
+                    }
+                    forwardX /= forwardLen;
+                    forwardY /= forwardLen;
+                    var rightX = -forwardY;
+                    var rightY = forwardX;
+                    var transformedX = rightX * impulseX + forwardX * (-impulseY);
+                    var transformedY = rightY * impulseX + forwardY * (-impulseY);
+                    impulseX = transformedX;
+                    impulseY = transformedY;
+                }
+                var f = new b2Vec2(impulseX * wBall.GetMass()*0.25, impulseY * wBall.GetMass()*0.25);
+                wBall.ApplyImpulse(f, wBall.GetPosition());          
+                keyAxis = [0,0];
+
+                // Take a time step.
+                wWorld.Step(1/60, 8, 3);
+            }
+            
+
+            function updateRenderWorld() {
+
+                // Update ball position.
+                var stepX = wBall.GetPosition().x - ballMesh.position.x;
+                var stepY = wBall.GetPosition().y - ballMesh.position.y;
+                ballMesh.position.x += stepX;
+                ballMesh.position.y += stepY;
+
+                // Update ball rotation.
+                var tempMat = new THREE.Matrix4();
+                tempMat.makeRotationAxis(new THREE.Vector3(0,1,0), stepX/ballRadius);
+                tempMat.multiplySelf(ballMesh.matrix);
+                ballMesh.matrix = tempMat;
+                tempMat = new THREE.Matrix4();
+                tempMat.makeRotationAxis(new THREE.Vector3(1,0,0), -stepY/ballRadius);
+                tempMat.multiplySelf(ballMesh.matrix);
+                ballMesh.matrix = tempMat;
+                ballMesh.rotation.getRotationFromMatrix(ballMesh.matrix);
+                
+                // Update camera and light positions.
+                if (cameraMode === 'first') {
+                    if (wBall) {
+                        var lv = wBall.GetLinearVelocity();
+                        if (lv) {
+                            var mag = Math.sqrt(lv.x * lv.x + lv.y * lv.y);
+                            if (mag > 0.01) {
+                                lastCameraForward.set(lv.x / mag, lv.y / mag, 0);
+                            }
+                        }
+                    }
+                    tempCameraVec.set(
+                        ballMesh.position.x - lastCameraForward.x * 0.6,
+                        ballMesh.position.y - lastCameraForward.y * 0.6,
+                        ballRadius * 1.8
+                    );
+                    camera.position.lerp(tempCameraVec, 0.35);
+                    tempTargetVec.set(
+                        ballMesh.position.x + lastCameraForward.x * 2,
+                        ballMesh.position.y + lastCameraForward.y * 2,
+                        ballRadius * 0.5
+                    );
+                    camera.lookAt(tempTargetVec);
+                    if (light) {
+                        light.position.copy(camera.position);
+                    }
+                } else {
+                    camera.position.x += (ballMesh.position.x - camera.position.x) * 0.1;
+                    camera.position.y += (ballMesh.position.y - camera.position.y) * 0.1;
+                    camera.position.z += (5 - camera.position.z) * 0.1;
+                    if (light) {
+                        light.position.x = camera.position.x;
+                        light.position.y = camera.position.y;
+                        light.position.z = camera.position.z - 3.7;
+                    }
+                }
+            }
+
+
+            function gameLoop() {
+            
+                switch(gameState) {
+                
+                    case 'menu':
+                        if (scene && camera && renderer) {
+                            renderer.render(scene, camera);
+                        }
+                        break;
+                    
+                    case 'initialize':
+                        prepareLevel();
+                        break;
+                    
+                    case 'loading':
+                        if (scene && camera && renderer) {
+                            renderer.render(scene, camera);
+                        }
+                        break;
+                        
+                    case 'fade in':
+                        light.intensity += 0.1 * (1.0 - light.intensity);
+                        renderer.render(scene, camera);
+                        if (Math.abs(light.intensity - 1.0) < 0.05) {
+                            light.intensity = 1.0;
+                            gameState = 'play'
+                        }
+                        break;
+
+                    case 'play':
+                        updatePhysicsWorld();
+                        updateRenderWorld();
+                        renderer.render(scene, camera);
+
+                        // Check for victory.
+                        var mazeX = Math.floor(ballMesh.position.x + 0.5);
+                        var mazeY = Math.floor(ballMesh.position.y + 0.5);
+                        if (mazeX == mazeDimension && mazeY == mazeDimension - 2) { 
+                            var completedLevel = levelIndex;
+                            onLevelCompleted(completedLevel);
+                            mazeDimension += 2;
+                            gameState = 'fade out';
+                        }
+                        break;
+                
+                    case 'fade out':
+                        updatePhysicsWorld();
+                        updateRenderWorld();
+                        light.intensity += 0.1 * (0.0 - light.intensity);
+                        renderer.render(scene, camera);
+                        if (Math.abs(light.intensity - 0.0) < 0.1) {
+                            light.intensity = 0.0;
+                            renderer.render(scene, camera);
+                            gameState = 'initialize'
+                        }
+                        break;
+                        
+                }
+            
+                requestAnimationFrame(gameLoop);
+
+            }
+
+
+            function onResize() {
+                renderer.setSize(window.innerWidth, window.innerHeight);
+                camera.aspect = window.innerWidth/window.innerHeight;
+                camera.updateProjectionMatrix();
+            }
+            
+
+            function onMoveKey(axis) {
+                keyAxis = axis.slice(0);
+            }
+
+            
+            jQuery.fn.centerv = function () {
+                wh = window.innerHeight;
+                h = this.outerHeight();
+                this.css("position", "absolute");
+                this.css("top", Math.max(0, (wh - h)/2) + "px");
+                return this;
+            }            
+
+            
+            jQuery.fn.centerh = function () {
+                ww = window.innerWidth;
+                w = this.outerWidth();
+                this.css("position", "absolute");
+                this.css("left", Math.max(0, (ww - w)/2) + "px");
+                return this;
+            }            
+
+            
+            jQuery.fn.center = function () {
+                this.centerv();
+                this.centerh();
+                return this;
+            }            
+
+            
+            $(document).ready(function() {
+
+                // Prepare the instructions.
+                $('#instructions').center();
+                $('#instructions').hide();
+                KeyboardJS.bind.key('i', function(){$('#instructions').show()}, 
+                                         function(){$('#instructions').hide()});
+    
+                // Create the renderer.
+                renderer = new THREE.WebGLRenderer({antialias: true});
+                renderer.setSize(window.innerWidth, window.innerHeight);
+                document.body.appendChild(renderer.domElement);
+
+                // Prepare victory message container.
+                $('#victory').hide();
+
+                // Bind keyboard and resize events.
+                KeyboardJS.bind.axis('left', 'right', 'down', 'up', onMoveKey);
+                KeyboardJS.bind.axis('h', 'l', 'j', 'k', onMoveKey);
+                $(window).resize(onResize);
+                
+                loadPersistentState();
+                setLanguage(gameSettings.language || defaultSettings.language, {
+                    skipSave: true,
+                    skipPlayerRefresh: true
+                });
+                renderPlayerSelect();
+                renderScoreboard();
+                updateStartMenuState();
+                showStartMenu(false);
+
+                $('#create-player').on('click', function() {
+                    var name = $('#player-name-input').val();
+                    var result = createPlayer(name);
+                    if (result.ok) {
+                        $('#player-name-input').val('');
+                    }
+                    if (result.message) {
+                        $('#menu-message').text(result.message);
+                    }
+                });
+
+                $('#player-name-input').on('keypress', function(event) {
+                    if (event.which === 13) {
+                        event.preventDefault();
+                        $('#create-player').click();
+                    }
+                });
+
+                $('#player-select').on('change', function() {
+                    var selected = $(this).val();
+                    setCurrentPlayerByName(selected);
+                });
+
+                $('#delete-player').on('click', function() {
+                    deleteCurrentPlayer();
+                });
+
+                $('#start-game').on('click', function() {
+                    startGameForCurrentPlayer();
+                });
+
+                $('#resume-game').on('click', function() {
+                    hideStartMenu({restore: true});
+                });
+
+                $('#open-settings').on('click', function() {
+                    openSettingsMenu();
+                });
+
+                $('#settings-save').on('click', function() {
+                    closeSettingsMenu(true);
+                });
+
+                $('#settings-cancel').on('click', function() {
+                    closeSettingsMenu(false);
+                });
+
+                $('#open-scoreboard').on('click', function() {
+                    openScoreboardMenu();
+                });
+
+                $('#scoreboard-close').on('click', function() {
+                    closeScoreboardMenu();
+                });
+
+                $('#settings-menu').on('click', function(event) {
+                    if (event.target === this) {
+                        closeSettingsMenu(false);
+                    }
+                });
+
+                $('#scoreboard-menu').on('click', function(event) {
+                    if (event.target === this) {
+                        closeScoreboardMenu();
+                    }
+                });
+
+                $('#menu-button').on('click', function() {
+                    showStartMenu(true);
+                });
+
+                $('#start-menu').on('click', function(event) {
+                    if (event.target === this && hasStartedGame) {
+                        hideStartMenu({restore: true});
+                    }
+                });
+
+                KeyboardJS.bind.key('escape', function() {
+                    if ($('#settings-menu:visible').length) {
+                        closeSettingsMenu(false);
+                        return;
+                    }
+                    if ($('#scoreboard-menu:visible').length) {
+                        closeScoreboardMenu();
+                        return;
+                    }
+                    if ($('#start-menu:visible').length) {
+                        if (hasStartedGame) {
+                            hideStartMenu({restore: true});
+                        }
+                    } else if (hasStartedGame) {
+                        showStartMenu(true);
+                    }
+                });
+
+                // Set the initial game state.
+                gameState = 'menu';
+                
+                // Start the game loop.
+                requestAnimationFrame(gameLoop);
+
+            })
+            
+            
+
+        </script>
+    
+        <style>
+        
+            body {
+                background: black;
+                margin: 0;
+                padding: 0;
+                font-family: 'Helvetica';
+            }
+            
+            #instructions {
+                background-color: rgba(0,0,0,0.75);
+                color: white;
+                text-align: center;
+                padding: 32px;
+                margin: 0px;
+                display: inline;
+                border: 2px solid white;
+            }
+
+            #help {
+                position: absolute;
+                left: 0px;
+                bottom: 0px;
+                padding: 4px;
+                color: white;   
+            }
+
+            #level {
+                position: absolute;
+                left: 0px;
+                top: 0px;
+                padding: 4px;
+                color: yellow;   
+                font-weight: bold;
+            }
+
+            #victory {
+                position: absolute;
+                right: 0px;
+                bottom: 0px;
+                padding: 8px 16px;
+                margin: 12px;
+                background: rgba(0,0,0,0.7);
+                color: #8cff8c;
+                font-weight: bold;
+                border: 1px solid #8cff8c;
+                display: none;
+                max-width: 320px;
+                text-align: right;
+                z-index: 4000;
+            }
+
+            #menu-button {
+                position: absolute;
+                top: 8px;
+                right: 8px;
+                padding: 6px 12px;
+                background: rgba(0,0,0,0.7);
+                color: white;
+                border: 1px solid #8a8a8a;
+                border-radius: 4px;
+                font-size: 12px;
+                cursor: pointer;
+                z-index: 4100;
+                display: none;
+                user-select: none;
+            }
+
+            #menu-button:hover {
+                background: rgba(70, 70, 70, 0.8);
+            }
+
+            .menu-overlay {
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0,0,0,0.9);
+                color: white;
+                display: none;
+                z-index: 9000;
+                overflow-y: auto;
+                padding: 20px 12px 40px;
+            }
+
+            .menu-panel {
+                max-width: 540px;
+                margin: 60px auto;
+                background: rgba(20,20,20,0.85);
+                border-radius: 10px;
+                padding: 24px 32px;
+                border: 1px solid #444;
+                box-shadow: 0 0 24px rgba(0,0,0,0.6);
+            }
+
+            .menu-panel h1,
+            .menu-panel h2 {
+                margin-top: 0;
+                margin-bottom: 12px;
+            }
+
+            .menu-section {
+                margin-bottom: 18px;
+            }
+
+            .menu-panel label {
+                display: block;
+                margin-bottom: 6px;
+                font-weight: bold;
+            }
+
+            .menu-panel input[type='text'],
+            .menu-panel select {
+                width: 100%;
+                padding: 8px 10px;
+                border-radius: 4px;
+                background: #121212;
+                color: white;
+                border: 1px solid #555;
+                box-sizing: border-box;
+            }
+
+            .menu-panel input[type='text']::placeholder {
+                color: #888;
+            }
+
+            .menu-buttons {
+                display: flex;
+                flex-direction: column;
+                gap: 10px;
+                margin-top: 16px;
+            }
+
+            .menu-buttons button,
+            .menu-panel button {
+                padding: 10px 14px;
+                border: none;
+                border-radius: 4px;
+                font-weight: bold;
+                cursor: pointer;
+                background: #2a7fff;
+                color: white;
+                transition: background 0.2s ease;
+            }
+
+            .menu-buttons button:hover,
+            .menu-panel button:hover {
+                background: #4a92ff;
+            }
+
+            .menu-buttons button:disabled,
+            .menu-panel button:disabled {
+                background: #555;
+                cursor: not-allowed;
+            }
+
+            .menu-panel button.secondary {
+                background: #444;
+            }
+
+            .menu-panel button.secondary:hover {
+                background: #5b5b5b;
+            }
+
+            .menu-panel button.danger {
+                background: #d14b4b;
+            }
+
+            .menu-panel button.danger:hover {
+                background: #df5f5f;
+            }
+
+            #menu-message {
+                min-height: 18px;
+                color: #ffa0a0;
+            }
+
+            #current-player-info {
+                margin-top: 8px;
+                font-size: 14px;
+            }
+
+            #resume-game {
+                display: none;
+            }
+
+            #start-menu-toplist {
+                margin: 12px 0 0 18px;
+                padding: 0;
+                list-style: decimal;
+            }
+
+            #start-menu-toplist li {
+                margin-bottom: 6px;
+            }
+
+            #settings-menu label {
+                font-weight: normal;
+            }
+
+            #settings-menu .settings-group {
+                margin-bottom: 16px;
+            }
+
+            #scoreboard-menu table {
+                width: 100%;
+                border-collapse: collapse;
+                margin-top: 12px;
+            }
+
+            #scoreboard-menu th,
+            #scoreboard-menu td {
+                border: 1px solid #555;
+                padding: 8px;
+                text-align: left;
+            }
+
+            #scoreboard-menu th {
+                background: rgba(255,255,255,0.05);
+            }
+
+            #scoreboard-menu tr:nth-child(even) {
+                background: rgba(255,255,255,0.03);
+            }
+
+            #scoreboard-menu tr.active-player {
+                background: rgba(42,127,255,0.35);
+            }
+
+        </style>
+        
+    </head>
+    
+    <body>
+    
+    <div id='instructions'></div>
+    
+    <div id='help'></div>
+
+    <div id='level'></div>
+
+    <div id='menu-button'>
+    </div>
+
+    <div id='start-menu' class='menu-overlay'>
+        <div class='menu-panel'>
+            <h1 id='menu-title'></h1>
+
+            <div class='menu-section'>
+                <label id='player-select-label' for='player-select'></label>
+                <select id='player-select'></select>
+                <button id='delete-player' type='button' class='danger'></button>
+            </div>
+
+            <div class='menu-section'>
+                <label id='create-player-heading' for='player-name-input'></label>
+                <input type='text' id='player-name-input' placeholder=''>
+                <button id='create-player' type='button'></button>
+            </div>
+
+            <div id='current-player-info'></div>
+            <div id='menu-message'></div>
+
+            <div class='menu-section'>
+                <h2 id='top-players-heading'></h2>
+                <ul id='start-menu-toplist'></ul>
+            </div>
+
+            <div class='menu-buttons'>
+                <button id='start-game' type='button'></button>
+                <button id='resume-game' type='button' class='secondary'></button>
+                <button id='open-settings' type='button' class='secondary'></button>
+                <button id='open-scoreboard' type='button' class='secondary'></button>
+            </div>
+        </div>
+    </div>
+
+    <div id='settings-menu' class='menu-overlay'>
+        <div class='menu-panel'>
+            <h2 id='settings-title'></h2>
+            <div class='settings-group'>
+                <label>
+                    <input type='checkbox' id='settings-victory-llm'>
+                    <span id='settings-victory-text'></span>
+                </label>
+            </div>
+            <div class='settings-group'>
+                <label id='settings-language-label' for='settings-language'></label>
+                <select id='settings-language'>
+                    <option value='de'></option>
+                    <option value='en'></option>
+                </select>
+            </div>
+            <div class='settings-group'>
+                <label id='settings-camera-label' for='settings-camera'></label>
+                <select id='settings-camera'>
+                    <option value='third'></option>
+                    <option value='first'></option>
+                </select>
+            </div>
+            <div class='menu-buttons'>
+                <button id='settings-save' type='button'></button>
+                <button id='settings-cancel' type='button' class='secondary'></button>
+            </div>
+        </div>
+    </div>
+
+    <div id='scoreboard-menu' class='menu-overlay'>
+        <div class='menu-panel'>
+            <h2 id='scoreboard-title'></h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th id='scoreboard-th-rank'></th>
+                        <th id='scoreboard-th-player'></th>
+                        <th id='scoreboard-th-level'></th>
+                    </tr>
+                </thead>
+                <tbody id='scoreboard-body'></tbody>
+            </table>
+            <div class='menu-buttons'>
+                <button id='scoreboard-close' type='button' class='secondary'></button>
+            </div>
+        </div>
+    </div>
+
+    <div id='victory'></div>
+    
+    </body>
+
+</html>
