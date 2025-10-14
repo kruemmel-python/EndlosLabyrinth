@@ -31,6 +31,12 @@
                 levelIndex     = 1,
                 isPreparingLevel = false,
                 lastMazeName   = '',
+                availableMazeAlgorithms = [
+                    { key: 'depth-first', labelKey: 'level.depthFirstName' },
+                    { key: 'prim', labelKey: 'level.primName' },
+                    { key: 'kruskal', labelKey: 'level.kruskalName' },
+                    { key: 'eller', labelKey: 'level.ellerName' }
+                ],
                 victoryTimeout = null,
                 pendingVictoryPromise = null,
                 pendingVictoryMessage = null,
@@ -123,7 +129,11 @@
                         level: {
                             loading: 'Level {level} wird geladen...',
                             prefix: 'Level',
-                            standardName: 'Standard-Labyrinth'
+                            standardName: 'Standard-Labyrinth',
+                            depthFirstName: 'Tiefensuche-Labyrinth',
+                            primName: 'Prim-Labyrinth',
+                            kruskalName: 'Kruskal-Labyrinth',
+                            ellerName: 'Eller-Labyrinth'
                         },
                         toplist: {
                             empty: 'Keine Einträge vorhanden.',
@@ -210,7 +220,11 @@
                         level: {
                             loading: 'Loading level {level}...',
                             prefix: 'Level',
-                            standardName: 'Standard maze'
+                            standardName: 'Standard maze',
+                            depthFirstName: 'Depth-first maze',
+                            primName: 'Prim maze',
+                            kruskalName: 'Kruskal maze',
+                            ellerName: 'Eller maze'
                         },
                         toplist: {
                             empty: 'No entries yet.',
@@ -1600,9 +1614,10 @@
             }
 
 
-            function startLevelWithField(field) {
+            function startLevelWithField(field, options) {
+                options = options || {};
                 randomizeLevelTextures();
-                lastMazeName = t('level.standardName');
+                lastMazeName = options.name || t('level.standardName');
                 maze = ensureMazeOpenings(field);
                 configureExit(maze);
                 keyAxis = [0, 0];
@@ -1634,7 +1649,8 @@
                 levelIndex = Math.max(1, Math.floor((mazeDimension - 1) / 2 - 4));
                 updateLevelLabel('loading');
                 var dimension = mazeDimension;
-                lastMazeName = t('level.standardName');
+                var algorithmInfo = getMazeAlgorithmForLevel(levelIndex);
+                var mazeLabelKey = (algorithmInfo && algorithmInfo.labelKey) || 'level.standardName';
                 if (!nextLevelConfig) {
                     nextLevelConfig = generateItemsForLevel(levelIndex);
                 }
@@ -1647,8 +1663,28 @@
                 } else {
                     currentRunStats = {coins: 0, boosters: [], totalTimeMs: 0, lastLevelDurationMs: 0};
                 }
-                startLevelWithField(generateSquareMaze(dimension));
+                if (typeof MazeGenerator !== 'undefined' && MazeGenerator.build) {
+                    var mazeResult = MazeGenerator.build({
+                        algorithm: algorithmInfo.key,
+                        dimension: dimension
+                    });
+                    startLevelWithField(mazeResult.field, { name: t(mazeLabelKey) });
+                } else {
+                    startLevelWithField(generateSquareMaze(dimension), { name: t(mazeLabelKey) });
+                }
                 isPreparingLevel = false;
+            }
+
+
+            function getMazeAlgorithmForLevel(level) {
+                if (!availableMazeAlgorithms || availableMazeAlgorithms.length === 0) {
+                    return { key: 'depth-first', labelKey: 'level.standardName' };
+                }
+                var index = 0;
+                if (typeof level === 'number' && level > 0) {
+                    index = (level - 1) % availableMazeAlgorithms.length;
+                }
+                return availableMazeAlgorithms[index];
             }
 
             
