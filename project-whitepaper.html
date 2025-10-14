@@ -1,40 +1,47 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="de">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Whitepaper: KeyboardJS and Maze Generation System</title>
+    <title>Whitepaper: Tastaturinteraktion und Labyrinthgenerierung</title>
     <style>
         body {
             font-family: 'Roboto', 'Helvetica Neue', Helvetica, Arial, sans-serif;
             line-height: 1.6;
-            margin: 0 auto;
-            max-width: 900px;
+            margin: 0;
             padding: 20px;
-            color: #333;
             background-color: #f9f9f9;
+            color: #333;
+        }
+        .container {
+            max-width: 900px;
+            margin: 20px auto;
+            background-color: #fff;
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
         }
         h1, h2, h3, h4, h5, h6 {
             color: #2c3e50;
             margin-top: 1.5em;
-            margin-bottom: 0.5em;
+            margin-bottom: 0.8em;
         }
         h1 {
             font-size: 2.5em;
             text-align: center;
-            margin-bottom: 0.5em;
-            border-bottom: 2px solid #3498db;
-            padding-bottom: 10px;
+            border-bottom: 2px solid #eee;
+            padding-bottom: 20px;
+            margin-bottom: 40px;
         }
         h2 {
             font-size: 1.8em;
-            border-bottom: 1px solid #ddd;
-            padding-bottom: 5px;
-            margin-top: 2em;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 10px;
+            margin-top: 3em;
         }
         h3 {
             font-size: 1.4em;
-            margin-top: 1.5em;
+            margin-top: 2em;
         }
         p {
             margin-bottom: 1em;
@@ -50,493 +57,250 @@
             margin-left: 20px;
             margin-bottom: 1em;
         }
-        pre {
-            background-color: #eee;
-            border: 1px solid #ddd;
-            padding: 10px;
-            overflow-x: auto;
-            font-family: 'Consolas', 'Courier New', monospace;
-            margin-bottom: 1em;
+        li {
+            margin-bottom: 0.5em;
+        }
+        a {
+            color: #3498db;
+            text-decoration: none;
+        }
+        a:hover {
+            text-decoration: underline;
         }
         code {
-            font-family: 'Consolas', 'Courier New', monospace;
-            background-color: #eef;
+            font-family: 'Fira Code', 'Cascadia Code', 'Consolas', monospace;
+            background-color: #ecf0f1;
             padding: 2px 4px;
-            border-radius: 3px;
+            border-radius: 4px;
+            font-size: 0.9em;
         }
-        .title-page {
-            text-align: center;
-            padding: 100px 0;
-            background-color: #e0f2f7;
-            border-bottom: 2px solid #3498db;
-            margin-bottom: 40px;
-        }
-        .title-page h1 {
-            font-size: 3em;
-            color: #2c3e50;
-            border-bottom: none;
-            padding-bottom: 0;
-        }
-        .title-page p {
-            font-size: 1.2em;
-            color: #555;
-            margin-top: 10px;
-        }
-        .section {
-            margin-bottom: 30px;
+        pre {
+            background-color: #ecf0f1;
             padding: 15px;
-            background-color: #fff;
-            border-radius: 5px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+            border-radius: 6px;
+            overflow-x: auto;
+            font-family: 'Fira Code', 'Cascadia Code', 'Consolas', monospace;
+            font-size: 0.9em;
+            line-height: 1.4;
+            margin-bottom: 1.5em;
         }
-        .appendix-item {
-            margin-bottom: 1em;
+        .header-info {
+            text-align: center;
+            margin-bottom: 40px;
+            font-size: 0.9em;
+            color: #555;
+        }
+        .header-info p {
+            margin: 5px 0;
+            text-align: center;
+        }
+        .section-title {
+            margin-top: 40px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #eee;
+        }
+        .footer {
+            margin-top: 50px;
+            padding-top: 20px;
+            border-top: 1px solid #eee;
+            text-align: center;
+            font-size: 0.8em;
+            color: #777;
         }
     </style>
 </head>
 <body>
+    <div class="container">
+        <!-- 1. Titelseite -->
+        <h1>Whitepaper: Tastaturinteraktion und Labyrinthgenerierung</h1>
+        <div class="header-info">
+            <p><strong>Version / Veröffentlichungsdatum:</strong> 1.0 / 2025-10-14</p>
+            <p><strong>Autor(en):</strong> Mermaid Architect AI</p>
+            <p><strong>Lizenz / Zugriffsinformationen:</strong> KeyboardJS unter BSD-Lizenz (siehe <a href="https://raw.github.com/RobertWHurst/KeyboardJS/master/license.txt">license.txt</a>); Labyrinthgenerierung ohne explizite Lizenz, implizit zur Nutzung im Projekt.</p>
+        </div>
 
-    <div class="title-page">
-        <h1>Whitepaper: Interactive Maze Generation and Input Handling System</h1>
-        <p><strong>Version / Release Date:</strong> 1.0 / 2025-10-14</p>
-        <p><strong>Author(s):</strong> Mermaid Architect AI</p>
-        <p><strong>License / Access Information:</strong> BSD License (KeyboardJS), Unspecified (Maze Generation)</p>
-    </div>
+        <!-- 2. Executive Summary -->
+        <h2 class="section-title">2. Executive Summary</h2>
+        <p>Dieses Whitepaper stellt zwei unabhängige, aber potenziell komplementäre JavaScript-Komponenten vor: eine robuste Bibliothek zur Tastaturinteraktion (KeyboardJS) und einen Algorithmus zur Generierung von quadratischen Labyrinthen. KeyboardJS bietet eine plattformübergreifende API zur Bindung von einzelnen Tasten und Tastenkombinationen an Callback-Funktionen, einschließlich der Unterstützung für Achsen-Bindungen, die für spielähnliche Steuerungen nützlich sind. Der Labyrinthgenerator implementiert einen rekursiven Backtracking-Algorithmus zur Erzeugung von perfekten Labyrinthen beliebiger quadratischer Dimension.</p>
+        <p>Das Projekt wurde konzipiert, um Entwicklern leistungsstarke Werkzeuge für die Implementierung komplexer Benutzereingaben und dynamischer Inhaltsgenerierung in browserbasierten Anwendungen bereitzustellen. KeyboardJS adressiert die Herausforderungen der konsistenten Tastaturereignisbehandlung über verschiedene Browser hinweg und vereinfacht die Definition von Tastenkürzeln und Steuerungsschemata. Der Labyrinthgenerator bietet eine effiziente Methode zur Erstellung prozedural generierter Umgebungen, die in Spielen, Simulationen oder als visuelle Rätsel eingesetzt werden können. Die Zielgruppe umfasst Webentwickler, Spieleentwickler und Forscher, die interaktive und dynamische Webanwendungen erstellen möchten.</p>
 
-    <div class="section">
-        <h2>2. Executive Summary</h2>
-        <p>
-            This whitepaper details a software system comprising two distinct yet complementary JavaScript modules: a robust keyboard input handling library, KeyboardJS, and a recursive square maze generation algorithm. KeyboardJS provides a sophisticated mechanism for binding complex key combinations and axes to callback functions, abstracting away the intricacies of browser event handling and offering advanced features like locale support and active key tracking. The maze generation module implements a depth-first search (DFS) based algorithm to dynamically construct perfect square mazes of arbitrary dimensions.
-        </p>
-        <p>
-            The project addresses the need for precise and flexible user input management in web applications, particularly for interactive experiences like games or complex data entry forms, and the procedural generation of environmental structures. It is primarily intended for web developers requiring a lightweight, client-side solution for these functionalities, offering enhanced control over keyboard events and efficient maze creation without server-side dependencies. The combined utility enables the development of interactive applications where user navigation or interaction within a procedurally generated environment is crucial.
-        </p>
-    </div>
+        <!-- 3. Problemstellung -->
+        <h2 class="section-title">3. Problemstellung</h2>
+        <p>Die Entwicklung interaktiver Webanwendungen, insbesondere solcher, die komplexe Tastatureingaben oder dynamisch generierte Inhalte erfordern, steht vor mehreren Herausforderungen. Im Bereich der Tastaturinteraktion ist die plattformübergreifende Konsistenz der Ereignisbehandlung oft schwierig. Unterschiedliche Browser und Betriebssysteme können Tastaturereignisse unterschiedlich interpretieren oder handhaben, was zu inkonsistentem Verhalten führt. Die manuelle Verwaltung von aktiven Tasten, Tastenkombinationen und deren Lebenszyklen kann schnell zu fehleranfälligem und schwer wartbarem Code führen. Eine robuste Abstraktionsschicht, die diese Komplexität kapselt und eine einfache, deklarative API bietet, ist daher von großem Nutzen.</p>
+        <p>Parallel dazu besteht in vielen interaktiven Anwendungen, von Lernspielen bis hin zu Simulationen, der Bedarf an prozedural generierten, komplexen Strukturen wie Labyrinthen. Die manuelle Erstellung solcher Inhalte ist zeitaufwändig und skaliert schlecht. Ein effizienter und zuverlässiger Algorithmus zur automatischen Generierung von Labyrinthen, der eine hohe Variabilität und Qualität gewährleistet, kann die Entwicklungszeit erheblich verkürzen und die Wiederspielbarkeit von Anwendungen erhöhen. Die Kombination dieser beiden Problemstellungen in einem Projekt ermöglicht die Schaffung von Anwendungen, die sowohl reichhaltige Interaktionsmöglichkeiten als auch dynamische, sich ständig ändernde Umgebungen bieten.</p>
 
-    <div class="section">
-        <h2>3. Problem Statement</h2>
-        <p>
-            Developing interactive web applications often presents two significant technical challenges: managing complex keyboard input and generating dynamic, engaging content. Traditional browser-native keyboard event handling (<code>keydown</code>, <code>keyup</code>) can be cumbersome for intricate key combinations (e.g., "Ctrl + Shift + A"), requiring developers to manually track active keys, manage event propagation, and normalize browser-specific event object discrepancies. This leads to verbose, error-prone code and inconsistent user experiences across different browser environments. Furthermore, the need for locale-specific key mappings adds another layer of complexity, often overlooked in basic implementations.
-        </p>
-        <p>
-            Concurrently, the creation of procedural content, such as mazes, for games or simulations typically involves complex algorithms that must be implemented efficiently to avoid performance bottlenecks, especially in client-side JavaScript environments. Manual design of such structures is time-consuming and lacks replayability. Existing solutions for both problems are often either too monolithic, introducing unnecessary dependencies, or too simplistic, failing to provide the granular control and flexibility required for advanced applications. A lightweight, modular solution that addresses these pain points is essential for modern web development.
-        </p>
-    </div>
+        <!-- 4. Systemarchitektur und Funktionsweise -->
+        <h2 class="section-title">4. Systemarchitektur und Funktionsweise</h2>
+        <p>Das vorliegende Projekt besteht aus zwei primären, lose gekoppelten Modulen: KeyboardJS für die Tastaturereignisbehandlung und einem Modul zur Labyrinthgenerierung. Die Architektur ist modular aufgebaut und ermöglicht die unabhängige Nutzung oder Integration der Komponenten.</p>
 
-    <div class="section">
-        <h2>4. System Architecture and Functionality</h2>
-        <p>
-            The system described herein is architected as a collection of independent, client-side JavaScript modules, designed for integration into web applications. It follows a modular design pattern, where each component provides specific functionality without tight coupling to the others, promoting reusability and maintainability.
-        </p>
-
-        <h3>Architectural Description</h3>
-        <p>
-            The architecture is fundamentally client-centric, operating entirely within the browser's JavaScript runtime environment. There are two primary functional modules:
-        </p>
+        <h3>4.1. KeyboardJS-Modul</h3>
+        <p>Das KeyboardJS-Modul ist als eigenständige JavaScript-Bibliothek konzipiert, die im Browser-Kontext oder als AMD-Modul geladen werden kann. Es folgt einem ereignisgesteuerten Paradigma und verwaltet den Zustand der aktuell gedrückten Tasten.</p>
         <ul>
-            <li>
-                <strong>KeyboardJS Module:</strong> This module acts as an event abstraction layer for keyboard input. It intercepts raw browser <code>keydown</code> and <code>keyup</code> events, processes them, and dispatches custom callbacks based on defined key bindings. Its core components include:
+            <li><strong>Polyfills:</strong> Die Bibliothek beginnt mit der Implementierung von Polyfills für <code>addEventListener</code>/<code>attachEvent</code> und <code>Array.prototype.indexOf</code>, um eine breite Browserkompatibilität, insbesondere mit älteren Internet Explorer-Versionen, zu gewährleisten.</li>
+            <li><strong>Tasten-Mapping (<code>locals</code>):</strong> Ein internes Objekt <code>locals['us']</code> speichert eine umfassende Zuordnung von Tastenbezeichnungen (z.B. "enter", "shift", "a", "f1") zu ihren entsprechenden JavaScript <code>keyCode</code>-Werten. Dies ermöglicht eine intuitive, sprachbasierte Tastenreferenzierung. Es gibt auch Funktionen zum Hinzufügen und Ändern von Lokalisierungen (<code>addLocale</code>, <code>setLocale</code>).</li>
+            <li><strong>Zustandsverwaltung:</strong>
                 <ul>
-                    <li><strong>Event Listeners:</strong> Attaches <code>keydown</code>, <code>keyup</code> to <code>document</code> and <code>blur</code> to <code>window</code>.</li>
-                    <li><strong>Key Mapping (<code>locals</code>):</strong> A dictionary (currently 'us' locale) mapping human-readable key names (e.g., "enter", "shift", "a") to their respective <code>keyCode</code> values.</li>
-                    <li><strong>Active Key Tracking (<code>activeKeys</code>):</strong> An array that maintains a real-time list of all currently pressed keys.</li>
-                    <li><strong>Binding Management (<code>keyBindingGroups</code>, <code>activeBindings</code>):</strong> Structures to store and manage user-defined key bindings, categorized by the number of keys in a combo for efficient lookup.</li>
-                    <li><strong>Binding Functions:</strong> Public API functions (<code>bindKey</code>, <code>bindAxis</code>) for creating new bindings and (<code>unbindKey</code>) for removing them.</li>
-                    <li><strong>Locale Management:</strong> Functions (<code>addLocale</code>, <code>setLocale</code>) to extend and switch keyboard layouts.</li>
+                    <li><code>activeKeys</code>: Ein Array, das alle aktuell gedrückten Tastenbezeichnungen speichert.</li>
+                    <li><code>activeBindings</code>: Ein Objekt, das die aktuell aktiven Tastenkombinations-Bindungen speichert.</li>
+                    <li><code>keyBindingGroups</code>: Ein Array von Arrays, das alle registrierten Tastenkombinations-Bindungen nach der Anzahl der Tasten in der Kombination gruppiert. Dies optimiert die Abfrage aktiver Bindungen.</li>
                 </ul>
             </li>
-            <li>
-                <strong>Maze Generation Module:</strong> This module encapsulates the logic for generating square mazes. Its primary function is <code>generateSquareMaze</code>, which takes a dimension as input and returns a 2D array representing the maze structure.
+            <li><strong>Ereignis-Listener:</strong>
                 <ul>
-                    <li><strong>Field Initialization:</strong> Creates a 2D array (<code>field</code>) of boolean values, initially marking all cells as 'walls' (<code>true</code>).</li>
-                    <li><strong>Recursive Iteration (<code>iterate</code>):</strong> Implements a randomized depth-first search algorithm to carve paths through the maze. It recursively visits unvisited neighboring cells, removing walls between them.</li>
-                    <li><strong>Random Direction Selection:</strong> At each step, it randomly selects one of the valid unvisited neighbors to ensure maze variability.</li>
+                    <li><code>keydown</code>-Handler: Bei jedem Tastendruck wird der <code>keyCode</code> des Ereignisses mit den definierten Tasten-Mappings abgeglichen. Die entsprechende Tastenbezeichnung wird zu <code>activeKeys</code> hinzugefügt, falls sie noch nicht vorhanden ist. Anschließend wird <code>executeActiveKeyBindings</code> aufgerufen, um passende Callbacks auszuführen.</li>
+                    <li><code>keyup</code>-Handler: Bei jedem Loslassen einer Taste wird die entsprechende Tastenbezeichnung aus <code>activeKeys</code> entfernt. Anschließend wird <code>pruneActiveKeyBindings</code> aufgerufen, um End-Callbacks für nicht mehr aktive Bindungen auszuführen.</li>
+                    <li><code>blur</code>-Handler (Fenster): Wenn das Browserfenster den Fokus verliert, werden alle <code>activeKeys</code> geleert, um den Zustand zurückzusetzen und unerwünschte "hängende" Tasten zu vermeiden.</li>
                 </ul>
             </li>
-        </ul>
-        <p>
-            The modules operate independently but can be integrated within a larger application context. For instance, KeyboardJS could be used to control a player character navigating a maze generated by the maze module.
-        </p>
-
-        <h3>Technical Implementation and Functionality</h3>
-        <h4>KeyboardJS Module (<code>keyboard.js</code>)</h4>
-        <p>
-            The KeyboardJS module is implemented as an Immediately Invoked Function Expression (IIFE) supporting both AMD (RequireJS) and browser global contexts, making it highly portable.
-        </p>
-        <p>
-            Key functionalities include:
-        </p>
-        <ul>
-            <li>
-                <strong>Event Normalization and Polyfills:</strong> Includes a basic <code>bind</code> function for cross-browser event listener attachment (handling <code>addEventListener</code> and <code>attachEvent</code> for older IE versions) and an <code>Array.prototype.indexOf</code> polyfill.
-            </li>
-            <li>
-                <strong>Key State Management:</strong> The <code>activeKeys</code> array is central to its operation. On <code>keydown</code>, the corresponding key is added; on <code>keyup</code>, it's removed. A <code>window.blur</code> event listener clears all active keys to prevent sticky keys when the window loses focus.
-            </li>
-            <li>
-                <strong>Binding Logic:</strong>
+            <li><strong>Bindungslogik:</strong>
                 <ul>
-                    <li><code>bindKey(keyCombo, callback, endCallback)</code>: Allows binding a function (<code>callback</code>) to be executed when a specific key or key combination (e.g., 'ctrl+x', 'up, down') is pressed. An optional <code>endCallback</code> is fired when the key combination is released.</li>
-                    <li><code>bindAxis(up, down, left, right, callback)</code>: A specialized binding for directional input. It binds four key combinations to an axis, firing a <code>callback</code> periodically (via <code>setInterval</code>) with an <code>[x, y]</code> array representing the current directional input (e.g., <code>[-1, 0]</code> for up). This is particularly useful for game controls.</li>
+                    <li><code>queryActiveBindings()</code>: Durchsucht <code>keyBindingGroups</code> und <code>activeKeys</code>, um alle aktuell aktiven Tastenkombinations-Bindungen zu identifizieren. Es priorisiert längere Kombinationen.</li>
+                    <li><code>executeActiveKeyBindings(event)</code>: Iteriert über die aktiven Bindungen, führt deren <code>callback</code>-Funktionen aus und markiert verwendete Tasten als "spent", um zu verhindern, dass eine Taste mehrere Bindungen gleichzeitig auslöst, es sei denn, die Bindungen sind disjunkt.</li>
+                    <li><code>pruneActiveKeyBindings(event)</code>: Überprüft, welche der zuvor aktiven Bindungen nicht mehr aktiv sind (z.B. weil eine Taste losgelassen wurde) und führt deren <code>endCallback</code>-Funktionen aus.</li>
                 </ul>
             </li>
-            <li>
-                <strong>Binding Execution Flow:</strong>
+            <li><strong>API:</strong> Die öffentliche API umfasst <code>bind.key</code> (für einzelne Tasten/Kombinationen), <code>bind.axis</code> (für richtungsbasierte Eingaben mit Intervall-Polling), <code>unbind.key</code> (zum Entfernen von Bindungen), <code>activeKeys</code> (zum Abrufen der aktuell gedrückten Tasten) und <code>locale.add</code>/<code>locale.set</code>.</li>
+        </ul>
+
+        <h3>4.2. Labyrinthgenerierungs-Modul</h3>
+        <p>Das Labyrinthgenerierungs-Modul besteht aus einer einzelnen Funktion <code>generateSquareMaze</code>, die einen rekursiven Backtracking-Algorithmus implementiert.</p>
+        <ul>
+            <li><strong>Initialisierung:</strong> Die Funktion erstellt ein zweidimensionales Array (<code>field</code>) der Größe <code>dimension x dimension</code>. Alle Zellen werden initial als "Wand" (<code>true</code>) markiert.</li>
+            <li><strong>Rekursiver Algorithmus (<code>iterate</code>):</strong>
                 <ul>
-                    <li>On <code>keydown</code>, <code>queryActiveBindings()</code> identifies all currently active key combinations based on <code>activeKeys</code>.</li>
-                    <li><code>executeActiveKeyBindings()</code> then iterates through these, prioritizing longer key combinations, and executes their respective <code>callback</code> functions. It also manages "spent keys" to prevent multiple bindings from consuming the same key press simultaneously, ensuring predictable behavior.</li>
-                    <li>On <code>keyup</code>, <code>pruneActiveKeyBindings()</code> checks which previously active bindings are no longer active and fires their <code>endCallback</code> functions.</li>
+                    <li>Die Funktion <code>iterate(field, x, y)</code> markiert die aktuelle Zelle <code>(x, y)</code> als "Weg" (<code>false</code>).</li>
+                    <li>Sie identifiziert alle benachbarten Zellen, die zwei Schritte entfernt sind und noch Wände sind (d.h., unbesucht sind). Dies sind die möglichen Richtungen, in die das Labyrinth erweitert werden kann.</li>
+                    <li>Wenn es keine solchen Richtungen gibt, ist der aktuelle Pfad beendet, und die Funktion kehrt zurück.</li>
+                    <li>Andernfalls wird zufällig eine Richtung ausgewählt. Die Zelle in dieser Richtung (zwei Schritte entfernt) wird als "Weg" markiert, und die Wand zwischen der aktuellen Zelle und der neu besuchten Zelle (ein Schritt entfernt) wird ebenfalls als "Weg" markiert.</li>
+                    <li>Die Funktion ruft sich rekursiv für die neu besuchte Zelle auf.</li>
                 </ul>
             </li>
-            <li>
-                <strong>Locale Support:</strong> The <code>locals</code> object stores key code mappings. Developers can add new locales or switch between them, allowing for internationalized keyboard layouts.
-            </li>
-        </ul>
-        <p>
-            Example of <code>bindKey</code> usage:
-        </p>
-        <pre><code>KeyboardJS.bind.key('ctrl + s', function() {
-    console.log('Ctrl+S pressed!');
-    return false; // Prevent default browser save action
-}, function() {
-    console.log('Ctrl+S released!');
-});</code></pre>
-
-        <h4>Maze Generation Module (<code>maze.js</code>)</h4>
-        <p>
-            The maze generation module provides a single, self-contained function for creating mazes.
-        </p>
-        <p>
-            Key functionalities include:
-        </p>
-        <ul>
-            <li>
-                <strong><code>generateSquareMaze(dimension)</code>:</strong> This function takes an integer <code>dimension</code> (e.g., 11 for an 11x11 maze) and returns a 2D array. The maze grid is typically odd-dimensioned to ensure a border of walls and clear paths.
-            </li>
-            <li>
-                <strong>Recursive Backtracker Algorithm:</strong> The <code>iterate</code> function implements a randomized version of the Depth-First Search (DFS) algorithm.
-                <ul>
-                    <li>It starts at a given cell (typically <code>[1, 1]</code>) and marks it as a 'path' (<code>false</code>).</li>
-                    <li>It then identifies all valid unvisited neighbors (cells two steps away, ensuring a wall in between).</li>
-                    <li>A random neighbor is chosen, the wall between the current cell and the chosen neighbor is removed (by setting the cell in between to <code>false</code>), and the function recursively calls itself for the chosen neighbor.</li>
-                    <li>If a cell has no unvisited neighbors, the recursion unwinds (backtracking).</li>
-                </ul>
-            </li>
-            <li>
-                <strong>Output Format:</strong> The generated maze is a 2D array where <code>true</code> represents a wall and <code>false</code> represents a path.
-            </li>
-        </ul>
-        <p>
-            Example of <code>generateSquareMaze</code> usage:
-        </p>
-        <pre><code>var myMaze = generateSquareMaze(21); // Generates a 21x21 maze
-// myMaze[0][0] would be true (wall), myMaze[1][1] would be false (path)</code></pre>
-    </div>
-
-    <div class="section">
-        <h2>5. Evaluation and Test Results</h2>
-        <p>
-            The evaluation of this system focuses on the qualitative assessment of its core components, KeyboardJS and the maze generation module, across key performance indicators such as robustness, performance/speed, and usability. Given the absence of explicit benchmark scripts or quantitative test results in the provided source code, this section relies on an analytical review of the implementation details.
-        </p>
-
-        <h3>Robustness</h3>
-        <ul>
-            <li>
-                <strong>KeyboardJS:</strong> The module demonstrates good robustness through its cross-browser compatibility efforts (e.g., <code>addEventListener</code>/<code>attachEvent</code> polyfill) and its handling of edge cases like window blur events to clear active keys. The "spent keys" mechanism in <code>executeActiveKeyBindings</code> prevents unintended multiple activations for overlapping key combinations, enhancing predictability. Locale support also adds to its robustness for international applications. The modular design allows for isolated testing and reduces the risk of cascading failures.
-            </li>
-            <li>
-                <strong>Maze Generation:</strong> The recursive backtracker algorithm is a well-established and robust method for generating perfect mazes (mazes with exactly one path between any two points). The implementation correctly handles boundary conditions and ensures that all cells are part of a path or a wall, preventing infinite loops or malformed mazes. The use of a 2D boolean array is a straightforward and robust data structure for representing the maze.
-            </li>
+            <li><strong>Startpunkt:</strong> Die Generierung beginnt typischerweise an der Zelle <code>(1, 1)</code>, um einen Rand von Wänden um das Labyrinth herum zu gewährleisten.</li>
+            <li><strong>Ausgabe:</strong> Die Funktion gibt das vollständig generierte <code>field</code>-Array zurück, wobei <code>true</code> Wände und <code>false</code> Wege repräsentiert.</li>
         </ul>
 
-        <h3>Performance/Speed</h3>
+        <h3>4.3. Systemarchitektur (Textuelle Beschreibung)</h3>
+        <p>Die Gesamtarchitektur ist als Client-Side-Anwendung im Browser konzipiert. KeyboardJS agiert als eine Low-Level-Eingabeschicht, die Tastaturereignisse abstrahiert und eine höherwertige API für die Anwendungslogik bereitstellt. Das Labyrinthgenerierungs-Modul ist eine reine Logikkomponente, die ein Datenmodell (das Labyrinth-Array) erzeugt. Diese beiden Komponenten sind nicht direkt voneinander abhängig, können aber in einer Anwendung kombiniert werden, beispielsweise in einem Labyrinthspiel, bei dem KeyboardJS die Spielerbewegung steuert und das Labyrinthmodul die Spielwelt generiert.</p>
+        <p><strong>Datenfluss:</strong></p>
+        <ol>
+            <li><strong>Tastaturereignisse:</strong> Browser löst <code>keydown</code>/<code>keyup</code>-Ereignisse aus.</li>
+            <li><strong>KeyboardJS-Ereignis-Handler:</strong> Fangen diese Ereignisse ab, aktualisieren den internen Zustand (<code>activeKeys</code>).</li>
+            <li><strong>Bindungs-Matching:</strong> <code>queryActiveBindings</code> identifiziert passende registrierte Tastenkombinationen.</li>
+            <li><strong>Callback-Ausführung:</strong> Die registrierten <code>callback</code>-Funktionen (und <code>endCallback</code>s) werden von KeyboardJS aufgerufen, die dann die Anwendungslogik (z.B. Spielerbewegung im Labyrinth) ausführen können.</li>
+            <li><strong>Labyrinthgenerierung:</strong> Die Funktion <code>generateSquareMaze</code> wird einmalig oder bei Bedarf aufgerufen, um das Labyrinth-Datenmodell zu erstellen.</li>
+            <li><strong>Anwendungslogik:</strong> Interpretiert das Labyrinth-Datenmodell (z.B. zur Darstellung auf einem Canvas) und reagiert auf die von KeyboardJS ausgelösten Ereignisse.</li>
+        </ol>
+        <p>Die Wahl von JavaScript als Implementierungssprache und die Ausführung im Browser sind durch die Natur von Webanwendungen bedingt. Die modulare Struktur ermöglicht eine einfache Integration in bestehende Projekte und fördert die Wiederverwendbarkeit der Komponenten.</p>
+
+        <!-- 5. Evaluation und Testergebnisse -->
+        <h2 class="section-title">5. Evaluation und Testergebnisse</h2>
+        <p>Eine quantitative Evaluation mit spezifischen Metriken oder Benchmarks ist ohne eine explizite Testsuite oder Leistungsdaten im vorliegenden Code nicht möglich. Eine qualitative Bewertung der Systemstärken kann jedoch vorgenommen werden.</p>
+
+        <h3>5.1. KeyboardJS</h3>
         <ul>
-            <li>
-                <strong>KeyboardJS:</strong>
-                <ul>
-                    <li><strong>Event Handling:</strong> The use of native browser event listeners is efficient. The lookup of keys by <code>keyCode</code> and management of <code>activeKeys</code> (using <code>indexOf</code> and <code>splice</code>) are generally performant for typical numbers of active keys.</li>
-                    <li><strong>Binding Execution:</strong> The <code>keyBindingGroups</code> array, organized by the number of keys in a combo, optimizes the search for active bindings by reducing the scope of iteration. However, for a very large number of bindings, the nested loops in <code>queryActiveBindings</code> and <code>executeActiveKeyBindings</code> could introduce minor overhead, though likely negligible for most interactive applications. The <code>setInterval</code> in <code>bindAxis</code> runs at a high frequency (1ms), which might consume CPU cycles unnecessarily if no axis movement is occurring, although it includes a check to return early if <code>axis[0] === 0 && axis[1] === 0</code>.</li>
-                </ul>
-            </li>
-            <li>
-                <strong>Maze Generation:</strong>
-                <ul>
-                    <li><strong>Algorithm Complexity:</strong> The recursive backtracker (DFS) algorithm has a time complexity proportional to the number of cells in the maze (O(N*M) for an N x M grid). For square mazes of dimension <code>D</code>, this is O(D<sup>2</sup>). This is efficient for typical maze sizes.</li>
-                    <li><strong>Memory Usage:</strong> The 2D array representing the maze requires O(D<sup>2</sup>) memory, which is also efficient. The recursive nature implies a call stack depth proportional to the number of cells in the longest path, which could be an issue for extremely large mazes in environments with limited stack size, though JavaScript engines typically handle deep recursion well within practical limits.</li>
-                </ul>
-            </li>
+            <li><strong>Robustheit:</strong> KeyboardJS zeigt eine hohe Robustheit durch die Implementierung von Polyfills für ältere Browser und die sorgfältige Verwaltung des Tastaturzustands (<code>activeKeys</code>, <code>activeBindings</code>). Der <code>blur</code>-Event-Handler trägt zur Stabilität bei, indem er den Zustand bei Fokusverlust zurücksetzt. Die Gruppierung von Bindungen nach Tastenanzahl (<code>keyBindingGroups</code>) ist ein Indikator für eine durchdachte Struktur, die potenzielle Fehlerquellen reduziert.</li>
+            <li><strong>Performance/Geschwindigkeit:</strong> Die Performance wird durch die effiziente Datenstruktur <code>keyBindingGroups</code> optimiert, die das Suchen nach aktiven Bindungen beschleunigt. Der <code>indexOf</code>-Aufruf in Arrays ist bei kleineren Mengen von aktiven Tasten und Bindungen schnell genug. Für sehr anspruchsvolle Echtzeitanwendungen mit extrem vielen Bindungen könnte eine Hash-basierte Suche noch performanter sein, ist aber für die meisten Webanwendungen nicht erforderlich. Die <code>bindAxis</code>-Funktion verwendet <code>setInterval</code> mit einer Frequenz von 1ms, was eine sehr reaktionsschnelle Achsensteuerung ermöglicht, aber auch eine konstante CPU-Last erzeugt, wenn Achsenbindungen aktiv sind.</li>
+            <li><strong>Benutzerfreundlichkeit (UX) für Entwickler:</strong> Die API ist intuitiv und deklarativ. Entwickler können Tastenkombinationen wie <code>'ctrl + x, ctrl + c'</code> einfach definieren. Die Trennung von <code>callback</code> und <code>endCallback</code> ermöglicht eine präzise Steuerung des Verhaltens bei Tastendruck und -loslassen. Die Unterstützung für Lokalisierungen (<code>addLocale</code>, <code>setLocale</code>) verbessert die Anpassbarkeit.</li>
         </ul>
 
-        <h3>Usability (UX for Developers)</h3>
+        <h3>5.2. Labyrinthgenerierung</h3>
         <ul>
-            <li>
-                <strong>KeyboardJS:</strong>
-                <ul>
-                    <li><strong>API Clarity:</strong> The API (<code>KeyboardJS.bind.key</code>, <code>KeyboardJS.bind.axis</code>, <code>KeyboardJS.unbind.key</code>) is clear and intuitive for developers. The use of human-readable key names in key combos (e.g., 'ctrl+s') significantly improves developer experience over raw key codes.</li>
-                    <li><strong>Flexibility:</strong> Support for single keys, multiple keys, key combinations, and axis binding provides high flexibility for diverse input requirements. The <code>endCallback</code> feature is particularly useful for stateful interactions (e.g., holding a key down).</li>
-                    <li><strong>Locale Support:</strong> The ability to add and set locales is a significant usability enhancement for developing international applications.</li>
-                </ul>
-            </li>
-            <li>
-                <strong>Maze Generation:</strong>
-                <ul>
-                    <li><strong>Simplicity:</strong> The single <code>generateSquareMaze(dimension)</code> function is very simple to use. It requires only one parameter and returns a clear, well-defined data structure.</li>
-                    <li><strong>Integration:</strong> The output (a 2D boolean array) is easy to integrate into rendering engines (e.g., drawing to a HTML canvas or SVG).</li>
-                </ul>
-            </li>
-        </ul>
-        <p>
-            In summary, both modules are qualitatively strong in their respective areas. KeyboardJS provides a robust and developer-friendly API for complex input, while the maze generator offers an efficient and reliable method for procedural content creation.
-        </p>
-    </div>
-
-    <div class="section">
-        <h2>6. Comparison with Other Tools</h2>
-        <p>
-            This section compares the presented modules with existing tools and approaches in their respective domains, highlighting their unique selling points and differentiators.
-        </p>
-
-        <h3>KeyboardJS vs. Native Event Handling & Other Libraries</h3>
-        <p>
-            <strong>Native Browser Event Handling:</strong>
-        </p>
-        <ul>
-            <li>
-                <strong>Problem:</strong> Directly using <code>document.addEventListener('keydown', ...)</code> requires manual tracking of pressed keys for combinations, normalization of <code>keyCode</code>/<code>code</code> across browsers, and explicit management of <code>event.preventDefault()</code> and <code>event.stopPropagation()</code>. This leads to boilerplate and potential inconsistencies.
-            </li>
-            <li>
-                <strong>KeyboardJS Differentiator:</strong> KeyboardJS abstracts away these complexities. It automatically tracks active keys, provides a consistent API for key names, and offers a concise way to define complex key combinations (e.g., <code>'ctrl + shift + a'</code>). Its <code>endCallback</code> for key releases and the <code>bindAxis</code> functionality are significantly more advanced than what native events offer out-of-the-box, streamlining development for interactive applications. The locale support is also a key advantage for internationalization.
-            </li>
-        </ul>
-        <p>
-            <strong>Other JavaScript Keyboard Libraries (e.g., Mousetrap, Keymaster.js):</strong>
-        </p>
-        <ul>
-            <li>
-                <strong>Similarities:</strong> Many libraries aim to simplify keyboard event handling, offering similar syntax for binding key combinations.
-            </li>
-            <li>
-                <strong>KeyboardJS Differentiator:</strong>
-                <ul>
-                    <li><strong><code>bindAxis</code> Functionality:</strong> The dedicated <code>bindAxis</code> method is a significant differentiator, providing a high-level abstraction for game-like directional input that is less common in other general-purpose keyboard libraries. It continuously reports axis state, which is crucial for smooth movement.</li>
-                    <li><strong>"Spent Keys" Logic:</strong> KeyboardJS's explicit mechanism to prevent multiple bindings from consuming the same key press (<code>spentKeys</code> array) helps ensure predictable behavior for overlapping key combinations, which can be a source of bugs in less sophisticated libraries.</li>
-                    <li><strong>Locale Management:</strong> While some libraries might support custom key maps, KeyboardJS provides a clear, extensible API for adding and setting locales, making it more adaptable for diverse keyboard layouts.</li>
-                    <li><strong>Modular Design:</strong> Its structure as an IIFE with AMD support makes it highly flexible for various project setups.</li>
-                </ul>
-            </li>
+            <li><strong>Robustheit:</strong> Der rekursive Backtracking-Algorithmus ist ein etabliertes und robustes Verfahren zur Labyrinthgenerierung. Er garantiert die Erzeugung eines "perfekten" Labyrinths, d.h., es gibt immer einen Pfad zwischen zwei beliebigen Punkten und keine Schleifen. Die Implementierung ist direkt und folgt dem Standardansatz.</li>
+            <li><strong>Performance/Geschwindigkeit:</strong> Die Generierung erfolgt rekursiv und ist für typische Webanwendungsgrößen (z.B. 50x50 oder 100x100 Zellen) schnell genug. Die Komplexität ist proportional zur Anzahl der Zellen im Labyrinth. Für sehr große Labyrinthe (mehrere Tausend Zellen) könnte die Rekursionstiefe in manchen JavaScript-Engines ein Problem darstellen, ist aber in modernen Browsern selten ein Engpass.</li>
+            <li><strong>Benutzerfreundlichkeit (UX) für Entwickler:</strong> Die Funktion <code>generateSquareMaze(dimension)</code> ist einfach zu verwenden und erfordert nur einen Parameter. Die Ausgabe als zweidimensionales Boolean-Array ist klar strukturiert und leicht weiterzuverarbeiten (z.B. für die grafische Darstellung).</li>
         </ul>
 
-        <h3>Maze Generation Module vs. Other Maze Algorithms/Implementations</h3>
-        <p>
-            <strong>Other Maze Generation Algorithms (e.g., Prim's, Kruskal's, Wilson's):</strong>
-        </p>
-        <ul>
-            <li>
-                <strong>Similarities:</strong> All these algorithms aim to generate mazes, often perfect mazes.
-            </li>
-            <li>
-                <strong>Maze Generation Module Differentiator:</strong>
-                <ul>
-                    <li><strong>Simplicity and Compactness:</strong> The provided module implements a randomized Depth-First Search (Recursive Backtracker) algorithm, which is known for its elegant recursive structure and relatively simple implementation. This makes the code very compact and easy to understand compared to, for example, Prim's or Kruskal's algorithms which might require more complex data structures (e.g., disjoint-set forests).</li>
-                    <li><strong>Perfect Maze Guarantee:</strong> Like many other algorithms, it reliably generates "perfect" mazes (no loops, no inaccessible areas).</li>
-                    <li><strong>Client-Side Focus:</strong> Its lightweight nature makes it ideal for client-side execution in web browsers without heavy computational overhead, making it suitable for interactive web experiences or casual games.</li>
-                    <li><strong>Direct Output:</strong> The direct output of a 2D boolean array is highly practical for immediate rendering in a canvas or DOM environment.</li>
-                </ul>
-            </li>
-        </ul>
-        <p>
-            The KeyboardJS and Maze Generation modules are distinct in their specific feature sets and lightweight implementations, offering compelling alternatives for developers seeking robust, client-side solutions for input handling and procedural content generation without the overhead of larger frameworks.
-        </p>
-    </div>
+        <!-- 6. Vergleich mit anderen Tools -->
+        <h2 class="section-title">6. Vergleich mit anderen Tools</h2>
+        <p>Die beiden Komponenten des Projekts adressieren unterschiedliche Problembereiche, können aber mit anderen Tools verglichen werden.</p>
 
-    <div class="section">
-        <h2>7. Core Concepts and Innovations</h2>
-        <p>
-            The system embodies several core concepts and introduces specific innovations that contribute to its utility and efficiency.
-        </p>
-
-        <h3>KeyboardJS: Event Abstraction and Contextual Binding</h3>
+        <h3>6.1. KeyboardJS im Vergleich zu anderen Tastatur-Bibliotheken</h3>
         <ul>
-            <li>
-                <strong>Unified Key Representation:</strong> A fundamental concept is the abstraction of raw <code>keyCode</code> values into human-readable string representations (e.g., "shift", "a", "enter"). This simplifies binding definitions and improves code readability. The <code>locals</code> object provides a clear mapping for this, supporting easy extension for different keyboard layouts.
-            </li>
-            <li>
-                <strong>Active Key State Management:</strong> The <code>activeKeys</code> array is a core innovation. By maintaining a real-time, canonical list of all currently pressed keys, KeyboardJS can accurately evaluate complex key combinations and their state changes (press and release) without relying on the transient nature of individual <code>keydown</code>/<code>keyup</code> events. This is crucial for robust combo detection.
-            </li>
-            <li>
-                <strong>Prioritized Binding Execution ("Spent Keys"):</strong> The "spent keys" mechanism within <code>executeActiveKeyBindings</code> is a key innovation. When multiple key bindings could potentially be triggered by a set of active keys (e.g., 'a' and 'ctrl+a' are both active), this system ensures that only the most specific or longest matching binding is executed, and its constituent keys are marked as "spent." This prevents unintended cascading effects or duplicate actions, leading to predictable and deterministic input handling.
-            </li>
-            <li>
-                <strong>Axis Binding for Game Input:</strong> The <code>bindAxis</code> function represents a novel abstraction for game-like directional input. Instead of requiring developers to manage four separate key bindings and manually combine their states, <code>bindAxis</code> provides a continuous, normalized <code>[x, y]</code> vector. This simplifies the implementation of movement controls and offers a more natural API for game development. The use of <code>setInterval</code> for continuous reporting is a pragmatic choice for real-time feedback.
-            </li>
-            <li>
-                <strong>Locale Support:</strong> The explicit inclusion of <code>addLocale</code> and <code>setLocale</code> functions is a forward-thinking design choice, acknowledging the global nature of web applications and providing a built-in mechanism for internationalization of keyboard input.
-            </li>
+            <li><strong>Vanilla JavaScript (manuelle Implementierung):</strong> Ohne eine Bibliothek müssten Entwickler <code>keydown</code>- und <code>keyup</code>-Ereignisse manuell abhören, den Zustand der gedrückten Tasten selbst verwalten, Tastenkombinationen parsen und Kollisionen behandeln. KeyboardJS abstrahiert all diese Komplexität, bietet eine konsistente API über Browser hinweg (dank Polyfills) und vereinfacht die Definition komplexer Bindungen erheblich.</li>
+            <li><strong>jQuery Hotkeys / Mousetrap:</strong> Ähnliche Bibliotheken wie jQuery Hotkeys oder Mousetrap bieten ebenfalls eine API zur Definition von Tastenkürzeln. KeyboardJS unterscheidet sich durch seine explizite Verwaltung von <code>activeKeys</code> und <code>activeBindings</code>, was eine präzisere Kontrolle über den Lebenszyklus von Tastenkombinationen (mit <code>endCallback</code>) ermöglicht. Die <code>bindAxis</code>-Funktion ist ein Alleinstellungsmerkmal, das direkt auf die Bedürfnisse von Spielsteuerungen zugeschnitten ist und in vielen anderen Bibliotheken nicht in dieser Form existiert. Die Unterstützung für Lokalisierungen ist ebenfalls ein Vorteil.</li>
+            <li><strong>Browser-native EventListener:</strong> Während moderne Browser eine gute Event-API bieten, erfordert die Handhabung von Tastenkombinationen, die Verwaltung des Zustands von Modifier-Tasten (Shift, Ctrl, Alt) und die Sicherstellung der Cross-Browser-Kompatibilität immer noch erheblichen Aufwand. KeyboardJS vereinfacht dies drastisch.</li>
         </ul>
 
-        <h3>Maze Generation: Recursive Backtracker for Perfect Mazes</h3>
+        <h3>6.2. Labyrinthgenerierung im Vergleich zu anderen Ansätzen</h3>
         <ul>
-            <li>
-                <strong>Randomized Depth-First Search (Recursive Backtracker):</strong> The core innovation here is the application of this specific algorithm for procedural maze generation. This algorithm is known for its simplicity, elegance, and ability to generate "perfect" mazes—mazes where there is exactly one path between any two points, and no inaccessible areas or loops.
-            </li>
-            <li>
-                <strong>In-place Maze Carving:</strong> The <code>iterate</code> function modifies the <code>field</code> array directly, carving paths by changing wall cells (<code>true</code>) to path cells (<code>false</code>). This "in-place" modification is efficient in terms of memory usage.
-            </li>
-            <li>
-                <strong>Guaranteed Connectivity:</strong> By ensuring that each step of the recursion connects a new cell to the existing maze structure, the algorithm guarantees that the final maze is fully connected and traversable. The random selection of directions ensures variety in the generated mazes.
-            </li>
+            <li><strong>Manuelle Labyrinth-Erstellung:</strong> Die manuelle Erstellung von Labyrinthen ist für große oder dynamische Anwendungen nicht praktikabel. Der Algorithmus bietet eine skalierbare und schnelle Lösung.</li>
+            <li><strong>Andere Labyrinth-Algorithmen (z.B. Prim's, Kruskal's):</strong> Der verwendete rekursive Backtracking-Algorithmus ist einer der gängigsten und einfachsten Algorithmen zur Generierung von perfekten Labyrinthen. Andere Algorithmen wie Prim's oder Kruskal's erzeugen ebenfalls perfekte Labyrinthe, können aber unterschiedliche visuelle Eigenschaften (z.B. längere "Gänge" oder mehr "Verzweigungen") aufweisen. Die Implementierung ist hier auf Einfachheit und Effizienz ausgelegt, was für viele Anwendungsfälle ausreichend ist.</li>
+            <li><strong>Bibliotheken für prozedurale Generierung:</strong> Es gibt umfassendere Bibliotheken für prozedurale Generierung, die eine breitere Palette von Algorithmen und Funktionen bieten. Das vorliegende Modul ist jedoch leichtgewichtig und fokussiert sich ausschließlich auf die Generierung von quadratischen Labyrinthen, was für spezifische Anforderungen vorteilhaft sein kann, da es keine unnötigen Abhängigkeiten oder Overhead mit sich bringt.</li>
         </ul>
-        <p>
-            Together, these modules offer innovative solutions for common web development challenges, providing developers with powerful, yet lightweight, tools for creating highly interactive and dynamic web experiences.
-        </p>
-    </div>
+        <p>Zusammenfassend lässt sich sagen, dass KeyboardJS durch seine umfassende Zustandsverwaltung, die <code>endCallback</code>-Funktionalität und die <code>bindAxis</code>-Steuerung einzigartige Vorteile für interaktive Anwendungen bietet. Der Labyrinthgenerator ist eine schlanke, effiziente Implementierung eines bewährten Algorithmus, der sich durch seine Einfachheit und direkte Anwendbarkeit auszeichnet.</p>
 
-    <div class="section">
-        <h2>8. Future Work and Outlook</h2>
-        <p>
-            The current system provides a solid foundation for interactive web applications. Future work could focus on extending its capabilities and enhancing its integration with modern web development practices.
-        </p>
+        <!-- 7. Kernkonzepte und Innovationen -->
+        <h2 class="section-title">7. Kernkonzepte und Innovationen</h2>
+        <p>Die Kernkonzepte und Innovationen dieses Projekts liegen in der intelligenten Abstraktion und der Bereitstellung spezialisierter Funktionalitäten für spezifische Anwendungsfälle.</p>
 
-        <h3>KeyboardJS Module Enhancements:</h3>
+        <h3>7.1. KeyboardJS</h3>
         <ul>
-            <li>
-                <strong>Event Delegation and Scoping:</strong> Implement functionality to bind keys to specific DOM elements rather than just the document, allowing for context-sensitive input (e.g., different key bindings when a specific input field is focused). This would require extending the <code>bind</code> function to accept a target element.
-            </li>
-            <li>
-                <strong>Modifier Key Flexibility:</strong> Allow for "any modifier" bindings (e.g., "alt + a" or "ctrl + a" triggers the same action) or "no modifier" bindings (e.g., "a" only triggers if no Ctrl/Alt/Shift is pressed).
-            </li>
-            <li>
-                <strong>Configuration Options:</strong> Introduce options for debouncing/throttling key events, or configuring the <code>setInterval</code> rate for <code>bindAxis</code>.
-            </li>
-            <li>
-                <strong>Modern JavaScript Modules:</strong> Refactor the module to use ES6 module syntax (<code>import</code>/<code>export</code>) for better tree-shaking and integration with modern bundlers, alongside the existing AMD/global support.
-            </li>
-            <li>
-                <strong>More Locales:</strong> Expand the default set of supported locales beyond 'us', potentially allowing for dynamic loading of locale definitions.
-            </li>
-            <li>
-                <strong>Virtual Keyboard Integration:</strong> Explore integration with virtual keyboard inputs for accessibility or touch-based interfaces.
-            </li>
+            <li><strong>Zustandsbasiertes Tastatur-Management:</strong> Anstatt nur auf einzelne Tastendrücke zu reagieren, verfolgt KeyboardJS den Zustand aller aktuell gedrückten Tasten (<code>activeKeys</code>). Dies ermöglicht die zuverlässige Erkennung komplexer Tastenkombinationen und die präzise Ausführung von Callbacks beim Drücken <em>und</em> Loslassen einer Kombination (<code>callback</code> und <code>endCallback</code>). Dies ist entscheidend für Anwendungen, die persistente Aktionen basierend auf gedrückten Tasten erfordern, wie z.B. das Halten einer Bewegungstaste in einem Spiel.</li>
+            <li><strong>Priorisierung von Bindungen und "Spent Keys":</strong> Die Logik in <code>executeActiveKeyBindings</code>, die Bindungen nach der Anzahl der Tasten priorisiert und das Konzept der "spent keys" einführt, ist ein innovativer Ansatz zur Konfliktlösung. Längere, spezifischere Tastenkombinationen werden vor kürzeren, allgemeineren Kombinationen ausgeführt. Eine Taste, die bereits Teil einer ausgelösten Bindung war ("spent key"), kann nicht gleichzeitig eine andere Bindung auslösen, es sei denn, die Bindungen sind disjunkt. Dies verhindert unerwünschte Mehrfachauslösungen und sorgt für ein deterministisches Verhalten.</li>
+            <li><strong>Achsen-Bindungen (<code>bindAxis</code>):</strong> Die <code>bindAxis</code>-Funktion ist eine spezifische Innovation für Spiele und interaktive Simulationen. Sie abstrahiert die Steuerung von 2D-Bewegungen (oben, unten, links, rechts) in ein konsistentes <code>[x, y]</code>-Vektorformat. Der kontinuierliche Polling-Mechanismus via <code>setInterval</code> ermöglicht eine flüssige, reaktionsschnelle Steuerung, ohne dass die Anwendungslogik komplexe Zustandsautomaten für die Richtungssteuerung implementieren muss.</li>
+            <li><strong>Lokalisierungsunterstützung:</strong> Die Möglichkeit, Tastatur-Layouts zu wechseln und neue hinzuzufügen, ist ein wichtiges Merkmal für die internationale Anwendbarkeit.</li>
         </ul>
 
-        <h3>Maze Generation Module Enhancements:</h3>
+        <h3>7.2. Labyrinthgenerierung</h3>
         <ul>
-            <li>
-                <strong>Different Algorithms:</strong> Implement other maze generation algorithms (e.g., Prim's, Kruskal's, Wilson's, Recursive Division) to offer different maze characteristics (e.g., bias towards long corridors, more branching).
-            </li>
-            <li>
-                <strong>Non-Square Mazes:</strong> Extend the generator to support rectangular mazes or even hexagonal/triangular grids.
-            </li>
-            <li>
-                <strong>Maze Customization:</strong> Add parameters for controlling maze properties like "braidiness" (introducing loops), solution path emphasis, or dead-end density.
-            </li>
-            <li>
-                <strong>Start/End Point Generation:</strong> Automatically generate suitable start and end points within the maze.
-            </li>
-            <li>
-                <strong>Visualization Utilities:</strong> Provide helper functions or examples for rendering the generated maze onto an HTML Canvas or as SVG.
-            </li>
+            <li><strong>Einfache, rekursive Backtracking-Implementierung:</strong> Während der Algorithmus selbst nicht neu ist, liegt die Stärke in seiner klaren und prägnanten Implementierung. Das rekursive Backtracking erzeugt "perfekte" Labyrinthe (keine Schleifen, alle Bereiche erreichbar) und ist für seine Fähigkeit bekannt, Labyrinthe mit langen, gewundenen Pfaden zu erzeugen, die oft als herausfordernder empfunden werden.</li>
+            <li><strong>Direkte Anwendbarkeit:</strong> Die Funktion ist als reiner Datenmodell-Generator konzipiert, der ein einfaches Boolean-Array zurückgibt. Diese Entkopplung von Generierungslogik und Rendering-Logik fördert die Flexibilität und Wiederverwendbarkeit in verschiedenen Rendering-Kontexten (Canvas, SVG, DOM).</li>
         </ul>
 
-        <h3>Potential Application Areas:</h3>
+        <!-- 8. Zukünftige Arbeit und Ausblick -->
+        <h2 class="section-title">8. Zukünftige Arbeit und Ausblick</h2>
+        <p>Die vorgestellten Komponenten bieten eine solide Grundlage für zukünftige Entwicklungen und haben Potenzial in verschiedenen Anwendungsbereichen.</p>
+
+        <h3>8.1. KeyboardJS</h3>
         <ul>
-            <li>
-                <strong>Web-based Games:</strong> The combination of precise input handling and procedural content generation is ideal for developing browser-based games, from simple arcade titles to more complex adventure or puzzle games.
-            </li>
-            <li>
-                <strong>Interactive Simulations:</strong> Creating dynamic environments for educational simulations or data visualization tools where user interaction is key.
-            </li>
-            <li>
-                <strong>Accessibility Tools:</strong> KeyboardJS could be extended to create custom navigation schemes for users with specific accessibility needs.
-            </li>
-            <li>
-                <strong>Developer Tools:</strong> Integrating custom keyboard shortcuts into browser-based developer tools or IDEs.
-            </li>
-        </ul>
-        <p>
-            The outlook for this technology is promising, particularly in the evolving landscape of interactive web content. By continuing to refine and expand these foundational modules, developers can build increasingly sophisticated and engaging user experiences.
-        </p>
-    </div>
-
-    <div class="section">
-        <h2>9. Conclusion</h2>
-        <p>
-            This whitepaper has presented a modular JavaScript system comprising KeyboardJS for advanced keyboard input handling and a recursive backtracker for square maze generation. KeyboardJS effectively addresses the complexities of cross-browser event normalization, intricate key combination detection, and locale-specific mappings, offering a robust and developer-friendly API for managing user input. Its innovative "spent keys" mechanism and dedicated axis binding functionality significantly streamline the development of interactive web applications, particularly games.
-        </p>
-        <p>
-            Complementing this, the maze generation module provides a simple, efficient, and reliable method for procedurally creating perfect square mazes. Its compact implementation of the randomized Depth-First Search algorithm ensures dynamic content generation without compromising performance.
-        </p>
-        <p>
-            Together, these modules form a powerful client-side toolkit for web developers, enabling the creation of rich, interactive experiences with precise control over user input and dynamic environmental content. The system's modular design, combined with its focus on solving common development pain points, underscores its significance as a valuable asset for modern web development, with clear pathways for future enhancements and broader application.
-        </p>
-    </div>
-
-    <div class="section">
-        <h2>10. Appendix (References and Glossary)</h2>
-
-        <h3>References/Sources</h3>
-        <ul>
-            <li class="appendix-item">
-                <strong>KeyboardJS:</strong> Original source code and license information.
-                <br><em>URL: <a href="https://raw.github.com/RobertWHurst/KeyboardJS/master/license.txt" target="_blank">https://raw.github.com/RobertWHurst/KeyboardJS/master/license.txt</a></em>
-                <br><em>Author: Robert William Hurst</em>
-            </li>
-            <li class="appendix-item">
-                <strong>AMD (Asynchronous Module Definition):</strong> A specification for the programmatic definition of modules, allowing for asynchronous loading.
-                <br><em>URL: <a href="https://github.com/amdjs/amdjs-api/wiki/AMD" target="_blank">https://github.com/amdjs/amdjs-api/wiki/AMD</a></em>
-            </li>
-            <li class="appendix-item">
-                <strong>Depth-First Search (DFS) for Maze Generation:</strong> A common algorithm for generating perfect mazes.
-                <br><em>General Concept, various academic and technical resources.</em>
-            </li>
+            <li><strong>Erweiterte Lokalisierung:</strong> Die Unterstützung für weitere Tastaturlayouts (z.B. Deutsch, Französisch) könnte durch Community-Beiträge oder die Integration externer Daten erweitert werden.</li>
+            <li><strong>Modulare Ereignisbehandlung:</strong> Eine Option zur Deaktivierung der Standard-Ereignisverarbeitung (<code>preventDefault</code>, <code>stopPropagation</code>) für bestimmte Bindungen könnte hinzugefügt werden, um mehr Flexibilität zu bieten.</li>
+            <li><strong>Unterstützung für Gamepads/Joysticks:</strong> Eine Erweiterung der <code>bindAxis</code>-Funktionalität auf Gamepad-Eingaben würde die Bibliothek für eine breitere Palette von interaktiven Anwendungen noch attraktiver machen.</li>
+            <li><strong>Konfigurierbare Priorisierung:</strong> Eine API, die es Entwicklern ermöglicht, die Priorität von Tastenkombinations-Bindungen explizit zu steuern, könnte nützlich sein.</li>
+            <li><strong>Performance-Optimierungen:</strong> Für extrem leistungskritische Anwendungen könnten die <code>indexOf</code>-Aufrufe in <code>activeKeys</code> und <code>spentKeys</code> durch Set-ähnliche Datenstrukturen (z.B. <code>Map</code> oder <code>Set</code> in ES6) ersetzt werden, um die Laufzeitkomplexität zu verbessern.</li>
         </ul>
 
-        <h3>Glossary</h3>
+        <h3>8.2. Labyrinthgenerierung</h3>
         <ul>
-            <li class="appendix-item">
-                <strong>Active Keys:</strong> A collection of all keyboard keys currently being held down by the user.
-            </li>
-            <li class="appendix-item">
-                <strong>AMD (Asynchronous Module Definition):</strong> A JavaScript API for defining modules, allowing for asynchronous loading of dependencies.
-            </li>
-            <li class="appendix-item">
-                <strong>API (Application Programming Interface):</strong> A set of defined methods of communication between various software components.
-            </li>
-            <li class="appendix-item">
-                <strong>Axis Binding:</strong> A specialized input binding that maps multiple directional keys or key combinations to a continuous 2D vector (x, y) representing movement along an axis.
-            </li>
-            <li class="appendix-item">
-                <strong>Callback Function:</strong> A function passed as an argument to another function, to be executed later.
-            </li>
-            <li class="appendix-item">
-                <strong>Client-Side:</strong> Refers to operations performed by the client (e.g., a web browser) rather than on a server.
-            </li>
-            <li class="appendix-item">
-                <strong><code>keyCode</code>:</strong> A numerical code representing a physical key on the keyboard, part of the legacy browser event object.
-            </li>
-            <li class="appendix-item">
-                <strong>Key Combination:</strong> The simultaneous pressing of two or more keys (e.g., "Ctrl + C").
-            </li>
-            <li class="appendix-item">
-                <strong>Locale:</strong> A set of parameters that defines the user's language, region, and any special variant preferences that the user wants to see in their user interface. In this context, it refers to keyboard layout mappings.
-            </li>
-            <li class="appendix-item">
-                <strong>Perfect Maze:</strong> A maze with no loops (cycles) and no inaccessible areas, meaning there is exactly one path between any two points in the maze.
-            </li>
-            <li class="appendix-item">
-                <strong>Polyfill:</strong> A piece of code (or plugin) that provides the functionality of a newer web standard to older browsers that do not natively support it.
-            </li>
-            <li class="appendix-item">
-                <strong>Procedural Generation:</strong> The creation of data algorithmically rather than manually.
-            </li>
-            <li class="appendix-item">
-                <strong>Recursive Backtracker:</strong> A maze generation algorithm based on Depth-First Search, known for its simplicity and ability to create perfect mazes.
-            </li>
-            <li class="appendix-item">
-                <strong>Spent Keys:</strong> A mechanism in KeyboardJS to prevent multiple overlapping key bindings from being triggered by the same key press, ensuring that a key press is "spent" by the most specific binding.
-            </li>
+            <li><strong>Varianten des Algorithmus:</strong> Implementierung weiterer Labyrinthgenerierungs-Algorithmen (z.B. Prim's, Kruskal's, Eller's) könnte eine größere Vielfalt an Labyrinthtypen ermöglichen.</li>
+            <li><strong>Zusätzliche Features:</strong> Funktionen zur Bestimmung des Start- und Endpunkts, zur Lösung des Labyrinths oder zur Generierung von Labyrinthen mit bestimmten Eigenschaften (z.B. längster Pfad, bestimmte Anzahl von Sackgassen) wären wertvolle Ergänzungen.</li>
+            <li><strong>Nicht-quadratische Labyrinthe:</strong> Die Erweiterung auf andere Topologien wie hexagonale oder dreidimensionale Labyrinthe würde neue Anwendungsfelder erschließen.</li>
+            <li><strong>Visualisierungshilfen:</strong> Obwohl die Generierung und Visualisierung getrennt sind, könnten Hilfsfunktionen zur einfachen Darstellung des generierten Labyrinths (z.B. auf einem HTML Canvas) bereitgestellt werden.</li>
+        </ul>
+
+        <h3>8.3. Langfristige Vision</h3>
+        <p>Die langfristige Vision ist die Schaffung einer umfassenden Suite von JavaScript-Modulen für interaktive Webanwendungen, die von der Eingabeverarbeitung bis zur prozeduralen Inhaltsgenerierung reicht. Dies könnte die Grundlage für browserbasierte Spiele-Engines, interaktive Lernplattformen oder Simulationswerkzeuge bilden. Die modulare Natur ermöglicht es, diese Komponenten als Bausteine für komplexe und dynamische Web-Erlebnisse zu nutzen.</p>
+
+        <!-- 9. Fazit -->
+        <h2 class="section-title">9. Fazit</h2>
+        <p>Dieses Whitepaper hat zwei wesentliche JavaScript-Komponenten vorgestellt: KeyboardJS, eine Bibliothek zur erweiterten Tastaturinteraktion, und ein Modul zur Generierung quadratischer Labyrinthe. KeyboardJS zeichnet sich durch seine robuste, plattformübergreifende Tastaturereignisbehandlung, die intelligente Verwaltung von Tastenkombinationen mit Priorisierung und das innovative Konzept der Achsen-Bindungen aus. Diese Funktionen vereinfachen die Entwicklung komplexer Benutzereingaben in Webanwendungen erheblich.</p>
+        <p>Der Labyrinthgenerator bietet eine effiziente und zuverlässige Implementierung des rekursiven Backtracking-Algorithmus, der die prozedurale Generierung von perfekten Labyrinthen ermöglicht. Beide Module sind modular, leichtgewichtig und darauf ausgelegt, Entwicklern leistungsstarke Werkzeuge für die Erstellung dynamischer und interaktiver Webanwendungen an die Hand zu geben.</p>
+        <p>Die Kombination dieser Technologien eröffnet vielfältige Möglichkeiten, von browserbasierten Spielen und interaktiven Lernumgebungen bis hin zu kreativen Tools, die eine präzise Steuerung und dynamisch generierte Inhalte erfordern. Die vorgestellten Komponenten sind ein Beweis für die Leistungsfähigkeit von JavaScript im modernen Web und bieten eine solide Basis für zukünftige Innovationen im Bereich der interaktiven Webentwicklung.</p>
+
+        <!-- 10. Anhang (Referenzen und Glossar) -->
+        <h2 class="section-title">10. Anhang</h2>
+
+        <h3>10.1. Referenzen und Quellen</h3>
+        <ul>
+            <li><strong>KeyboardJS:</strong> Robert William Hurst. Ursprüngliche Quelle auf GitHub: <a href="https://github.com/RobertWHurst/KeyboardJS" target="_blank">https://github.com/RobertWHurst/KeyboardJS</a>. Lizenz: BSD License (<a href="https://raw.github.com/RobertWHurst/KeyboardJS/master/license.txt" target="_blank">license.txt</a>).</li>
+            <li><strong>Labyrinthgenerierung:</strong> Der rekursive Backtracking-Algorithmus ist ein Standardalgorithmus in der Graphentheorie und prozeduralen Generierung. Keine spezifische externe Bibliothek verwendet.</li>
+            <li><strong>JavaScript Polyfills:</strong> Standard-Webtechnologien für Cross-Browser-Kompatibilität.</li>
+        </ul>
+
+        <h3>10.2. Glossar</h3>
+        <ul>
+            <li><strong>AMD (Asynchronous Module Definition):</strong> Ein Standard für die modulare Definition von JavaScript-Code, der asynchron geladen werden kann.</li>
+            <li><strong>API (Application Programming Interface):</strong> Eine Schnittstelle, die es Softwarekomponenten ermöglicht, miteinander zu interagieren.</li>
+            <li><strong>Achsen-Bindung:</strong> Eine spezielle Tastatur-Bindung, die mehrere Tasten (z.B. für oben, unten, links, rechts) zu einer kontinuierlichen 2D-Bewegungsachse zusammenfasst.</li>
+            <li><strong>Callback-Funktion:</strong> Eine Funktion, die an ein Ereignis gebunden ist und aufgerufen wird, wenn dieses Ereignis eintritt.</li>
+            <li><strong>Cross-Browser-Kompatibilität:</strong> Die Fähigkeit einer Webanwendung oder Bibliothek, in verschiedenen Webbrowsern konsistent zu funktionieren.</li>
+            <li><strong><code>keyCode</code>:</strong> Ein numerischer Wert, der eine Taste auf der Tastatur identifiziert, wie er von älteren Browser-Ereignisobjekten zurückgegeben wird.</li>
+            <li><strong>Lokalisierung (Locale):</strong> Die Anpassung einer Software an die sprachlichen, kulturellen und technischen Anforderungen einer bestimmten Region oder Sprache.</li>
+            <li><strong>Polyfill:</strong> Ein Stück Code, das eine moderne Funktionalität in älteren Browsern bereitstellt, die diese nativ nicht unterstützen.</li>
+            <li><strong>Prozedurale Generierung:</strong> Die Erstellung von Daten (z.B. Labyrinthen, Landschaften) durch Algorithmen anstatt durch manuelle Erstellung.</li>
+            <li><strong>Rekursives Backtracking:</strong> Ein Algorithmus zur Labyrinthgenerierung, der zufällig Pfade erkundet und bei Sackgassen zu früheren Verzweigungen zurückkehrt.</li>
+            <li><strong>"Spent Keys":</strong> Ein Konzept in KeyboardJS, bei dem Tasten, die bereits eine Tastenkombination ausgelöst haben, für andere, gleichzeitig mögliche Kombinationen blockiert werden, um Konflikte zu vermeiden.</li>
         </ul>
     </div>
-
 </body>
 </html>
