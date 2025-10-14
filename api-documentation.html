@@ -1,0 +1,1878 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Technical Documentation</title>
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --sidebar-bg: #1e293b;
+            --text-color: #e2e8f0;
+            --link-color: #38bdf8;
+            --link-hover: #7dd3fc;
+            --border-color: #334155;
+            --h2-color: #67e8f9;
+            --h3-color: #a5f3fc;
+            --code-bg: #1e293b;
+        }
+        html { scroll-behavior: smooth; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
+            margin: 0;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+        }
+        .sidebar {
+            width: 300px;
+            flex-shrink: 0;
+            background-color: var(--sidebar-bg);
+            border-right: 1px solid var(--border-color);
+            height: 100vh;
+            overflow-y: auto;
+            padding: 1.5rem;
+            box-sizing: border-box;
+        }
+        .sidebar h1 {
+            font-size: 1.25rem;
+            margin-top: 0;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+        .sidebar ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        .sidebar li a {
+            display: block;
+            padding: 0.5rem 0;
+            color: var(--link-color);
+            text-decoration: none;
+            font-size: 0.875rem;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            transition: color 0.2s;
+        }
+        .sidebar li a:hover {
+            color: var(--link-hover);
+        }
+        .main-content {
+            flex-grow: 1;
+            height: 100vh;
+            overflow-y: auto;
+            padding: 2rem 3rem;
+            box-sizing: border-box;
+        }
+        section {
+            padding-top: 2rem;
+            margin-top: -2rem;
+            margin-bottom: 3rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+        section:last-child {
+            border-bottom: none;
+        }
+        h2 {
+            font-size: 1.75rem;
+            color: var(--h2-color);
+            font-family: monospace;
+        }
+        h3 {
+            font-size: 1.25rem;
+            color: var(--h3-color);
+            margin-top: 2rem;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 0.5rem;
+        }
+        p { line-height: 1.6; }
+        code {
+            background-color: var(--code-bg);
+            padding: 0.2em 0.4em;
+            margin: 0;
+            font-size: 85%;
+            border-radius: 6px;
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+        }
+        pre {
+            background-color: var(--code-bg);
+            padding: 1rem;
+            border-radius: 8px;
+            overflow-x: auto;
+        }
+        pre code {
+            padding: 0;
+            background: none;
+            font-size: 100%;
+        }
+        .error {
+            color: #f87171;
+            background-color: #450a0a;
+            border: 1px solid #7f1d1d;
+            padding: 1rem;
+            border-radius: 8px;
+        }
+    </style>
+</head>
+<body>
+    <aside class="sidebar">
+        <h1>Project Files</h1>
+        <ul>
+            <li><a href="#keyboard.js">keyboard.js</a></li><li><a href="#maze.js">maze.js</a></li><li><a href="#index.html">index.html</a></li><li><a href="#Box2dWeb.min.js">Box2dWeb.min.js</a></li><li><a href="#jquery.js">jquery.js</a></li><li><a href="#Three.js">Three.js</a></li>
+        </ul>
+    </aside>
+    <main class="main-content">
+        <section id="keyboard.js">
+    <h2>keyboard.js</h2>
+
+    <p>
+        This file implements the KeyboardJS library, a JavaScript utility for handling keyboard input,
+        allowing developers to bind functions to single keys or complex key combinations, and to manage
+        keyboard-driven axis controls. It supports both AMD and browser global environments.
+    </p>
+
+    <h3>Module Initialization</h3>
+    <p>
+        The library is wrapped in an Immediately Invoked Function Expression (IIFE) that checks for
+        AMD (Asynchronous Module Definition) support. If AMD is available, it registers itself as an
+        anonymous module. Otherwise, it exposes itself globally as <code>k</code> and <code>KeyboardJS</code>
+        on the <code>context</code> (typically <code>window</code>).
+    </p>
+
+    <h3>Polyfills</h3>
+    <ul>
+        <li>
+            <h3><code>bind(target, type, handler)</code></h3>
+            <p>
+                A cross-browser event binding utility. It uses <code>addEventListener</code> for modern browsers
+                and <code>attachEvent</code> for older Internet Explorer versions.
+            </p>
+            <ul>
+                <li><code>target</code>: The DOM element to attach the event listener to.</li>
+                <li><code>type</code>: The event type (e.g., "keydown", "keyup").</li>
+                <li><code>handler</code>: The function to execute when the event fires.</li>
+            </ul>
+            <p>Returns: <code>undefined</code></p>
+        </li>
+        <li>
+            <h3><code>Array.prototype.indexOf</code></h3>
+            <p>
+                A polyfill for <code>Array.prototype.indexOf</code>, ensuring compatibility with browsers
+                that do not natively support this method.
+            </p>
+        </li>
+    </ul>
+
+    <h3>Global Variables</h3>
+    <ul>
+        <li>
+            <h3><code>locals</code></h3>
+            <p>
+                An object containing keyboard locale definitions. Currently, it includes a <code>'us'</code>
+                locale mapping common key names (e.g., "backspace", "tab", "a", "f1") to their respective
+                JavaScript <code>keyCode</code> values.
+            </p>
+            <p>
+                <code>//If you create a new local please submit it as a pull request or post it in the issue tracker at
+                // http://github.com/RobertWhurst/KeyboardJS/issues/</code>
+            </p>
+        </li>
+        <li>
+            <h3><code>keys</code></h3>
+            <p>
+                The currently active locale's key-to-keyCode mapping. Initialized to <code>locals['us']</code>.
+            </p>
+        </li>
+        <li>
+            <h3><code>activeKeys</code></h3>
+            <p>
+                An array that stores the string names of all keys currently being held down.
+            </p>
+        </li>
+        <li>
+            <h3><code>activeBindings</code></h3>
+            <p>
+                An object that stores currently active key bindings, keyed by their <code>keyCombo</code> string.
+            </p>
+        </li>
+        <li>
+            <h3><code>keyBindingGroups</code></h3>
+            <p>
+                An array of arrays, where each inner array holds key bindings grouped by the number of keys
+                in their combination (e.g., <code>keyBindingGroups[1]</code> for single-key binds,
+                <code>keyBindingGroups[2]</code> for two-key combos).
+            </p>
+        </li>
+    </ul>
+
+    <h3>Event Listeners</h3>
+    <p>
+        The library attaches global event listeners to the <code>document</code> and <code>window</code> objects:
+    </p>
+    <ul>
+        <li>
+            <h3><code>document "keydown"</code></h3>
+            <p>
+                When a key is pressed, this handler identifies the key using the <code>event.keyCode</code>
+                and adds its string representation to the <code>activeKeys</code> array if it's not already present.
+                It then calls <code>executeActiveKeyBindings(event)</code> to process any matching key bindings.
+            </p>
+        </li>
+        <li>
+            <h3><code>document "keyup"</code></h3>
+            <p>
+                When a key is released, this handler removes the corresponding key from the <code>activeKeys</code>
+                array. It then calls <code>pruneActiveKeyBindings(event)</code> to handle bindings that are no
+                longer active.
+            </p>
+        </li>
+        <li>
+            <h3><code>window "blur"</code></h3>
+            <p>
+                When the browser window loses focus, this handler clears the <code>activeKeys</code> array,
+                effectively resetting the state of all pressed keys. It also calls
+                <code>pruneActiveKeyBindings(event)</code> to ensure any active bindings are properly ended.
+            </p>
+        </li>
+    </ul>
+
+    <h3>Internal Functions</h3>
+    <ul>
+        <li>
+            <h3><code>queryActiveBindings()</code></h3>
+            <p>
+                Generates an array of active key bindings. It iterates through <code>keyBindingGroups</code>
+                from longest key combinations to shortest, checking if all keys required by a binding are
+                present in the <code>activeKeys</code> array.
+            </p>
+            <ul>
+                <li>Parameters: None</li>
+                <li>Returns: <code>Array</code> - An array of active binding objects.</li>
+            </ul>
+        </li>
+        <li>
+            <h3><code>executeActiveKeyBindings(event)</code></h3>
+            <p>
+                Collects active keys, sets active binds, and fires on key down callbacks.
+            </p>
+            <ul>
+                <li><code>event</code>: The keyboard event object.</li>
+            </ul>
+            <p>
+                This function queries for active bindings, then iterates through them. For each binding,
+                it checks if its keys have already been "spent" by a higher-priority binding (longer key combo).
+                If not, it executes the binding's <code>callback</code> function, adds the binding to
+                <code>activeBindings</code>, and marks its keys as spent. If any binding is fired, it returns
+                <code>false</code> to prevent default browser actions (like event bubbling).
+            </p>
+            <ul>
+                <li>Returns: <code>Boolean</code> - <code>false</code> if a binding was executed and default
+                    event action should be prevented, otherwise <code>true</code> or <code>undefined</code>.</li>
+            </ul>
+        </li>
+        <li>
+            <h3><code>pruneActiveKeyBindings(event)</code></h3>
+            <p>
+                Removes no longer active keys and fires the on key up callbacks for associated active bindings.
+            </p>
+            <ul>
+                <li><code>event</code>: The keyboard event object.</li>
+            </ul>
+            <p>
+                This function compares the currently <code>activeBindings</code> with the result of
+                <code>queryActiveBindings()</code>. If a binding in <code>activeBindings</code> is no longer
+                found in the currently active set, its <code>endCallback</code> is executed, and the binding
+                is removed from <code>activeBindings</code>.
+            </p>
+            <ul>
+                <li>Returns: <code>Boolean</code> - <code>false</code> if an <code>endCallback</code> returned
+                    <code>false</code>, otherwise <code>undefined</code>.</li>
+            </ul>
+        </li>
+    </ul>
+
+    <h3>Public API Functions</h3>
+    <ul>
+        <li>
+            <h3><code>bindKey(keyCombo, callback, endCallback)</code></h3>
+            <p>
+                Binds an on key down and an optional on key up callback to a key or key combo.
+                Accepts a string containing the name of each key you want to bind to comma separated.
+                If you want to bind a combo the use the plus sign to link keys together.
+                Example: 'ctrl + x, ctrl + c' Will fire if Control and x or y are pressed at the same time.
+            </p>
+            <ul>
+                <li><code>keyCombo</code>: <code>String</code> - A comma-separated string of key combinations
+                    (e.g., "a", "ctrl + s", "shift + alt + d").</li>
+                <li><code>callback</code>: <code>Function</code> - The function to execute when the key combo
+                    is pressed and becomes active. Parameters: <code>(event, keys, keyCombo)</code>.</li>
+                <li><code>endCallback</code>: <code>Function</code> (Optional) - The function to execute when
+                    the key combo is released or becomes inactive. Parameters: <code>(event, keys, keyCombo)</code>.</li>
+            </ul>
+            <ul>
+                <li>Returns: <code>Object</code> - An object with a <code>clear()</code> method to unbind
+                    the created key binding.</li>
+            </ul>
+        </li>
+        <li>
+            <h3><code>bindAxis(up, down, left, right, callback)</code></h3>
+            <p>
+                Binds keys or key combos to an axis. The keys should be in the following order; up, down, left, right.
+                If any of the the binded key or key combos are active the callback will fire. The callback will be
+                passed an array containing two numbers. The first represents x and the second represents y.
+                Both have a possible range of -1, 0, or 1 depending on the axis direction.
+            </p>
+            <ul>
+                <li><code>up</code>: <code>String</code> - Key combo for the 'up' direction.</li>
+                <li><code>down</code>: <code>String</code> - Key combo for the 'down' direction.</li>
+                <li><code>left</code>: <code>String</code> - Key combo for the 'left' direction.</li>
+                <li><code>right</code>: <code>String</code> - Key combo for the 'right' direction.</li>
+                <li><code>callback</code>: <code>Function</code> - The function to execute when an axis key is active.
+                    Parameters: <code>(axisArray)</code>, where <code>axisArray</code> is <code>[y, x]</code>.</li>
+            </ul>
+            <p>
+                This function sets up individual key bindings for each direction and uses a <code>setInterval</code>
+                timer to continuously call the provided <code>callback</code> with the current axis state
+                (<code>[y, x]</code>, where -1 is up/left, 1 is down/right, 0 is neutral).
+            </p>
+            <ul>
+                <li>Returns: <code>Object</code> - An object with a <code>clear()</code> method to unbind
+                    all associated axis bindings and stop the interval.</li>
+            </ul>
+        </li>
+        <li>
+            <h3><code>unbindKey(keys)</code></h3>
+            <p>
+                Clears all key and key combo binds containing a given key or keys.
+            </p>
+            <ul>
+                <li><code>keys</code>: <code>String</code> - A comma-separated string of keys to unbind.
+                    Can also be the string <code>'all'</code> to clear all bindings.</li>
+            </ul>
+            <p>
+                This function iterates through all stored key bindings and removes any binding that includes
+                one of the specified keys.
+            </p>
+            <ul>
+                <li>Returns: <code>undefined</code></li>
+            </ul>
+        </li>
+        <li>
+            <h3><code>getActiveKeys()</code></h3>
+            <p>
+                Gets an array of active keys.
+            </p>
+            <ul>
+                <li>Parameters: None</li>
+                <li>Returns: <code>Array</code> - An array of strings representing the currently pressed keys.</li>
+            </ul>
+        </li>
+        <li>
+            <h3><code>addLocale(local, keys)</code></h3>
+            <p>
+                Adds a new keyboard local not supported by keyboard JS.
+            </p>
+            <ul>
+                <li><code>local</code>: <code>String</code> - The name of the new locale (e.g., "fr").</li>
+                <li><code>keys</code>: <code>Object</code> - An object mapping key names to their <code>keyCode</code> values.</li>
+            </ul>
+            <ul>
+                <li>Returns: <code>undefined</code></li>
+            </ul>
+        </li>
+        <li>
+            <h3><code>setLocale(local)</code></h3>
+            <p>
+                Changes the keyboard local.
+            </p>
+            <ul>
+                <li><code>local</code>: <code>String</code> - The name of the locale to activate.</li>
+            </ul>
+            <p>
+                If the specified locale exists in the <code>locals</code> object, it updates the global
+                <code>keys</code> variable to use that locale's key mappings.
+            </p>
+            <ul>
+                <li>Returns: <code>undefined</code></li>
+            </ul>
+        </li>
+    </ul>
+
+    <h3>Returned Module Object</h3>
+    <p>
+        The library returns an object containing the public API:
+    </p>
+    <pre><code>{
+    "bind": {
+        "key": bindKey,
+        "axis": bindAxis
+    },
+    "activeKeys": getActiveKeys,
+    "unbind": {
+        "key": unbindKey
+    },
+    "locale": {
+        "add": addLocale,
+        "set": setLocale
+    }
+}</code></pre>
+</section>
+<section id="maze.js">
+    <h2>maze.js</h2>
+
+    <p>This file contains the core logic for generating a square maze using a recursive backtracking algorithm. It initializes a grid and then carves paths through it to create a solvable maze structure.</p>
+
+    <h3><code>generateSquareMaze(dimension)</code></h3>
+    <p>Generates a square maze of a specified dimension. The maze is represented as a 2D array where <code>true</code> indicates a wall and <code>false</code> indicates a path.</p>
+    <p><strong>Initialize the field.</strong></p>
+    <p><strong>Gnerate the maze recursively.</strong></p>
+
+    <h4>Parameters:</h4>
+    <ul>
+        <li>
+            <code>dimension</code> (<code>number</code>): The size of the square maze (e.g., 11 for an 11x11 maze). This value should typically be an odd number to ensure proper wall/path generation.
+        </li>
+    </ul>
+
+    <h4>Returns:</h4>
+    <ul>
+        <li>
+            <code>Array&lt;Array&lt;boolean&gt;&gt;</code>: A 2D array representing the generated maze. <code>true</code> signifies a wall, and <code>false</code> signifies a path. The array also has a <code>dimension</code> property set to the input dimension.
+        </li>
+    </ul>
+
+    <h4>Internal Function: <code>iterate(field, x, y)</code></h4>
+    <p>A recursive helper function used by <code>generateSquareMaze</code> to carve paths through the maze grid. It implements the core logic of the recursive backtracking algorithm.</p>
+
+    <h4>Parameters:</h4>
+    <ul>
+        <li>
+            <code>field</code> (<code>Array&lt;Array&lt;boolean&gt;&gt;</code>): The current state of the maze grid being generated.
+        </li>
+        <li>
+            <code>x</code> (<code>number</code>): The current X-coordinate (column) in the grid.
+        </li>
+        <li>
+            <code>y</code> (<code>number</code>): The current Y-coordinate (row) in the grid.
+        </li>
+    </ul>
+
+    <h4>Returns:</h4>
+    <ul>
+        <li>
+            <code>Array&lt;Array&lt;boolean&gt;&gt;</code>: The updated maze grid after carving paths from the current position.
+        </li>
+    </ul>
+</section>
+<section id="index.html">
+    <h2>index.html</h2>
+
+    <p>This file serves as the main entry point for the Astray game, orchestrating the loading of external libraries, defining global game state, managing UI elements, and implementing the core game logic including rendering, physics, and user interaction.</p>
+
+    <h3>External Script Imports</h3>
+    <p>The following JavaScript libraries are loaded to provide essential functionalities:</p>
+    <ul>
+        <li><code>Box2dWeb.min.js</code>: The Box2D physics engine for collision detection and rigid body simulation.</li>
+        <li><code>Three.js</code>: The Three.js 3D library for rendering the game world.</li>
+        <li><code>keyboard.js</code>: A custom script likely handling keyboard input for game controls.</li>
+        <li><code>jquery.js</code>: The jQuery library for DOM manipulation and event handling.</li>
+        <li><code>maze.js</code>: A custom script responsible for maze generation and related logic.</li>
+    </ul>
+
+    <h3>Global Variables</h3>
+    <p>A comprehensive set of global variables manages the game's state, rendering, physics, and UI:</p>
+    <ul>
+        <li><code>camera</code>, <code>scene</code>, <code>renderer</code>, <code>light</code>: Core Three.js objects for 3D rendering.</li>
+        <li><code>mouseX</code>, <code>mouseY</code>: Mouse coordinates (though not actively used for direct control in the provided snippet).</li>
+        <li><code>maze</code>, <code>mazeMesh</code>: Data structure for the maze layout and its Three.js mesh representation.</li>
+        <li><code>mazeDimension</code>: The current size of the square maze (e.g., 11x11).</li>
+        <li><code>planeMesh</code>, <code>ballMesh</code>: Three.js meshes for the ground plane and the player's ball.</li>
+        <li><code>ballRadius</code>: Radius of the player's ball.</li>
+        <li><code>keyAxis</code>: Array <code>[x, y]</code> representing the current input direction from keyboard.</li>
+        <li><code>ironTexture</code>, <code>planeTexture</code>, <code>brickTexture</code>: Three.js textures for the ball, ground, and maze walls.</li>
+        <li><code>gameState</code>: String indicating the current state of the game (e.g., 'menu', 'initialize', 'play', 'fade in', 'fade out').</li>
+        <li><code>levelIndex</code>: The current level number the player is on.</li>
+        <li><code>isPreparingLevel</code>: Boolean flag to prevent multiple simultaneous level preparations.</li>
+        <li><code>lastMazeName</code>: Name of the last loaded maze.</li>
+        <li><code>victoryTimeout</code>, <code>pendingVictoryPromise</code>, <code>pendingVictoryMessage</code>, <code>displayVictoryRequested</code>: Variables related to managing and displaying victory messages, potentially involving asynchronous AI calls.</li>
+        <li><code>ballTexturePaths</code>, <code>wallTexturePaths</code>, <code>floorTexturePaths</code>: Arrays of paths to various textures for randomization.</li>
+        <li><code>textureCache</code>: Object to store loaded Three.js textures to avoid redundant loading.</li>
+        <li><code>translations</code>: A nested object containing all UI text translated into German (`de`) and English (`en`).</li>
+        <li><code>currentLanguage</code>: The currently active language for translations.</li>
+        <li><code>currentExitTarget</code>, <code>currentExitApproachCell</code>: Coordinates for the maze exit and the cell leading to it.</li>
+        <li><code>boosterDefinitions</code>: Object defining various in-game boosters, their effects, and durations.</li>
+        <li><code>boosterOrder</code>: Array specifying the order of boosters for generation.</li>
+        <li><code>activeItems</code>: Array of currently spawned collectible items (coins, boosters) in the scene.</li>
+        <li><code>currentLevelConfig</code>, <code>nextLevelConfig</code>: Configuration objects for the current and upcoming levels, including item counts and boosters.</li>
+        <li><code>currentRunStats</code>: Statistics for the current game run (coins, boosters collected, total time).</li>
+        <li><code>currentLevelStartTime</code>: Timestamp when the current level started.</li>
+        <li><code>currentImpulseMultiplier</code>, <code>currentFrictionFactor</code>, <code>currentCoinMultiplier</code>: Dynamic multipliers for ball physics and item collection, affected by boosters.</li>
+        <li><code>baseImpulseStrength</code>, <code>baseFrictionFactor</code>: Default values for ball physics.</li>
+        <li><code>boosterTimeouts</code>: Object to store timeouts for active booster effects.</li>
+        <li><code>defaultLightIntensity</code>, <code>visionBoostActive</code>: Variables related to lighting and a specific booster effect.</li>
+        <li><code>itemResources</code>: Object to cache Three.js geometries and materials for in-game items (coins, boosters).</li>
+        <li><code>b2World</code>, <code>b2FixtureDef</code>, <code>b2BodyDef</code>, <code>b2Body</code>, <code>b2CircleShape</code>, <code>b2PolygonShape</code>, <code>b2Settings</code>, <code>b2Vec2</code>: Box2D shortcuts for physics objects.</li>
+        <li><code>wWorld</code>, <code>wBall</code>: Box2D world and the physics body for the ball.</li>
+        <li><code>victoryLlmDefaults</code>: Default configuration for the AI-powered victory message feature.</li>
+        <li><code>victoryDisplayDurationMs</code>: Duration for which victory messages are displayed.</li>
+        <li><code>STORAGE_KEY_PLAYERS</code>, <code>STORAGE_KEY_SETTINGS</code>, <code>STORAGE_KEY_CURRENT_PLAYER</code>: Keys for localStorage to persist game data.</li>
+        <li><code>defaultSettings</code>: Default game settings.</li>
+        <li><code>players</code>, <code>currentPlayer</code>: Arrays and objects managing player profiles and the currently active player.</li>
+        <li><code>hasStartedGame</code>: Boolean indicating if a game has been started.</li>
+        <li><code>previousGameState</code>: Stores the game state before pausing to the menu.</li>
+        <li><code>gameSettings</code>: Current game settings, loaded from storage or defaults.</li>
+        <li><code>scoreboardNeedsRender</code>: Flag to indicate if the scoreboard UI needs to be re-rendered.</li>
+        <li><code>victoryLlmConfig</code>: Merged configuration for the AI victory messages.</li>
+    </ul>
+
+    <h3>Booster Definitions (`boosterDefinitions`)</h3>
+    <p>This object defines the properties and effects of various in-game boosters:</p>
+    <ul>
+        <li>
+            <code>speed</code>:
+            <ul>
+                <li><code>id</code>: 'speed'</li>
+                <li><code>durationMs</code>: 12000 (12 seconds)</li>
+                <li><code>apply()</code>: Sets <code>currentImpulseMultiplier</code> to 1.6.</li>
+                <li><code>reset()</code>: Resets <code>currentImpulseMultiplier</code> to 1.0.</li>
+            </ul>
+        </li>
+        <li>
+            <code>grip</code>:
+            <ul>
+                <li><code>id</code>: 'grip'</li>
+                <li><code>durationMs</code>: 12000 (12 seconds)</li>
+                <li><code>apply()</code>: Sets <code>currentFrictionFactor</code> to 0.985.</li>
+                <li><code>reset()</code>: Resets <code>currentFrictionFactor</code> to <code>baseFrictionFactor</code>.</li>
+            </ul>
+        </li>
+        <li>
+            <code>coinrush</code>:
+            <ul>
+                <li><code>id</code>: 'coinrush'</li>
+                <li><code>durationMs</code>: 15000 (15 seconds)</li>
+                <li><code>apply()</code>: Sets <code>currentCoinMultiplier</code> to 2.</li>
+                <li><code>reset()</code>: Resets <code>currentCoinMultiplier</code> to 1.</li>
+            </ul>
+        </li>
+        <li>
+            <code>vision</code>:
+            <ul>
+                <li><code>id</code>: 'vision'</li>
+                <li><code>durationMs</code>: 10000 (10 seconds)</li>
+                <li><code>apply()</code>: Sets <code>visionBoostActive</code> to true and increases <code>light.intensity</code>.</li>
+                <li><code>reset()</code>: Sets <code>visionBoostActive</code> to false and resets <code>light.intensity</code> to <code>defaultLightIntensity</code>.</li>
+            </ul>
+        </li>
+    </ul>
+
+    <h3>Functions</h3>
+    <p>The script defines numerous functions to manage game logic, UI, and persistence:</p>
+    <ul>
+        <li>
+            <h3><code>updateLevelLabel(state)</code></h3>
+            <p>Updates the text displayed for the current level, including loading messages or maze names.</p>
+            <ul>
+                <li><code>state</code> (string): The current state of the level ('loading' or 'ready').</li>
+            </ul>
+        </li>
+        <li>
+            <h3><code>resolveTranslation(lang, key)</code></h3>
+            <p>Recursively resolves a translation key for a given language. Falls back to German if the key is not found in the specified language.</p>
+            <ul>
+                <li><code>lang</code> (string): The target language code (e.g., 'de', 'en').</li>
+                <li><code>key</code> (string): The dot-separated translation key (e.g., 'menu.title').</li>
+            </ul>
+            <p><strong>Returns:</strong> The translated string or object, or <code>undefined</code> if not found.</p>
+        </li>
+        <li>
+            <h3><code>formatTranslation(value, params)</code></h3>
+            <p>Replaces placeholders in a translation string with provided parameters.</p>
+            <ul>
+                <li><code>value</code> (string): The raw translation string with <code>{token}</code> placeholders.</li>
+                <li><code>params</code> (object): An object where keys are tokens and values are replacements.</li>
+            </ul>
+            <p><strong>Returns:</strong> The formatted translation string.</p>
+        </li>
+        <li>
+            <h3><code>formatDuration(ms)</code></h3>
+            <p>Formats a duration in milliseconds into a human-readable <code>MM:SS</code> or <code>HH:MM:SS</code> string.</p>
+            <ul>
+                <li><code>ms</code> (number): Duration in milliseconds.</li>
+            </ul>
+            <p><strong>Returns:</strong> Formatted duration string.</p>
+        </li>
+        <li>
+            <h3><code>deepClone(obj)</code></h3>
+            <p>Performs a deep clone of an object using JSON serialization. Handles null gracefully.</p>
+            <ul>
+                <li><code>obj</code> (object): The object to clone.</li>
+            </ul>
+            <p><strong>Returns:</strong> A deep copy of the object, or <code>null</code> if input is null or cloning fails.</p>
+        </li>
+        <li>
+            <h3><code>showMenuMessage(text)</code></h3>
+            <p>Displays a message in the main menu UI.</p>
+            <ul>
+                <li><code>text</code> (string): The message to display.</li>
+            </ul>
+        </li>
+        <li>
+            <h3><code>t(key, params)</code></h3>
+            <p>A shorthand function for retrieving and formatting translations.</p>
+            <ul>
+                <li><code>key</code> (string): The translation key.</li>
+                <li><code>params</code> (object, optional): Parameters for formatting the translation.</li>
+            </ul>
+            <p><strong>Returns:</strong> The translated and formatted string.</p>
+        </li>
+        <li>
+            <h3><code>applyLanguageToDom()</code></h3>
+            <p>Updates all static text elements in the DOM with translations for the <code>currentLanguage</code>.</p>
+        </li>
+        <li>
+            <h3><code>setLanguage(lang, options)</code></h3>
+            <p>Sets the active language, applies it to the DOM, and updates player/scoreboard UI. Optionally saves settings.</p>
+            <ul>
+                <li><code>lang</code> (string): The language code to set.</li>
+                <li><code>options</code> (object, optional):
+                    <ul>
+                        <li><code>skipPlayerRefresh</code> (boolean): If true, skips re-rendering player select.</li>
+                        <li><code>skipSettingsUpdate</code> (boolean): If true, skips updating <code>gameSettings.language</code>.</li>
+                        <li><code>skipSave</code> (boolean): If true, skips saving settings to localStorage.</li>
+                    </ul>
+                </li>
+            </ul>
+        </li>
+        <li>
+            <h3><code>sanitizeModelContent(content)</code></h3>
+            <p>Removes markdown code block delimiters from AI-generated text.</p>
+            <ul>
+                <li><code>content</code> (string): The raw content from the AI model.</li>
+            </ul>
+            <p><strong>Returns:</strong> Sanitized string.</p>
+        </li>
+        <li>
+            <h3><code>pickRandomPath(paths)</code></h3>
+            <p>Selects a random path from an array of paths.</p>
+            <ul>
+                <li><code>paths</code> (array): An array of strings representing file paths.</li>
+            </ul>
+            <p><strong>Returns:</strong> A randomly selected path, or <code>null</code> if the array is empty.</p>
+        </li>
+        <li>
+            <h3><code>getCachedTexture(path)</code></h3>
+            <p>Retrieves a Three.js texture from a cache or loads it if not present.</p>
+            <ul>
+                <li><code>path</code> (string): The path to the texture image.</li>
+            </ul>
+            <p><strong>Returns:</strong> A Three.js <code>Texture</code> object.</p>
+        </li>
+        <li>
+            <h3><code>loadTextureFromPath(path, fallbackPath)</code></h3>
+            <p>Loads a texture, with an optional fallback path if the primary path fails or is null.</p>
+            <ul>
+                <li><code>path</code> (string): Primary texture path.</li>
+                <li><code>fallbackPath</code> (string): Fallback texture path.</li>
+            </ul>
+            <p><strong>Returns:</strong> A Three.js <code>Texture</code> object.</p>
+        </li>
+        <li>
+            <h3><code>randomizeLevelTextures()</code></h3>
+            <p>Randomly selects and loads textures for the ball, walls, and floor for the current level.</p>
+        </li>
+        <li>
+            <h3><code>shuffleArray(array)</code></h3>
+            <p>Shuffles the elements of an array in place using the Fisher-Yates algorithm.</p>
+            <ul>
+                <li><code>array</code> (array): The array to shuffle.</li>
+            </ul>
+            <p><strong>Returns:</strong> The shuffled array.</p>
+        </li>
+        <li>
+            <h3><code>getBoosterName(id, lang)</code></h3>
+            <p>Retrieves the translated name of a booster by its ID.</p>
+            <ul>
+                <li><code>id</code> (string): The booster's identifier.</li>
+                <li><code>lang</code> (string): The target language.</li>
+            </ul>
+            <p><strong>Returns:</strong> The translated booster name or its ID if translation is not found.</p>
+        </li>
+        <li>
+            <h3><code>buildItemSummary(config, lang)</code></h3>
+            <p>Constructs a summary string of items (coins, boosters) for a given level configuration in a specific language.</p>
+            <ul>
+                <li><code>config</code> (object): Level configuration object.</li>
+                <li><code>lang</code> (string): The target language.</li>
+            </ul>
+            <p><strong>Returns:</strong> A descriptive string of items.</p>
+        </li>
+        <li>
+            <h3><code>getItemSummaryText(config, lang)</code></h3>
+            <p>Retrieves or builds the item summary text for a level, prioritizing pre-built summaries in the config.</p>
+            <ul>
+                <li><code>config</code> (object): Level configuration object.</li>
+                <li><code>lang</code> (string, optional): The target language. Defaults to <code>currentLanguage</code>.</li>
+            </ul>
+            <p><strong>Returns:</strong> The item summary string.</p>
+        </li>
+        <li>
+            <h3><code>generateItemsForLevel(level)</code></h3>
+            <p>Generates a configuration object for items (coins, boosters) for a given level, including pre-built summaries for German and English.</p>
+            <ul>
+                <li><code>level</code> (number): The level number.</li>
+            </ul>
+            <p><strong>Returns:</strong> An object describing items for the level.</p>
+        </li>
+        <li>
+            <h3><code>clearActiveItems()</code></h3>
+            <p>Removes all active collectible items from the Three.js scene and clears the <code>activeItems</code> array.</p>
+        </li>
+        <li>
+            <h3><code>collectWalkableCells(field)</code></h3>
+            <p>Identifies and returns a list of walkable (non-wall) cells within a maze field.</p>
+            <ul>
+                <li><code>field</code> (array): The 2D array representing the maze.</li>
+            </ul>
+            <p><strong>Returns:</strong> An array of <code>{x, y}</code> objects for walkable cells.</p>
+        </li>
+        <li>
+            <h3><code>spawnItemsForCurrentLevel(field)</code></h3>
+            <p>Spawns coins and boosters in the Three.js scene based on <code>currentLevelConfig</code>, placing them in random walkable cells.</p>
+            <ul>
+                <li><code>field</code> (array): The 2D array representing the maze.</li>
+            </ul>
+        </li>
+        <li>
+            <h3><code>collectItemByIndex(index)</code></h3>
+            <p>Handles the collection of an item at a specific index in the <code>activeItems</code> array, updating player stats and activating boosters.</p>
+            <ul>
+                <li><code>index</code> (number): The index of the item to collect.</li>
+            </ul>
+        </li>
+        <li>
+            <h3><code>activateBooster(boosterId)</code></h3>
+            <p>Applies the effects of a specified booster and sets a timeout to reset its effects.</p
+<section id="Box2dWeb.min.js">
+    <h2>Box2dWeb.min.js</h2>
+    <p>This file contains the minified JavaScript implementation of the Box2D physics engine. It defines the core structures, collision detection, common utilities, dynamics (bodies, fixtures, contacts, world), controllers, and joints necessary for 2D physics simulations.</p>
+
+    <h3>Global Namespace</h3>
+    <ul>
+        <li>
+            <p><code>Box2D</code></p>
+            <p>The primary global object that serves as the namespace for all Box2D components, classes, and utilities.</p>
+        </li>
+    </ul>
+
+    <h3>Core Utilities and Extensions</h3>
+    <ul>
+        <li>
+            <p><code>Box2D.inherit(y, w)</code></p>
+            <p>A utility function to establish classical inheritance between two JavaScript constructor functions.</p>
+            <ul>
+                <li><strong>Parameters:</strong>
+                    <ul>
+                        <li><code>y</code>: The child constructor function.</li>
+                        <li><code>w</code>: The parent constructor function.</li>
+                    </ul>
+                </li>
+            </ul>
+        </li>
+        <li>
+            <p><code>Box2D.generateCallback(y, w)</code></p>
+            <p>Generates a callback function that binds a method <code>w</code> to a specific context <code>y</code>.</p>
+            <ul>
+                <li><strong>Parameters:</strong>
+                    <ul>
+                        <li><code>y</code>: The context (<code>this</code> value) for the callback.</li>
+                        <li><code>w</code>: The function to be called.</li>
+                    </ul>
+                </li>
+                <li><strong>Returns:</strong>
+                    <p><code>function</code>: A new function that, when called, invokes <code>w.apply(y, arguments)</code>.</p>
+                </li>
+            </ul>
+        </li>
+        <li>
+            <p><code>Box2D.NVector(y)</code></p>
+            <p>Creates a new array (Vector) of a specified size, initialized with zeros. Used for numerical arrays.</p>
+            <ul>
+                <li><strong>Parameters:</strong>
+                    <ul>
+                        <li><code>y</code>: The desired size of the vector.</li>
+                    </ul>
+                </li>
+                <li><strong>Returns:</strong>
+                    <p><code>Array</code>: A new array of length <code>y</code>, filled with zeros.</p>
+                </li>
+            </ul>
+        </li>
+        <li>
+            <p><code>Box2D.is(y, w)</code></p>
+            <p>Checks if an object <code>y</code> is an instance of a given type <code>w</code>, or if its constructor implements <code>w</code>.</p>
+            <ul>
+                <li><strong>Parameters:</strong>
+                    <ul>
+                        <li><code>y</code>: The object to check.</li>
+                        <li><code>w</code>: The type (constructor function or interface identifier) to check against.</li>
+                    </ul>
+                </li>
+                <li><strong>Returns:</strong>
+                    <p><code>boolean</code>: <code>true</code> if <code>y</code> is an instance of <code>w</code> or implements it, <code>false</code> otherwise.</p>
+                </li>
+            </ul>
+        </li>
+        <li>
+            <p><code>Box2D.parseUInt(y)</code></p>
+            <p>Parses a value into an unsigned integer by taking its absolute integer value.</p>
+            <ul>
+                <li><strong>Parameters:</strong>
+                    <ul>
+                        <li><code>y</code>: The value to parse.</li>
+                    </ul>
+                </li>
+                <li><strong>Returns:</strong>
+                    <p><code>number</code>: The absolute integer value of <code>y</code>.</p>
+                </li>
+            </ul>
+        </li>
+    </ul>
+
+    <h3>Collision Module (<code>Box2D.Collision</code>)</h3>
+    <p>This module handles all aspects of collision detection, including broad-phase and narrow-phase algorithms, geometric primitives, and manifold generation.</p>
+    <ul>
+        <li>
+            <p><code>Box2D.Collision.IBroadPhase</code></p>
+            <p>An interface identifier for broad-phase collision detection algorithms.</p>
+        </li>
+        <li>
+            <p><code>Box2D.Collision.b2AABB</code></p>
+            <p>Represents an Axis-Aligned Bounding Box, used for efficient broad-phase collision detection.</p>
+            <ul>
+                <li><strong>Methods:</strong>
+                    <ul>
+                        <li><code>IsValid()</code>: Checks if the AABB is valid (lower bound is less than or equal to upper bound).</li>
+                        <li><code>GetCenter()</code>: Returns the center point of the AABB.</li>
+                        <li><code>GetExtents()</code>: Returns the half-widths of the AABB.</li>
+                        <li><code>Contains(b)</code>: Checks if this AABB contains another AABB <code>b</code>.</li>
+                        <li><code>RayCast(b, e)</code>: Performs a ray cast against the AABB.</li>
+                        <li><code>TestOverlap(b)</code>: Checks for overlap between this AABB and another AABB <code>b</code>.</li>
+                        <li><code>Combine(b, e)</code>: Expands this AABB to contain two other AABBs <code>b</code> and <code>e</code>.</li>
+                        <li><code>static Combine(b, e)</code>: Creates a new AABB that contains two other AABBs <code>b</code> and <code>e</code>.</li>
+                    </ul>
+                </li>
+            </ul>
+        </li>
+        <li>
+            <p><code>Box2D.Collision.b2Bound</code></p>
+            <p>Represents a boundary value used in broad-phase algorithms (e.g., sweep-and-prune).</p>
+            <ul>
+                <li><strong>Methods:</strong>
+                    <ul>
+                        <li><code>IsLower()</code>: Checks if this bound is a lower bound.</li>
+                        <li><code>IsUpper()</code>: Checks if this bound is an upper bound.</li>
+                        <li><code>Swap(b)</code>: Swaps the values of this bound with another bound <code>b</code>.</li>
+                    </ul>
+                </li>
+            </ul>
+        </li>
+        <li>
+            <p><code>Box2D.Collision.b2BoundValues</code></p>
+            <p>Stores lower and upper bound values, typically for 2D axes.</p>
+        </li>
+        <li>
+            <p><code>Box2D.Collision.b2Collision</code></p>
+            <p>Provides static methods for various collision detection routines.</p>
+            <ul>
+                <li><strong>Methods:</strong>
+                    <ul>
+                        <li><code>ClipSegmentToLine(b, e, f, m)</code>: Clips a segment to a line.</li>
+                        <li><code>EdgeSeparation(b, e, f, m, r)</code>: Calculates the separation distance between two edges.</li>
+                        <li><code>FindMaxSeparation(b, e, f, m, r)</code>: Finds the maximum separation between two polygons.</li>
+                        <li><code>FindIncidentEdge(b, e, f, m, r, s)</code>: Finds the incident edge for a given reference edge.</li>
+                        <li><code>MakeClipPointVector()</code>: Creates a vector of clip points.</li>
+                        <li><code>CollidePolygons(b, e, f, m, r)</code>: Performs collision detection between two polygons.</li>
+                        <li><code>CollideCircles(b, e, f, m, r)</code>: Performs collision detection between two circles.</li>
+                        <li><code>CollidePolygonAndCircle(b, e, f, m, r)</code>: Performs collision detection between a polygon and a circle.</li>
+                        <li><code>TestOverlap(b, e)</code>: Tests for overlap between two AABBs.</li>
+                    </ul>
+                </li>
+            </ul>
+        </li>
+        <li>
+            <p><code>Box2D.Collision.b2ContactID</code></p>
+            <p>A unique identifier for a contact point, used to persist contact information across time steps.</p>
+            <ul>
+                <li><strong>Properties:</strong>
+                    <ul>
+                        <li><code>key</code>: A numerical key representing the contact ID.</li>
+                        <li><code>features</code>: An object containing detailed features of the contact (referenceEdge, incidentEdge, incidentVertex, flip).</li>
+                    </ul>
+                </li>
+                <li><strong>Methods:</strong>
+                    <ul>
+                        <li><code>Set(b)</code>: Sets the contact ID from another <code>b2ContactID</code>.</li>
+                        <li><code>Copy()</code>: Creates a copy of this contact ID.</li>
+                    </ul>
+                </li>
+            </ul>
+        </li>
+        <li>
+            <p><code>Box2D.Collision.b2ContactPoint</code></p>
+            <p>Represents a single point of contact between two fixtures.</p>
+            <ul>
+                <li><strong>Properties:</strong>
+                    <ul>
+                        <li><code>position</code>: The world position of the contact point.</li>
+                        <li><code>velocity</code>: The relative velocity at the contact point.</li>
+                        <li><code>normal</code>: The contact normal.</li>
+                        <li><code>id</code>: The <code>b2ContactID</code> for this point.</li>
+                    </ul>
+                </li>
+            </ul>
+        </li>
+        <li>
+            <p><code>Box2D.Collision.b2Distance</code></p>
+            <p>Provides static methods for computing the distance between two shapes using the GJK algorithm.</p>
+            <ul>
+                <li><strong>Methods:</strong>
+                    <ul>
+                        <li><code>static Distance(b, e, f)</code>: Computes the shortest distance between two shapes.</li>
+                    </ul>
+                </li>
+            </ul>
+        </li>
+        <li>
+            <p><code>Box2D.Collision.b2DistanceInput</code></p>
+            <p>Input parameters for the <code>b2Distance</code> algorithm.</p>
+        </li>
+        <li>
+            <p><code>Box2D.Collision.b2DistanceOutput</code></p>
+            <p>Output results from the <code>b2Distance</code> algorithm.</p>
+            <ul>
+                <li><strong>Properties:</strong>
+                    <ul>
+                        <li><code>pointA</code>: Closest point on shape A.</li>
+                        <li><code>pointB</code>: Closest point on shape B.</li>
+                        <li><code>distance</code>: The shortest distance between the shapes.</li>
+                        <li><code>iterations</code>: Number of GJK iterations.</li>
+                    </ul>
+                </li>
+            </ul>
+        </li>
+        <li>
+            <p><code>Box2D.Collision.b2DistanceProxy</code></p>
+            <p>A proxy for a shape, used by the GJK algorithm to query vertices and radius.</p>
+            <ul>
+                <li><strong>Methods:</strong>
+                    <ul>
+                        <li><code>Set(b)</code>: Initializes the proxy from a <code>b2Shape</code>.</li>
+                        <li><code>GetSupport(b)</code>: Returns the index of the vertex furthest in a given direction.</li>
+                        <li><code>GetSupportVertex(b)</code>: Returns the vertex furthest in a given direction.</li>
+                        <li><code>GetVertexCount()</code>: Returns the number of vertices.</li>
+                        <li><code>GetVertex(b)</code>: Returns a specific vertex by index.</li>
+                    </ul>
+                </li>
+            </ul>
+        </li>
+        <li>
+            <p><code>Box2D.Collision.b2DynamicTree</code></p>
+            <p>A dynamic AABB tree, used for efficient broad-phase collision detection.</p>
+            <ul>
+                <li><strong>Methods:</strong>
+                    <ul>
+                        <li><code>CreateProxy(b, e)</code>: Creates a proxy for an AABB and user data.</li>
+                        <li><code>DestroyProxy(b)</code>: Destroys a proxy.</li>
+                        <li><code>MoveProxy(b, e, f)</code>: Moves a proxy, updating its AABB.</li>
+                        <li><code>Rebalance(b)</code>: Rebalances the tree.</li>
+                        <li><code>GetFatAABB(b)</code>: Returns the fat AABB of a proxy.</li>
+                        <li><code>GetUserData(b)</code>: Returns the user data associated with a proxy.</li>
+                        <li><code>Query(b, e)</code>: Queries the tree for all proxies overlapping a given AABB.</li>
+                        <li><code>RayCast(b, e)</code>: Performs a ray cast against the tree.</li>
+                    </ul>
+                </li>
+            </ul>
+        </li>
+        <li>
+            <p><code>Box2D.Collision.b2DynamicTreeBroadPhase</code></p>
+            <p>An implementation of the <code>IBroadPhase</code> interface using a <code>b2DynamicTree</code>.</p>
+            <ul>
+                <li><strong>Methods:</strong>
+                    <ul>
+                        <li><code>CreateProxy(b, e)</code>: Creates a proxy.</li>
+                        <li><code>DestroyProxy(b)</code>: Destroys a proxy.</li>
+                        <li><code>MoveProxy(b, e, f)</code>: Moves a proxy.</li>
+                        <li><code>TestOverlap(b, e)</code>: Tests for overlap between two proxies.</li>
+                        <li><code>GetUserData(b)</code>: Gets user data for a proxy.</li>
+                        <li><code>GetFatAABB(b)</code>: Gets the fat AABB for a proxy.</li>
+                        <li><code>GetProxyCount()</code>: Returns the number of proxies.</li>
+                        <li><code>UpdatePairs(b)</code>: Updates collision pairs and calls a callback for each new pair.</li>
+                        <li><code>Query(b, e)</code>: Queries the broad-phase for overlapping AABBs.</li>
+                        <li><code>RayCast(b, e)</code>: Performs a ray cast.</li>
+                        <li><code>Rebalance(b)</code>: Rebalances the underlying dynamic tree.</li>
+                    </ul>
+                </li>
+            </ul>
+        </li>
+        <li>
+            <p><code>Box2D.Collision.b2DynamicTreeNode</code></p>
+            <p>A node in the <code>b2DynamicTree</code>.</p>
+            <ul>
+                <li><strong>Methods:</strong>
+                    <ul>
+                        <li><code>IsLeaf()</code>: Checks if the node is a leaf node.</li>
+                    </ul>
+                </li>
+            </ul>
+        </li>
+        <li>
+            <p><code>Box2D.Collision.b2DynamicTreePair</code></p>
+            <p>Represents a pair of proxies in the broad-phase.</p>
+        </li>
+        <li>
+            <p><code>Box2D.Collision.b2Manifold</code></p>
+            <p>Represents the contact manifold, containing contact points and collision geometry information.</p>
+            <ul>
+                <li><strong>Properties:</strong>
+                    <ul>
+                        <li><code>m_pointCount</code>: Number of contact points.</li>
+                        <li><code>m_points</code>: Array of <code>b2ManifoldPoint</code> objects.</li>
+                        <li><code>m_localPlaneNormal</code>: Normal of the contact plane in local coordinates.</li>
+                        <li><code>m_localPoint</code>: Point on the reference body in local coordinates.</li>
+                        <li><code>m_type</code>: Type of manifold (circles, faceA, faceB).</li>
+                    </ul>
+                </li>
+                <li><strong>Methods:</strong>
+                    <ul>
+                        <li><code>Reset()</code>: Resets the manifold to its default state.</li>
+                        <li><code>Set(b)</code>: Copies data from another manifold <code>b</code>.</li>
+                        <li><code>Copy()</code>: Creates a deep copy of the manifold.</li>
+                    </ul>
+                </li>
+                <li><strong>Constants:</strong>
+                    <ul>
+                        <li><code>e_circles</code>: Manifold type for circle-circle collision.</li>
+                        <li><code>e_faceA</code>: Manifold type for face A collision.</li>
+                        <li><code>e_faceB</code>: Manifold type for face B collision.</li>
+                    </ul>
+                </li>
+            </ul>
+        </li>
+        <li>
+            <p><code>Box2D.Collision.b2ManifoldPoint</code></p>
+            <p>Represents a single point within a contact manifold.</p>
+            <ul>
+                <li><strong>Properties:</strong>
+                    <ul>
+                        <li><code>m_localPoint</code>: Local point of contact.</li>
+                        <li><code>m_normalImpulse</code>: Accumulated normal impulse.</li>
+                        <li><code>m_tangentImpulse</code>: Accumulated tangent impulse.</li>
+                        <li><code>m_id</code>: Contact ID for this point.</li>
+                    </ul>
+                </li>
+                <li><strong>Methods:</strong>
+                    <ul>
+                        <li><code>Reset()</code>: Resets the manifold point.</li>
+                        <li><code>Set(b)</code>: Copies data from another manifold point <code>b</code>.</li>
+                    </ul>
+                </li>
+            </ul>
+        </li>
+        <li>
+            <p><code>Box2D.Collision.b2Point</code></p>
+            <p>A simple point shape, used as a proxy for GJK.</p>
+            <ul>
+                <li><strong>Properties:</strong>
+                    <ul>
+                        <li><code>p</code>: The <code>b2Vec2</code> representing the point.</li>
+                    </ul>
+                </li>
+                <li><strong>Methods:</strong>
+                    <ul>
+                        <li><code>Support()</code>: Returns the point itself.</li>
+                        <li><code>GetFirstVertex()</code>: Returns the point itself.</li>
+                    </ul>
+                </li>
+            </ul>
+        </li>
+        <li>
+            <p><code>Box2D.Collision.b2RayCastInput</code></p>
+            <p>Input parameters for a ray cast query.</p>
+            <ul>
+                <li><strong>Properties:</strong>
+                    <ul>
+                        <li><code>p1</code>: Start point of the ray.</li>
+                        <li><code>p2</code>: End point of the ray.</li>
+                        <li><code>maxFraction</code>: Maximum fraction of the ray to consider.</li>
+                    </ul>
+                </li>
+            </ul>
+        </li>
+        <li>
+            <p><code>Box2D.Collision.b2RayCastOutput
+<section id="jquery.js">
+    <h2>jquery.js</h2>
+    <p>This file contains the source code for jQuery v1.7.2, a fast, small, and feature-rich JavaScript library. It simplifies HTML document traversal and manipulation, event handling, animation, and Ajax interactions for rapid web development.</p>
+
+    <h3>Core jQuery Object (`f` or `jQuery`)</h3>
+    <p>The main entry point for all jQuery functionalities. It's typically aliased as `$` in the global scope.</p>
+    <ul>
+        <li>
+            <h4><code>jQuery(selector, context)</code> or <code>$(selector, context)</code></h4>
+            <p><strong>Purpose:</strong> Selects HTML elements and returns a jQuery object containing them. Can also create new HTML elements or execute a function when the DOM is ready.</p>
+            <ul>
+                <li><strong>Parameters:</strong>
+                    <ul>
+                        <li><code>selector</code> (String, Element, Array, jQuery object, Function): A string containing a CSS selector, an HTML string, an existing DOM element, an array of elements, a jQuery object, or a function to execute when the DOM is ready.</li>
+                        <li><code>context</code> (Element, jQuery object): A DOM element or jQuery object to use as context for the selection.</li>
+                    </ul>
+                </li>
+                <li><strong>Returns:</strong> A new jQuery object.</li>
+            </ul>
+        </li>
+    </ul>
+
+    <h3>jQuery.fn (jQuery.prototype) - Instance Methods</h3>
+    <p>These methods are available on jQuery objects, allowing for chainable operations on selected elements.</p>
+    <ul>
+        <li>
+            <h4><code>.init(a, d, f)</code></h4>
+            <p><strong>Purpose:</strong> The internal constructor for jQuery objects. It handles various input types (selectors, HTML strings, DOM elements, functions) to populate the jQuery object with matched elements.</p>
+            <ul>
+                <li><strong>Parameters:</strong>
+                    <ul>
+                        <li><code>a</code>: The input (selector, HTML, element, function).</li>
+                        <li><code>d</code>: Context for selection.</li>
+                        <li><code>f</code>: Internal reference to the jQuery object for recursive calls.</li>
+                    </ul>
+                </li>
+                <li><strong>Returns:</strong> The initialized jQuery object.</li>
+            </ul>
+        </li>
+        <li>
+            <h4><code>.selector</code></h4>
+            <p><strong>Purpose:</strong> A string containing the selector expression that was used to generate the current set of elements.</p>
+        </li>
+        <li>
+            <h4><code>.jquery</code></h4>
+            <p><strong>Purpose:</strong> A string containing the jQuery version number (e.g., "1.7.2").</p>
+        </li>
+        <li>
+            <h4><code>.length</code></h4>
+            <p><strong>Purpose:</strong> The number of elements in the jQuery object.</p>
+        </li>
+        <li>
+            <h4><code>.size()</code></h4>
+            <p><strong>Purpose:</strong> Returns the number of elements in the jQuery object. Equivalent to <code>.length</code>.</p>
+            <ul>
+                <li><strong>Returns:</strong> (Number) The number of elements.</li>
+            </ul>
+        </li>
+        <li>
+            <h4><code>.toArray()</code></h4>
+            <p><strong>Purpose:</strong> Retrieves all the DOM elements contained in the jQuery set, as an array.</p>
+            <ul>
+                <li><strong>Returns:</strong> (Array) An array of DOM elements.</li>
+            </ul>
+        </li>
+        <li>
+            <h4><code>.get(a)</code></h4>
+            <p><strong>Purpose:</strong> Retrieves the DOM elements matched by the jQuery object. If an index is provided, it returns a single DOM element; otherwise, it returns an array of all matched DOM elements.</p>
+            <ul>
+                <li><strong>Parameters:</strong>
+                    <ul>
+                        <li><code>a</code> (Number, optional): The index of the element to retrieve. Can be negative to count from the end.</li>
+                    </ul>
+                </li>
+                <li><strong>Returns:</strong> (Element, Array) A single DOM element or an array of DOM elements.</li>
+            </ul>
+        </li>
+        <li>
+            <h4><code>.pushStack(a, b, c)</code></h4>
+            <p><strong>Purpose:</strong> Adds a set of elements onto the jQuery stack. Used internally to maintain the chainability of jQuery methods.</p>
+            <ul>
+                <li><strong>Parameters:</strong>
+                    <ul>
+                        <li><code>a</code> (Array, jQuery object): The elements to push onto the stack.</li>
+                        <li><code>b</code> (String): The name of the method that generated the new set.</li>
+                        <li><code>c</code> (String): The argument(s) passed to the method.</li>
+                    </ul>
+                </li>
+                <li><strong>Returns:</strong> A new jQuery object with the elements pushed onto the stack.</li>
+            </ul>
+        </li>
+        <li>
+            <h4><code>.each(a, b)</code></h4>
+            <p><strong>Purpose:</strong> Iterates over a jQuery object, executing a function for each matched element.</p>
+            <ul>
+                <li><strong>Parameters:</strong>
+                    <ul>
+                        <li><code>a</code> (Function): A function to execute for each matched element. Receives the index and the element as arguments.</li>
+                        <li><code>b</code> (Array, optional): Additional arguments to pass to the function.</li>
+                    </ul>
+                </li>
+                <li><strong>Returns:</strong> The original jQuery object.</li>
+            </ul>
+        </li>
+        <li>
+            <h4><code>.ready(a)</code></h4>
+            <p><strong>Purpose:</strong> Attaches a function to be executed when the DOM is fully loaded and ready.</p>
+            <ul>
+                <li><strong>Parameters:</strong>
+                    <ul>
+                        <li><code>a</code> (Function): The function to execute.</li>
+                    </ul>
+                </li>
+                <li><strong>Returns:</strong> The original jQuery object.</li>
+            </ul>
+        </li>
+        <li>
+            <h4><code>.eq(a)</code></h4>
+            <p><strong>Purpose:</strong> Reduces the set of matched elements to the one at the specified index.</p>
+            <ul>
+                <li><strong>Parameters:</strong>
+                    <ul>
+                        <li><code>a</code> (Number): The index of the element to select.</li>
+                    </ul>
+                </li>
+                <li><strong>Returns:</strong> A new jQuery object containing the element at the specified index.</li>
+            </ul>
+        </li>
+        <li>
+            <h4><code>.first()</code></h4>
+            <p><strong>Purpose:</strong> Reduces the set of matched elements to the first in the set.</p>
+            <ul>
+                <li><strong>Returns:</strong> A new jQuery object containing the first element.</li>
+            </ul>
+        </li>
+        <li>
+            <h4><code>.last()</code></h4>
+            <p><strong>Purpose:</strong> Reduces the set of matched elements to the last in the set.</p>
+            <ul>
+                <li><strong>Returns:</strong> A new jQuery object containing the last element.</li>
+            </ul>
+        </li>
+        <li>
+            <h4><code>.slice()</code></h4>
+            <p><strong>Purpose:</strong> Reduces the set of matched elements to a subset specified by a range of indices.</p>
+            <ul>
+                <li><strong>Parameters:</strong> (Number, optional) <code>start</code>, (Number, optional) <code>end</code>.</li>
+                <li><strong>Returns:</strong> A new jQuery object containing the sliced subset.</li>
+            </ul>
+        </li>
+        <li>
+            <h4><code>.map(a)</code></h4>
+            <p><strong>Purpose:</strong> Passes each element in the current matched set through a function, producing a new jQuery object containing the return values.</p>
+            <ul>
+                <li><strong>Parameters:</strong>
+                    <ul>
+                        <li><code>a</code> (Function): A function to execute for each matched element. Receives the element and its index as arguments.</li>
+                    </ul>
+                </li>
+                <li><strong>Returns:</strong> A new jQuery object containing the results of the function.</li>
+            </ul>
+        </li>
+        <li>
+            <h4><code>.end()</code></h4>
+            <p><strong>Purpose:</strong> Ends the most recent filtering operation in the current chain and returns the set of matched elements to its previous state.</p>
+            <ul>
+                <li><strong>Returns:</strong> The previous jQuery object in the chain.</li>
+            </ul>
+        </li>
+        <li>
+            <h4><code>.extend(target, object1, [objectN])</code></h4>
+            <p><strong>Purpose:</strong> Merges the contents of two or more objects together into the first object. Can be used as a static method (<code>jQuery.extend</code>) or an instance method (<code>jQuery.fn.extend</code>).</p>
+            <ul>
+                <li><strong>Parameters:</strong>
+                    <ul>
+                        <li><code>target</code> (Object): The object to extend. It will receive the new properties.</li>
+                        <li><code>object1</code> (Object): An object containing additional properties to merge in.</li>
+                        <li><code>objectN</code> (Object, optional): Additional objects to merge in.</li>
+                    </ul>
+                </li>
+                <li><strong>Returns:</strong> The modified target object.</li>
+            </ul>
+        </li>
+        <li>
+            <h4><code>.attr(attributeName, value)</code></h4>
+            <p><strong>Purpose:</strong> Get the value of an attribute for the first element in the set of matched elements or set one or more attributes for every matched element.</p>
+            <ul>
+                <li><strong>Parameters:</strong>
+                    <ul>
+                        <li><code>attributeName</code> (String): The name of the attribute.</li>
+                        <li><code>value</code> (String, Number, Function, optional): The value to set, or a function returning the value.</li>
+                    </ul>
+                </li>
+                <li><strong>Returns:</strong> (String, jQuery object) The attribute value if getting, or the jQuery object if setting.</li>
+            </ul>
+        </li>
+        <li>
+            <h4><code>.removeAttr(attributeName)</code></h4>
+            <p><strong>Purpose:</strong> Remove an attribute from each element in the set of matched elements.</p>
+            <ul>
+                <li><strong>Parameters:</strong>
+                    <ul>
+                        <li><code>attributeName</code> (String): The name of the attribute to remove.</li>
+                    </ul>
+                </li>
+                <li><strong>Returns:</strong> The original jQuery object.</li>
+            </ul>
+        </li>
+        <li>
+            <h4><code>.prop(propertyName, value)</code></h4>
+            <p><strong>Purpose:</strong> Get the value of a property for the first element in the set of matched elements or set one or more properties for every matched element.</p>
+            <ul>
+                <li><strong>Parameters:</strong>
+                    <ul>
+                        <li><code>propertyName</code> (String): The name of the property.</li>
+                        <li><code>value</code> (String, Number, Boolean, Function, optional): The value to set, or a function returning the value.</li>
+                    </ul>
+                </li>
+                <li><strong>Returns:</strong> (Any, jQuery object) The property value if getting, or the jQuery object if setting.</li>
+            </ul>
+        </li>
+        <li>
+            <h4><code>.removeProp(propertyName)</code></h4>
+            <p><strong>Purpose:</strong> Remove a property from each element in the set of matched elements.</p>
+            <ul>
+                <li><strong>Parameters:</strong>
+                    <ul>
+                        <li><code>propertyName</code> (String): The name of the property to remove.</li>
+                    </ul>
+                </li>
+                <li><strong>Returns:</strong> The original jQuery object.</li>
+            </ul>
+        </li>
+        <li>
+            <h4><code>.addClass(className)</code></h4>
+            <p><strong>Purpose:</strong> Adds the specified class(es) to each element in the set of matched elements.</p>
+            <ul>
+                <li><strong>Parameters:</strong>
+                    <ul>
+                        <li><code>className</code> (String, Function): One or more class names to add, or a function returning class names.</li>
+                    </ul>
+                </li>
+                <li><strong>Returns:</strong> The original jQuery object.</li>
+            </ul>
+        </li>
+        <li>
+            <h4><code>.removeClass(className)</code></h4>
+            <p><strong>Purpose:</strong> Removes the specified class(es) from each element in the set of matched elements.</p>
+            <ul>
+                <li><strong>Parameters:</strong>
+                    <ul>
+                        <li><code>className</code> (String, Function, optional): One or more class names to remove, or a function returning class names. If omitted, all classes are removed.</li>
+                    </ul>
+                </li>
+                <li><strong>Returns:</strong> The original jQuery object.</li>
+            </ul>
+        </li>
+        <li>
+            <h4><code>.toggleClass(className, state)</code></h4>
+            <p><strong>Purpose:</strong> Adds or removes one or more classes from each element in the set of matched elements, depending on either the class's presence or the value of the state argument.</p>
+            <ul>
+                <li><strong>Parameters:</strong>
+                    <ul>
+                        <li><code>className</code> (String, Function, Boolean, optional): One or more class names to toggle, a function returning class names, or a boolean to force the toggle state.</li>
+                        <li><code>state</code> (Boolean, optional): A boolean value to determine whether the class should be added or removed.</li>
+                    </ul>
+                </li>
+                <li><strong>Returns:</strong> The original jQuery object.</li>
+            </ul>
+        </li>
+        <li>
+            <h4><code>.hasClass(className)</code></h4>
+            <p><strong>Purpose:</strong> Determines whether any of the matched elements are assigned the given class name.</p>
+            <ul>
+                <li><strong>Parameters:</strong>
+                    <ul>
+                        <li><code>className</code> (String): The class name to check for.</li>
+                    </ul>
+                </li>
+                <li><strong>Returns:</strong> (Boolean) <code>true</code> if at least one element has the class, <code>false</code> otherwise.</li>
+            </ul>
+        </li>
+        <li>
+            <h4><code>.val(value)</code></h4>
+            <p><strong>Purpose:</strong> Get the current value of the first element in the set of matched elements or set the value of every matched element.</p>
+            <ul>
+                <li><strong>Parameters:</strong>
+                    <ul>
+                        <li><code>value</code> (String, Number, Array, Function, optional): The value to set, or a function returning the value.</li>
+                    </ul>
+                </li>
+                <li><strong>Returns:</strong> (String, Array, jQuery object) The value if getting, or the jQuery object if setting.</li>
+            </ul>
+        </li>
+        <li>
+            <h4><code>.on(events, selector, data, handler)</code></h4>
+            <p><strong>Purpose:</strong> Attaches one or more event handlers for the selected elements.</p>
+            <ul>
+                <li><strong>Parameters:</strong>
+                    <ul>
+                        <li><code>events</code> (String, Object): One or more space-separated event types, or an object of event types and handlers.</li>
+                        <li><code>selector</code> (String, optional): A selector string to filter the descendants of the selected elements that trigger the event.</li>
+                        <li><code>data</code> (Any, optional): Data to be passed to the handler function.</li>
+                        <li><code>handler</code> (Function): A function to execute when the event is triggered.</li>
+                    </ul>
+                </li>
+                <li><strong>Returns:</strong> The original jQuery object.</li>
+            </ul>
+        </li>
+        <li>
+            <h4><code>.off(events, selector, handler)</code></h4>
+            <p><strong>Purpose:</strong> Removes event handlers that were attached with <code>.on()</code>.</p>
+            <ul>
+                <li><strong>Parameters:</strong>
+                    <ul>
+                        <li><code>events</code> (String, Object, optional): One or more space-separated event types, or an object of event types and handlers.</li>
+                        <li><code>selector</code> (String, optional): A selector string to filter the descendants.</li>
+                        <li><code>handler</code> (Function, optional): The function to remove.</li>
+                    </ul>
+                </li>
+                <li><strong>Returns:</strong> The original jQuery object.</li>
+            </ul>
+        </li>
+        <li>
+            <h4><code>.bind(eventType, eventData, handler)</code></h4>
+            <p><strong>Purpose:</strong> Attaches a handler to an event for the elements. (Deprecated in favor of <code>.on()</code>).</p>
+            <ul>
+                <li><strong>Parameters:</strong>
+                    <ul>
+                        <li><code>eventType</code> (String): One or more space-separated event types.</li>
+                        <li><code>eventData</code> (Any, optional): Data to be passed to the handler function.</li>
+                        <li><code>handler</code> (Function): A function to execute when the event is triggered.</li>
+                    </ul>
+                </li>
+                <li><strong>Returns:</strong> The original jQuery object.</li>
+            </ul>
+        </li>
+        <li>
+            <h4><code>.unbind(eventType, handler)</code></h4>
+            <p><strong>Purpose:</strong> Removes a previously attached event handler from the elements. (Deprecated in favor of <code>.off()</code>).</p>
+            <ul>
+                <li><strong>Parameters:</strong>
+                    <ul>
+                        <li><code>eventType</code> (String, optional): One or more space-separated event types.</li>
+                        <li><code>handler</code> (Function, optional): The function to remove.</li>
+                    </ul>
+                </li>
+                <li><strong>Returns:</strong> The original jQuery object.</li>
+            </ul>
+        </li>
+        <li>
+            <h4><code>.live(eventType, eventData, handler)</code></h4>
+            <p><strong>Purpose:</strong> Attaches an event handler for all elements matching the current selector, now and in the future. (Deprecated in favor of <code>.on()</code> with a selector).</p>
+            <ul>
+                <li><strong>Parameters:</strong>
+                    <ul>
+                        <li><code>eventType</code> (String): One or more space-separated event types.</li>
+                        <li><code>eventData</code> (Any, optional): Data to be passed to the handler function.</li>
+                        <li><code>handler</code> (Function): A function to execute when the event is triggered.</li>
+                    </ul>
+                </li>
+                <li><strong>Returns:</strong> The original jQuery object.</li>
+            </ul>
+        </li>
+        <li>
+            <h4><code>.die(eventType, handler)</code></h4>
+            <p><strong>Purpose:</strong> Removes all event handlers previously attached using <code>.live()</code>. (Deprecated in favor of <code>.
+<section id="Three.js">
+    <h2>Three.js</h2>
+
+    <p>This file appears to be a minified version of an early Three.js library, likely version 49 based on the `REVISION` property. It provides fundamental 3D graphics primitives, math utilities, scene graph components, loaders, and renderers (Canvas, SVG, WebGL).</p>
+
+    <h3>Global Initialization and Polyfills</h3>
+    <ul>
+        <li>
+            <p><code>THREE = THREE || { REVISION: "49" }</code>: Initializes the global <code>THREE</code> object if it doesn't already exist, setting its revision to "49".</p>
+        </li>
+        <li>
+            <p><code>self.Int32Array || (self.Int32Array = Array, self.Float32Array = Array)</code>: Provides polyfills for <code>Int32Array</code> and <code>Float32Array</code>, falling back to standard JavaScript <code>Array</code> if not natively supported. This suggests compatibility with older environments or environments without typed arrays.</p>
+        </li>
+        <li>
+            <p><code>(function(){...})()</code>: An immediately invoked function expression that polyfills <code>window.requestAnimationFrame</code> and <code>window.cancelAnimationFrame</code> for smoother animations across different browser implementations. It checks for vendor-prefixed versions and falls back to <code>setTimeout</code> if no native implementation is found.</p>
+            <ul>
+                <li>**Purpose:** Ensures consistent animation timing.</li>
+                <li>**Parameters (for fallback):**
+                    <ul>
+                        <li><code>callback</code>: A function to call when the animation frame is ready.</li>
+                    </ul>
+                </li>
+                <li>**Returns (for fallback):** A timeout ID that can be used with <code>clearTimeout</code> (acting as <code>cancelAnimationFrame</code>).</li>
+            </ul>
+        </li>
+    </ul>
+
+    <h3>Core Components</h3>
+
+    <h4><code>THREE.Clock</code></h4>
+    <p>A utility class for tracking time, useful for animations and game loops.</p>
+    <ul>
+        <li>
+            <p><code>new THREE.Clock(autoStart)</code></p>
+            <ul>
+                <li>**Purpose:** Creates a new clock instance.</li>
+                <li>**Parameters:**
+                    <ul>
+                        <li><code>autoStart</code> (boolean, optional): If <code>true</code> (default), the clock starts automatically when <code>getDelta()</code> is first called.</li>
+                    </ul>
+                </li>
+            </ul>
+        </li>
+        <li>
+            <p><code>start()</code></p>
+            <ul>
+                <li>**Purpose:** Starts the clock. Sets <code>startTime</code> and <code>oldTime</code> to the current time and sets <code>running</code> to <code>true</code>.</li>
+            </ul>
+        </li>
+        <li>
+            <p><code>stop()</code></p>
+            <ul>
+                <li>**Purpose:** Stops the clock. Calls <code>getElapsedTime()</code> to update the total elapsed time and sets <code>running</code> to <code>false</code>.</li>
+            </ul>
+        </li>
+        <li>
+            <p><code>getElapsedTime()</code></p>
+            <ul>
+                <li>**Purpose:** Returns the total elapsed time since the clock started, and updates it by calling <code>getDelta()</code>.</li>
+                <li>**Returns:** The total elapsed time in seconds.</li>
+            </ul>
+        </li>
+        <li>
+            <p><code>getDelta()</code></p>
+            <ul>
+                <li>**Purpose:** Gets the time difference between the current and the last call to this method. If <code>autoStart</code> is true and the clock isn't running, it starts the clock.</li>
+                <li>**Returns:** The delta time in seconds.</li>
+            </ul>
+        </li>
+    </ul>
+
+    <h4><code>THREE.Color</code></h4>
+    <p>Represents an RGB color. Color components are normalized to the range [0, 1].</p>
+    <ul>
+        <li>
+            <p><code>new THREE.Color(hex)</code></p>
+            <ul>
+                <li>**Purpose:** Creates a new color instance.</li>
+                <li>**Parameters:**
+                    <ul>
+                        <li><code>hex</code> (number, optional): A hexadecimal color value (e.g., 0xFF0000 for red).</li>
+                    </ul>
+                </li>
+            </ul>
+        </li>
+        <li>
+            <p><code>r</code>, <code>g</code>, <code>b</code> (number): Red, Green, and Blue components (0-1).</p>
+        </li>
+        <li>
+            <p><code>copy(color)</code></p>
+            <ul>
+                <li>**Purpose:** Copies the RGB values from another <code>THREE.Color</code> instance.</li>
+                <li>**Parameters:**
+                    <ul>
+                        <li><code>color</code> (THREE.Color): The color to copy from.</li>
+                    </ul>
+                </li>
+                <li>**Returns:** <code>this</code></li>
+            </ul>
+        </li>
+        <li>
+            <p><code>copyGammaToLinear(color)</code></p>
+            <ul>
+                <li>**Purpose:** Copies a gamma-corrected color and converts it to linear space.</li>
+                <li>**Parameters:**
+                    <ul>
+                        <li><code>color</code> (THREE.Color): The gamma-corrected color.</li>
+                    </ul>
+                </li>
+                <li>**Returns:** <code>this</code></li>
+            </ul>
+        </li>
+        <li>
+            <p><code>copyLinearToGamma(color)</code></p>
+            <ul>
+                <li>**Purpose:** Copies a linear color and converts it to gamma space.</li>
+                <li>**Parameters:**
+                    <ul>
+                        <li><code>color</code> (THREE.Color): The linear color.</li>
+                    </ul>
+                </li>
+                <li>**Returns:** <code>this</code></li>
+            </ul>
+        </li>
+        <li>
+            <p><code>convertGammaToLinear()</code></p>
+            <ul>
+                <li>**Purpose:** Converts this color from gamma to linear space in place.</li>
+                <li>**Returns:** <code>this</code></li>
+            </ul>
+        </li>
+        <li>
+            <p><code>convertLinearToGamma()</code></p>
+            <ul>
+                <li>**Purpose:** Converts this color from linear to gamma space in place.</li>
+                <li>**Returns:** <code>this</code></li>
+            </ul>
+        </li>
+        <li>
+            <p><code>setRGB(r, g, b)</code></p>
+            <ul>
+                <li>**Purpose:** Sets the RGB components of the color.</li>
+                <li>**Parameters:**
+                    <ul>
+                        <li><code>r</code> (number): Red component (0-1).</li>
+                        <li><code>g</code> (number): Green component (0-1).</li>
+                        <li><code>b</code> (number): Blue component (0-1).</li>
+                    </ul>
+                </li>
+                <li>**Returns:** <code>this</code></li>
+            </ul>
+        </li>
+        <li>
+            <p><code>setHSV(h, s, v)</code></p>
+            <ul>
+                <li>**Purpose:** Sets the color using HSV (Hue, Saturation, Value) components.</li>
+                <li>**Parameters:**
+                    <ul>
+                        <li><code>h</code> (number): Hue component (0-1).</li>
+                        <li><code>s</code> (number): Saturation component (0-1).</li>
+                        <li><code>v</code> (number): Value component (0-1).</li>
+                    </ul>
+                </li>
+                <li>**Returns:** <code>this</code></li>
+            </ul>
+        </li>
+        <li>
+            <p><code>setHex(hex)</code></p>
+            <ul>
+                <li>**Purpose:** Sets the color using a hexadecimal value.</li>
+                <li>**Parameters:**
+                    <ul>
+                        <li><code>hex</code> (number): Hexadecimal color value.</li>
+                    </ul>
+                </li>
+                <li>**Returns:** <code>this</code></li>
+            </ul>
+        </li>
+        <li>
+            <p><code>lerpSelf(color, alpha)</code></p>
+            <ul>
+                <li>**Purpose:** Linearly interpolates this color towards another color.</li>
+                <li>**Parameters:**
+                    <ul>
+                        <li><code>color</code> (THREE.Color): The target color.</li>
+                        <li><code>alpha</code> (number): The interpolation factor (0-1).</li>
+                    </ul>
+                </li>
+                <li>**Returns:** <code>this</code></li>
+            </ul>
+        </li>
+        <li>
+            <p><code>getHex()</code></p>
+            <ul>
+                <li>**Purpose:** Returns the color as a hexadecimal value.</li>
+                <li>**Returns:** (number)</li>
+            </ul>
+        </li>
+        <li>
+            <p><code>getContextStyle()</code></p>
+            <ul>
+                <li>**Purpose:** Returns the color as an RGB string suitable for Canvas 2D context.</li>
+                <li>**Returns:** (string) e.g., "rgb(255,0,0)"</li>
+            </ul>
+        </li>
+        <li>
+            <p><code>clone()</code></p>
+            <ul>
+                <li>**Purpose:** Creates a new <code>THREE.Color</code> instance with the same RGB values.</li>
+                <li>**Returns:** (THREE.Color)</li>
+            </ul>
+        </li>
+    </ul>
+
+    <h4><code>THREE.Vector2</code></h4>
+    <p>Represents a 2D vector with <code>x</code> and <code>y</code> components.</p>
+    <ul>
+        <li>
+            <p><code>new THREE.Vector2(x, y)</code></p>
+            <ul>
+                <li>**Purpose:** Creates a new 2D vector.</li>
+                <li>**Parameters:**
+                    <ul>
+                        <li><code>x</code> (number, optional): The x-component (default 0).</li>
+                        <li><code>y</code> (number, optional): The y-component (default 0).</li>
+                    </ul>
+                </li>
+            </ul>
+        </li>
+        <li>
+            <p><code>set(x, y)</code>: Sets the vector's components.</p>
+        </li>
+        <li>
+            <p><code>copy(vector)</code>: Copies components from another <code>THREE.Vector2</code>.</p>
+        </li>
+        <li>
+            <p><code>add(vector1, vector2)</code>: Sets this vector to the sum of two other vectors.</p>
+        </li>
+        <li>
+            <p><code>addSelf(vector)</code>: Adds another vector to this vector.</p>
+        </li>
+        <li>
+            <p><code>sub(vector1, vector2)</code>: Sets this vector to the difference of two other vectors.</p>
+        </li>
+        <li>
+            <p><code>subSelf(vector)</code>: Subtracts another vector from this vector.</p>
+        </li>
+        <li>
+            <p><code>multiplyScalar(scalar)</code>: Multiplies this vector by a scalar.</p>
+        </li>
+        <li>
+            <p><code>divideScalar(scalar)</code>: Divides this vector by a scalar. Sets to (0,0) if scalar is 0.</p>
+        </li>
+        <li>
+            <p><code>negate()</code>: Negates this vector (multiplies by -1).</p>
+        </li>
+        <li>
+            <p><code>dot(vector)</code>: Computes the dot product with another vector.</p>
+        </li>
+        <li>
+            <p><code>lengthSq()</code>: Computes the squared length of the vector.</p>
+        </li>
+        <li>
+            <p><code>length()</code>: Computes the length (magnitude) of the vector.</p>
+        </li>
+        <li>
+            <p><code>normalize()</code>: Normalizes this vector (makes its length 1).</p>
+        </li>
+        <li>
+            <p><code>distanceTo(vector)</code>: Computes the distance to another vector.</p>
+        </li>
+        <li>
+            <p><code>distanceToSquared(vector)</code>: Computes the squared distance to another vector.</p>
+        </li>
+        <li>
+            <p><code>setLength(length)</code>: Sets the length of the vector.</p>
+        </li>
+        <li>
+            <p><code>lerpSelf(vector, alpha)</code>: Linearly interpolates this vector towards another vector.</p>
+        </li>
+        <li>
+            <p><code>equals(vector)</code>: Checks if this vector is equal to another vector.</p>
+        </li>
+        <li>
+            <p><code>isZero()</code>: Checks if the vector's length is close to zero.</p>
+        </li>
+        <li>
+            <p><code>clone()</code>: Creates a new <code>THREE.Vector2</code> instance with the same components.</p>
+        </li>
+    </ul>
+
+    <h4><code>THREE.Vector3</code></h4>
+    <p>Represents a 3D vector with <code>x</code>, <code>y</code>, and <code>z</code> components.</p>
+    <ul>
+        <li>
+            <p><code>new THREE.Vector3(x, y, z)</code></p>
+            <ul>
+                <li>**Purpose:** Creates a new 3D vector.</li>
+                <li>**Parameters:**
+                    <ul>
+                        <li><code>x</code> (number, optional): The x-component (default 0).</li>
+                        <li><code>y</code> (number, optional): The y-component (default 0).</li>
+                        <li><code>z</code> (number, optional): The z-component (default 0).</li>
+                    </ul>
+                </li>
+            </ul>
+        </li>
+        <li>
+            <p><code>set(x, y, z)</code>: Sets the vector's components.</p>
+        </li>
+        <li>
+            <p><code>setX(x)</code>, <code>setY(y)</code>, <code>setZ(z)</code>: Sets individual components.</p>
+        </li>
+        <li>
+            <p><code>copy(vector)</code>: Copies components from another <code>THREE.Vector3</code>.</p>
+        </li>
+        <li>
+            <p><code>add(vector1, vector2)</code>: Sets this vector to the sum of two other vectors.</p>
+        </li>
+        <li>
+            <p><code>addSelf(vector)</code>: Adds another vector to this vector.</p>
+        </li>
+        <li>
+            <p><code>addScalar(scalar)</code>: Adds a scalar to all components of this vector.</p>
+        </li>
+        <li>
+            <p><code>sub(vector1, vector2)</code>: Sets this vector to the difference of two other vectors.</p>
+        </li>
+        <li>
+            <p><code>subSelf(vector)</code>: Subtracts another vector from this vector.</p>
+        </li>
+        <li>
+            <p><code>multiply(vector1, vector2)</code>: Sets this vector to the component-wise product of two other vectors.</p>
+        </li>
+        <li>
+            <p><code>multiplySelf(vector)</code>: Multiplies this vector component-wise by another vector.</p>
+        </li>
+        <li>
+            <p><code>multiplyScalar(scalar)</code>: Multiplies this vector by a scalar.</p>
+        </li>
+        <li>
+            <p><code>divideSelf(vector)</code>: Divides this vector component-wise by another vector.</p>
+        </li>
+        <li>
+            <p><code>divideScalar(scalar)</code>: Divides this vector by a scalar. Sets to (0,0,0) if scalar is 0.</p>
+        </li>
+        <li>
+            <p><code>negate()</code>: Negates this vector (multiplies by -1).</p>
+        </li>
+        <li>
+            <p><code>dot(vector)</code>: Computes the dot product with another vector.</p>
+        </li>
+        <li>
+            <p><code>lengthSq()</code>: Computes the squared length of the vector.</p>
+        </li>
+        <li>
+            <p><code>length()</code>: Computes the length (magnitude) of the vector.</p>
+        </li>
+        <li>
+            <p><code>lengthManhattan()</code>: Computes the Manhattan length (sum of absolute components).</p>
+        </li>
+        <li>
+            <p><code>normalize()</code>: Normalizes this vector (makes its length 1).</p>
+        </li>
+        <li>
+            <p><code>setLength(length)</code>: Sets the length of the vector.</p>
+        </li>
+        <li>
+            <p><code>lerpSelf(vector, alpha)</code>: Linearly interpolates this vector towards another vector.</p>
+        </li>
+        <li>
+            <p><code>cross(vector1, vector2)</code>: Sets this vector to the cross product of two other vectors.</p>
+        </li>
+        <li>
+            <p><code>crossSelf(vector)</code>: Computes the cross product of this vector with another vector in place.</p>
+        </li>
+        <li>
+            <p><code>distanceTo(vector)</code>: Computes the distance to another vector.</p>
+        </li>
+        <li>
+            <p><code>distanceToSquared(vector)</code>: Computes the squared distance to another vector.</p>
+        </li>
+        <li>
+            <p><code>getPositionFromMatrix(matrix)</code>: Extracts the position component from a 4x4 matrix.</p>
+        </li>
+        <li>
+            <p><code>getRotationFromMatrix(matrix, scale)</code>: Extracts the rotation component from a 4x4 matrix, optionally considering scale.</p>
+        </li>
+        <li>
+            <p><code>get
+    </main>
+</body>
+</html>
