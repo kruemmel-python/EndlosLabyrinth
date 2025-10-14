@@ -1352,8 +1352,31 @@
                 if (typeof window.orientation === 'number') {
                     return window.orientation;
                 }
-                if (window.screen && window.screen.orientation && typeof window.screen.orientation.angle === 'number') {
-                    return window.screen.orientation.angle;
+                if (window.screen && window.screen.orientation) {
+                    if (typeof window.screen.orientation.angle === 'number') {
+                        return window.screen.orientation.angle;
+                    }
+                    var orientationType = window.screen.orientation.type;
+                    if (typeof orientationType === 'string') {
+                        if (orientationType.indexOf('landscape-primary') === 0) {
+                            return 90;
+                        }
+                        if (orientationType.indexOf('landscape-secondary') === 0) {
+                            return -90;
+                        }
+                        if (orientationType.indexOf('portrait-secondary') === 0) {
+                            return 180;
+                        }
+                        if (orientationType.indexOf('portrait-primary') === 0) {
+                            return 0;
+                        }
+                    }
+                }
+                if (window.matchMedia) {
+                    var landscapeQuery = window.matchMedia('(orientation: landscape)');
+                    if (landscapeQuery && landscapeQuery.matches) {
+                        return window.innerWidth > window.innerHeight ? 90 : 0;
+                    }
                 }
                 return 0;
             }
