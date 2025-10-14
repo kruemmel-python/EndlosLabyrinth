@@ -1,12 +1,13 @@
 # Endlos Labyrinth
 
-Endlos Labyrinth ist ein experimentelles 2D-Actionspiel, das vollständig im Browser läuft. Du navigierst durch ein prozedural wirkendes Labyrinth, weichst patrouillierenden NPCs aus und sammelst verschiedene Power-ups ein. Die Benutzeroberfläche kombiniert einen Startbildschirm mit Branding, einen Spielmodus mit HUD sowie einen Lehrmodus zum Üben der Steuerung.
+Endlos Labyrinth ist ein experimentelles 2D-Actionspiel, das vollständig im Browser läuft. Du navigierst durch ein Labyrinth mit festen Hindernissen, weichst patrouillierenden NPCs aus und sammelst verschiedene Power-ups ein. Die Benutzeroberfläche kombiniert einen Startbildschirm mit Branding, einen Spielmodus mit HUD sowie einen Lehrmodus zum Üben der Steuerung.
 
 ## Features
 
 - **Startmenü mit Branding:** Ein von Retro-Arcades inspiriertes Menü mit Logo, Tagline und Buttons für Spielstart, Einstellungen und Lehrmodus.
+- **Bewährtes Labyrinth:** Das bestehende Layout mit festen Hindernissen bleibt erhalten und wurde um Interaktionen erweitert.
 - **Spielmechaniken:** Sprint-, Verlangsamungs- und Sprung-Items beeinflussen deine Bewegung, sobald sie eingesammelt wurden.
-- **NPC-Verhalten:** Gegnerische Patrouillen bewegen sich entlang festgelegter Routen und interagieren physikalisch mittels Box2D.
+- **NPC-Verhalten:** Gegnerische Patrouillen bewegen sich entlang festgelegter Routen und reagieren auf Kollisionen, indem sie ihre Patrouillenrichtung wechseln.
 - **HUD & Feedback:** Die Oberfläche informiert über aktive Status-Effekte und blendet Toast-Nachrichten ein, wenn Items eingesammelt oder Effekte aktiv werden.
 - **Lehrmodus:** Ein stressfreier Modus, in dem du Items ausprobieren kannst, ohne von NPCs verfolgt zu werden.
 
