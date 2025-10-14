@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="de">
+  <head>
+    <meta charset="utf-8">
+    <title>Endloses Labyrinth</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+  </head>
+  <body>
+    <header>
+      <h1>Endloses Labyrinth</h1>
+      <p>Führe den Abenteurer durch das Labyrinth zum Ausgang. Benutze die Buttons oder die Pfeiltasten deiner Tastatur.</p>
+    </header>
+
+    <main>
+      <section class="info">
+        <div class="counter">
+          <strong>Züge:</strong> {{ state.moves }}
+        </div>
+        {% if won %}
+          <div class="status status--won">Geschafft! Drücke „Neues Labyrinth“, um weiterzuspielen.</div>
+        {% else %}
+          <div class="status">Finde den Weg zum Ausgang.</div>
+        {% endif %}
+        <form method="post" action="{{ url_for('reset') }}">
+          <button type="submit" class="button button--reset">Neues Labyrinth</button>
+        </form>
+      </section>
+
+      <section class="labyrinth" aria-label="Labyrinth">
+        <table>
+          <tbody>
+            {% for row in state.maze %}
+              {% set row_index = loop.index0 %}
+              <tr>
+                {% for cell in row %}
+                  {% set col_index = loop.index0 %}
+                  {% set key = row_index ~ ':' ~ col_index %}
+                  {% set is_player = state.player == (row_index, col_index) %}
+                  {% set is_goal = state.goal == (row_index, col_index) %}
+                  {% set is_visited = key in state.visited %}
+                  <td class="cell
+                             {% if cell == 1 %} cell--wall{% endif %}
+                             {% if is_player %} cell--player{% endif %}
+                             {% if is_goal %} cell--goal{% endif %}
+                             {% if is_visited and not is_player and not is_goal %} cell--visited{% endif %}
+                           "
+                      data-row="{{ row_index }}" data-col="{{ col_index }}">
+                    {% if is_player %}
+                      <span class="emoji" aria-label="Spieler">🧭</span>
+                    {% elif is_goal %}
+                      <span class="emoji" aria-label="Ausgang">⭐</span>
+                    {% endif %}
+                  </td>
+                {% endfor %}
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </section>
+
+      <section class="controls">
+        <form class="controls__grid" method="post" action="{{ url_for('move') }}">
+          <div></div>
+          <button class="button" type="submit" name="direction" value="up">⬆️</button>
+          <div></div>
+          <button class="button" type="submit" name="direction" value="left">⬅️</button>
+          <div></div>
+          <button class="button" type="submit" name="direction" value="right">➡️</button>
+          <div></div>
+          <button class="button" type="submit" name="direction" value="down">⬇️</button>
+          <div></div>
+        </form>
+      </section>
+    </main>
+
+    <footer>
+      <p>Tipp: Jeder Klick erzeugt einen neuen, zufälligen Irrgarten. Beobachte, wie sich die Struktur verändert!</p>
+    </footer>
+
+    <script>
+      document.addEventListener('keydown', (event) => {
+        const mapping = {
+          'ArrowUp': 'up',
+          'ArrowDown': 'down',
+          'ArrowLeft': 'left',
+          'ArrowRight': 'right'
+        };
+        const direction = mapping[event.key];
+        if (!direction) {
+          return;
+        }
+        event.preventDefault();
+        const formData = new FormData();
+        formData.append('direction', direction);
+        fetch('{{ url_for('move') }}', {
+          method: 'POST',
+          body: formData,
+        }).then(() => window.location.reload());
+      });
+    </script>
+  </body>
+</html>

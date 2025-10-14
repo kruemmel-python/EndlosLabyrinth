@@ -1,0 +1,148 @@
+:root {
+  --wall-color: #2c3e50;
+  --path-color: #f7f7f7;
+  --visited-color: #c5e1a5;
+  --player-color: #2980b9;
+  --goal-color: #f1c40f;
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  background: linear-gradient(120deg, #1c2833, #34495e);
+  color: #ecf0f1;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+header, footer {
+  text-align: center;
+  padding: 1rem;
+  max-width: 780px;
+}
+
+main {
+  flex: 1;
+  width: 100%;
+  max-width: 780px;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  padding: 0 1rem 2rem;
+  box-sizing: border-box;
+}
+
+.info {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  align-items: center;
+  justify-content: space-between;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+}
+
+.status {
+  flex: 1 1 200px;
+}
+
+.status--won {
+  color: #2ecc71;
+  font-weight: 600;
+}
+
+.button {
+  background: rgba(255, 255, 255, 0.1);
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  color: inherit;
+  font-size: 1.5rem;
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.2s ease, transform 0.1s ease;
+}
+
+.button:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.button:active {
+  transform: scale(0.96);
+}
+
+.button--reset {
+  font-size: 1rem;
+}
+
+.labyrinth {
+  display: flex;
+  justify-content: center;
+}
+
+.labyrinth table {
+  border-collapse: collapse;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.3);
+}
+
+.cell {
+  width: 32px;
+  height: 32px;
+  background: var(--path-color);
+  border: 1px solid rgba(0, 0, 0, 0.2);
+  text-align: center;
+  vertical-align: middle;
+}
+
+.cell--wall {
+  background: var(--wall-color);
+}
+
+.cell--visited {
+  background: var(--visited-color);
+}
+
+.cell--player {
+  background: var(--player-color);
+}
+
+.cell--goal {
+  background: var(--goal-color);
+}
+
+.emoji {
+  font-size: 1.2rem;
+  line-height: 32px;
+}
+
+.controls {
+  display: flex;
+  justify-content: center;
+}
+
+.controls__grid {
+  display: grid;
+  grid-template-columns: repeat(3, 60px);
+  grid-template-rows: repeat(3, 60px);
+  gap: 0.5rem;
+}
+
+@media (max-width: 600px) {
+  .cell {
+    width: 24px;
+    height: 24px;
+  }
+
+  .emoji {
+    line-height: 24px;
+  }
+
+  .controls__grid {
+    grid-template-columns: repeat(3, 50px);
+    grid-template-rows: repeat(3, 50px);
+  }
+}
