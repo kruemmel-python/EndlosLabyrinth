@@ -1,0 +1,506 @@
+
+body {
+background: black;
+margin: 0;
+padding: 0;
+font-family: 'Helvetica';
+}
+
+#instructions {
+background-color: rgba(0,0,0,0.75);
+color: white;
+text-align: center;
+padding: 32px;
+margin: 0px;
+display: inline;
+border: 2px solid white;
+}
+
+#help {
+position: absolute;
+left: 0px;
+bottom: 0px;
+padding: 4px;
+color: white;
+}
+
+#level {
+position: absolute;
+left: 0px;
+top: 0px;
+padding: 4px;
+color: yellow;
+font-weight: bold;
+}
+
+#coin-counter {
+position: absolute;
+left: 0px;
+top: 28px;
+padding: 4px;
+color: #ffd700;
+font-weight: bold;
+z-index: 4100;
+display: none;
+}
+
+#victory {
+position: absolute;
+right: 0px;
+bottom: 0px;
+padding: 8px 16px;
+margin: 12px;
+background: rgba(0,0,0,0.7);
+color: #8cff8c;
+font-weight: bold;
+border: 1px solid #8cff8c;
+display: none;
+max-width: 320px;
+text-align: right;
+z-index: 4000;
+}
+
+#menu-button {
+position: absolute;
+top: 8px;
+right: 8px;
+padding: 6px 12px;
+background: rgba(0,0,0,0.7);
+color: white;
+border: 1px solid #8a8a8a;
+border-radius: 4px;
+font-size: 12px;
+cursor: pointer;
+z-index: 4100;
+display: none;
+user-select: none;
+}
+
+#menu-button:hover {
+background: rgba(70, 70, 70, 0.8);
+}
+
+#inventory-button,
+#shop-button {
+position: absolute;
+right: 8px;
+padding: 6px 12px;
+background: rgba(0,0,0,0.7);
+color: white;
+border: 1px solid #8a8a8a;
+border-radius: 4px;
+font-size: 12px;
+cursor: pointer;
+z-index: 4095;
+display: none;
+user-select: none;
+}
+
+#inventory-button {
+top: 40px;
+}
+
+#shop-button {
+top: 72px;
+}
+
+#inventory-button:hover,
+#shop-button:hover {
+background: rgba(70, 70, 70, 0.8);
+}
+
+#touch-controls {
+position: fixed;
+bottom: 16px;
+left: 50%;
+width: 160px;
+height: 120px;
+transform: translateX(-50%);
+display: none;
+z-index: 4200;
+pointer-events: none;
+}
+
+#touch-controls .touch-control-button {
+position: absolute;
+width: 52px;
+height: 52px;
+border-radius: 50%;
+background: rgba(0, 0, 0, 0.6);
+color: #ffffff;
+border: 1px solid rgba(255, 255, 255, 0.4);
+font-size: 24px;
+display: flex;
+align-items: center;
+justify-content: center;
+touch-action: none;
+pointer-events: auto;
+box-shadow: 0 3px 8px rgba(0, 0, 0, 0.45);
+transition: background 0.15s ease, transform 0.15s ease;
+}
+
+#touch-controls .touch-control-button:active {
+background: rgba(80, 80, 80, 0.85);
+transform: scale(0.95) translateZ(0);
+}
+
+#touch-controls .touch-control-button:focus-visible {
+outline: 2px solid #8cff8c;
+outline-offset: 2px;
+}
+
+#touch-controls .touch-up {
+top: 0;
+left: 50%;
+transform: translate(-50%, 0);
+}
+
+#touch-controls .touch-down {
+bottom: 0;
+left: 50%;
+transform: translate(-50%, 0);
+}
+
+#touch-controls .touch-left {
+left: 0;
+top: 50%;
+transform: translate(0, -50%);
+}
+
+#touch-controls .touch-right {
+right: 0;
+top: 50%;
+transform: translate(0, -50%);
+}
+
+@media (hover: none) and (pointer: coarse) {
+#touch-controls {
+display: block;
+}
+}
+
+@media (max-width: 480px) {
+#touch-controls {
+width: 140px;
+height: 110px;
+}
+
+#touch-controls .touch-control-button {
+width: 46px;
+height: 46px;
+font-size: 20px;
+}
+}
+
+.menu-overlay {
+position: fixed;
+top: 0;
+left: 0;
+width: 100%;
+height: 100%;
+background: rgba(0,0,0,0.9);
+color: white;
+display: none;
+z-index: 9000;
+overflow-y: auto;
+padding: 20px 12px 40px;
+}
+
+.menu-panel {
+max-width: 540px;
+margin: 60px auto;
+background: rgba(20,20,20,0.85);
+border-radius: 10px;
+padding: 24px 32px;
+border: 1px solid #444;
+box-shadow: 0 0 24px rgba(0,0,0,0.6);
+}
+
+.menu-panel h1,
+.menu-panel h2 {
+margin-top: 0;
+margin-bottom: 12px;
+}
+
+.menu-section {
+margin-bottom: 18px;
+}
+
+.menu-panel label {
+display: block;
+margin-bottom: 6px;
+font-weight: bold;
+}
+
+.menu-panel input[type='text'],
+.menu-panel select {
+width: 100%;
+padding: 8px 10px;
+border-radius: 4px;
+background: #121212;
+color: white;
+border: 1px solid #555;
+box-sizing: border-box;
+}
+
+.menu-message {
+display: none;
+margin-top: 8px;
+margin-bottom: 8px;
+}
+
+#inventory-message {
+color: #8cff8c;
+}
+
+#shop-message {
+color: #8cff8c;
+}
+
+.inventory-balance {
+font-weight: bold;
+margin-bottom: 12px;
+}
+
+.inventory-section {
+margin-bottom: 18px;
+}
+
+.inventory-empty {
+font-style: italic;
+color: rgba(255,255,255,0.6);
+}
+
+#inventory-booster-list {
+list-style: none;
+padding: 0;
+margin: 0;
+}
+
+#inventory-booster-list li {
+display: flex;
+justify-content: space-between;
+align-items: center;
+margin-bottom: 8px;
+gap: 12px;
+}
+
+.inventory-booster-label {
+flex: 1;
+}
+
+#inventory-booster-list button,
+#inventory-use-bomb,
+#inventory-open-shop,
+#inventory-close,
+#shop-items .shop-buy,
+#shop-back,
+#shop-close {
+padding: 6px 12px;
+font-size: 12px;
+}
+
+#shop-items {
+list-style: none;
+padding: 0;
+margin: 16px 0;
+}
+
+#shop-items .shop-item {
+border: 1px solid rgba(255,255,255,0.12);
+border-radius: 6px;
+padding: 12px;
+margin-bottom: 12px;
+background: rgba(0,0,0,0.35);
+}
+
+.shop-item-header {
+font-weight: bold;
+margin-bottom: 4px;
+}
+
+.shop-item-description {
+font-size: 14px;
+margin-bottom: 6px;
+color: rgba(255,255,255,0.8);
+}
+
+.shop-item-cost {
+font-size: 13px;
+margin-bottom: 10px;
+color: #ffd700;
+}
+
+.menu-panel input[type='text']::placeholder {
+color: #888;
+}
+
+.menu-buttons {
+display: flex;
+flex-direction: column;
+gap: 10px;
+margin-top: 16px;
+}
+
+.menu-buttons button,
+.menu-panel button {
+padding: 10px 14px;
+border: none;
+border-radius: 4px;
+font-weight: bold;
+cursor: pointer;
+background: #2a7fff;
+color: white;
+transition: background 0.2s ease;
+}
+
+.menu-buttons button:hover,
+.menu-panel button:hover {
+background: #4a92ff;
+}
+
+.menu-buttons button:disabled,
+.menu-panel button:disabled {
+background: #555;
+cursor: not-allowed;
+}
+
+.menu-panel button.secondary {
+background: #444;
+}
+
+.menu-panel button.secondary:hover {
+background: #5b5b5b;
+}
+
+.menu-panel button.danger {
+background: #d14b4b;
+}
+
+.menu-panel button.danger:hover {
+background: #df5f5f;
+}
+
+#menu-message {
+min-height: 18px;
+color: #ffa0a0;
+}
+
+#current-player-info {
+margin-top: 8px;
+font-size: 14px;
+}
+
+#current-player-info .player-status {
+font-weight: 600;
+}
+
+#current-player-info .developer-credit {
+margin-top: 4px;
+font-size: 12px;
+color: rgba(255,255,255,0.7);
+}
+
+#resume-game {
+display: none;
+}
+
+#start-menu-toplist {
+margin: 12px 0 0 18px;
+padding: 0;
+list-style: decimal;
+}
+
+#start-menu-toplist li {
+margin-bottom: 6px;
+}
+
+#settings-menu label {
+font-weight: normal;
+}
+
+#settings-menu .settings-group {
+margin-bottom: 16px;
+}
+
+#settings-menu .settings-note {
+margin-top: 6px;
+font-size: 13px;
+color: #bbbbbb;
+line-height: 1.4;
+}
+
+.keybinding-grid {
+display: grid;
+grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+gap: 10px 16px;
+margin-top: 10px;
+}
+
+.keybinding-row {
+display: flex;
+align-items: center;
+justify-content: space-between;
+gap: 10px;
+}
+
+.keybinding-label {
+font-size: 14px;
+}
+
+.keybinding-button {
+background: #1f1f1f;
+border: 1px solid #555;
+color: #f4f4f4;
+font-weight: bold;
+padding: 8px 12px;
+min-width: 120px;
+transition: background 0.2s ease, border-color 0.2s ease;
+}
+
+.keybinding-button:hover {
+background: #2b2b2b;
+border-color: #6b6b6b;
+}
+
+.keybinding-button.waiting {
+background: #2b3a5b;
+border-color: #6f8bff;
+animation: keybindingPulse 1s ease-in-out infinite alternate;
+}
+
+@keyframes keybindingPulse {
+from { box-shadow: 0 0 0 rgba(111, 139, 255, 0.0); }
+to { box-shadow: 0 0 8px rgba(111, 139, 255, 0.6); }
+}
+
+.keybinding-reset {
+margin-top: 12px;
+align-self: flex-start;
+}
+
+#scoreboard-menu table {
+width: 100%;
+border-collapse: collapse;
+margin-top: 12px;
+}
+
+#scoreboard-menu th,
+#scoreboard-menu td {
+border: 1px solid #555;
+padding: 8px;
+text-align: left;
+}
+
+#scoreboard-menu th {
+background: rgba(255,255,255,0.05);
+}
+
+#scoreboard-menu tr:nth-child(even) {
+background: rgba(255,255,255,0.03);
+}
+
+#scoreboard-menu tr.active-player {
+background: rgba(42,127,255,0.35);
+}
+
