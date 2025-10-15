@@ -539,7 +539,7 @@
         <li><code>victoryLlmDefaults</code>: Default configuration for the AI-powered victory message feature.</li>
         <li><code>victoryDisplayDurationMs</code>: Duration for which victory messages are displayed.</li>
         <li><code>STORAGE_KEY_PLAYERS</code>, <code>STORAGE_KEY_SETTINGS</code>, <code>STORAGE_KEY_CURRENT_PLAYER</code>: Keys for localStorage to persist game data.</li>
-        <li><code>defaultSettings</code>: Default game settings.</li>
+        <li><code>defaultSettings</code>: Default game settings, covering language, the tilt toggle, and a <code>keyBindings</code> map for configurable movement controls.</li>
         <li><code>players</code>, <code>currentPlayer</code>: Arrays and objects managing player profiles and the currently active player.</li>
         <li><code>hasStartedGame</code>: Boolean indicating if a game has been started.</li>
         <li><code>previousGameState</code>: Stores the game state before pausing to the menu.</li>
@@ -632,6 +632,49 @@
                 <li><code>obj</code> (object): The object to clone.</li>
             </ul>
             <p><strong>Returns:</strong> A deep copy of the object, or <code>null</code> if input is null or cloning fails.</p>
+        </li>
+        <li>
+            <h3><code>sanitizeKeyBindings(bindings)</code></h3>
+            <p>Normalizes a movement key mapping, falling back to defaults for missing or unsupported keys.</p>
+            <ul>
+                <li><code>bindings</code> (object): Direction-to-key mapping to sanitize.</li>
+            </ul>
+            <p><strong>Returns:</strong> A normalized mapping with <code>up</code>, <code>down</code>, <code>left</code>, and <code>right</code> keys.</p>
+        </li>
+        <li>
+            <h3><code>cloneKeyBindings(bindings)</code></h3>
+            <p>Creates a sanitized clone of a key-binding map so UI code can edit it without mutating saved settings.</p>
+            <ul>
+                <li><code>bindings</code> (object): The source binding map.</li>
+            </ul>
+            <p><strong>Returns:</strong> A deep copy of the normalized binding map.</p>
+        </li>
+        <li>
+            <h3><code>formatKeyBindingDisplay(key)</code></h3>
+            <p>Formats a binding key into a human-friendly label (e.g., arrows render as directional glyphs, letters uppercase).</p>
+            <ul>
+                <li><code>key</code> (string): Canonical KeyboardJS key token.</li>
+            </ul>
+            <p><strong>Returns:</strong> A display string for settings buttons.</p>
+        </li>
+        <li>
+            <h3><code>applyCustomKeyBindings()</code></h3>
+            <p>Clears the previous custom axis binding and registers the currently selected movement keys with KeyboardJS.</p>
+        </li>
+        <li>
+            <h3><code>beginKeybindingCapture(direction, button)</code></h3>
+            <p>Puts the settings UI into capture mode so the next key press remaps the requested direction.</p>
+            <ul>
+                <li><code>direction</code> (string): One of <code>'up'</code>, <code>'down'</code>, <code>'left'</code>, or <code>'right'</code>.</li>
+                <li><code>button</code> (HTMLElement): The button that initiated capture (used for styling).</li>
+            </ul>
+        </li>
+        <li>
+            <h3><code>cancelKeybindingCapture(options)</code></h3>
+            <p>Exits capture mode without changing bindings. Optionally shows a cancellation message.</p>
+            <ul>
+                <li><code>options</code> (object, optional): <code>{ showCancelled: boolean }</code>.</li>
+            </ul>
         </li>
         <li>
             <h3><code>showMenuMessage(text)</code></h3>

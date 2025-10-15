@@ -34,6 +34,14 @@
                 tiltSmoothingFactor = 0.2,
                 tiltMaxAngle = 35,
                 tiltDeadZone = 3,
+                keyBindingDirections = ['up', 'down', 'left', 'right'],
+                arrowAxisBinding = null,
+                customAxisBinding = null,
+                settingsKeyBindingDraft = null,
+                awaitingKeyBindingDirection = null,
+                awaitingKeyBindingButton = null,
+                keybindingMessageOverride = null,
+                keybindingMessageTimeout = null,
                 ironTexture    = undefined,
                 planeTexture   = undefined,
                 brickTexture   = undefined,
@@ -119,7 +127,18 @@
                             tiltEnabled: 'Bewegungssteuerung ist aktiv. Neige dein Gerät, um die Kugel zu steuern.',
                             tiltDisabled: 'Bewegungssteuerung ist deaktiviert.',
                             tiltUnavailable: 'Bewegungssteuerung wird auf diesem Gerät nicht unterstützt.',
-                            tiltNeedsPermission: 'Tippe, um die Bewegungssteuerung zu aktivieren (Erlaubnis erforderlich).'
+                            tiltNeedsPermission: 'Tippe, um die Bewegungssteuerung zu aktivieren (Erlaubnis erforderlich).',
+                            keybindingHeading: 'Tastenbelegung',
+                            keybindingInstruction: 'Tippe auf eine Richtung und drücke anschließend die gewünschte Taste.',
+                            keybindingUp: 'Nach oben',
+                            keybindingDown: 'Nach unten',
+                            keybindingLeft: 'Nach links',
+                            keybindingRight: 'Nach rechts',
+                            keybindingWaiting: 'Taste drücken...',
+                            keybindingReset: 'Standardtasten wiederherstellen',
+                            keybindingDuplicate: 'Mehrere Richtungen nutzen dieselbe Taste. Dies kann die Steuerung erschweren.',
+                            keybindingUnsupported: 'Diese Taste wird nicht unterstützt. Bitte versuche es erneut.',
+                            keybindingCancelled: 'Tastenzuordnung abgebrochen.'
                         },
                         language: {
                             de: 'Deutsch',
@@ -136,7 +155,7 @@
                             entry: '{rank}. {name} - Level {level} ({time})'
                         },
                         instructions: {
-                            text: '<strong>So spielst du Astray:</strong><br><br>Nutze die Pfeiltasten oder WASD, um die Kugel zu steuern und den Ausgang zu finden.<br><br>Auf Geräten mit Bewegungssensor kannst du dein Gerät neigen, um die Kugel zu bewegen.<br><br>Auf Touch-Geräten findest du am unteren Bildschirmrand zusätzliche Pfeile zur Steuerung.<br><br>Drücke die Taste B, um dein Inventar zu öffnen, Booster zu aktivieren oder den Shop zu besuchen.'
+                            text: '<strong>So spielst du Astray:</strong><br><br>Nutze die Pfeiltasten oder WASD, um die Kugel zu steuern und den Ausgang zu finden.<br><br>Über das Einstellungsmenü kannst du die Tastenbelegung anpassen.<br><br>Auf Geräten mit Bewegungssensor kannst du dein Gerät neigen, um die Kugel zu bewegen.<br><br>Auf Touch-Geräten findest du am unteren Bildschirmrand zusätzliche Pfeile zur Steuerung.<br><br>Drücke die Taste B, um dein Inventar zu öffnen, Booster zu aktivieren oder den Shop zu besuchen.'
                         },
                         help: 'Halte die Taste "I" für Anweisungen gedrückt.',
                         victory: {
@@ -271,7 +290,18 @@
                             tiltEnabled: 'Motion controls are enabled. Tilt your device to move the ball.',
                             tiltDisabled: 'Motion controls are off.',
                             tiltUnavailable: 'Motion controls are not supported on this device.',
-                            tiltNeedsPermission: 'Tap to enable motion controls (permission required).'
+                            tiltNeedsPermission: 'Tap to enable motion controls (permission required).',
+                            keybindingHeading: 'Key bindings',
+                            keybindingInstruction: 'Tap a direction and then press the desired key.',
+                            keybindingUp: 'Up',
+                            keybindingDown: 'Down',
+                            keybindingLeft: 'Left',
+                            keybindingRight: 'Right',
+                            keybindingWaiting: 'Press a key...',
+                            keybindingReset: 'Restore default keys',
+                            keybindingDuplicate: 'Multiple directions share the same key. This may make movement harder.',
+                            keybindingUnsupported: 'That key is not supported. Please try again.',
+                            keybindingCancelled: 'Key assignment cancelled.'
                         },
                         language: {
                             de: 'German',
@@ -288,7 +318,7 @@
                             entry: '{rank}. {name} - Level {level} ({time})'
                         },
                         instructions: {
-                            text: '<strong>How to play Astray:</strong><br><br>Use the arrow keys or WASD to move the ball and find the exit.<br><br>Devices with motion sensors let you tilt to move the ball.<br><br>Touch devices display small on-screen arrows near the bottom for easy steering.<br><br>Press the B key to open your inventory, trigger boosters, or visit the shop.'
+                            text: '<strong>How to play Astray:</strong><br><br>Use the arrow keys or WASD to move the ball and find the exit.<br><br>Use the Settings menu to remap your movement keys.<br><br>Devices with motion sensors let you tilt to move the ball.<br><br>Touch devices display small on-screen arrows near the bottom for easy steering.<br><br>Press the B key to open your inventory, trigger boosters, or visit the shop.'
                         },
                         help: 'Hold down the "I" key for instructions.',
                         victory: {
@@ -476,8 +506,48 @@
             var defaultSettings = {
                 victoryLlmEnabled: true,
                 language: 'de',
-                tiltControlEnabled: false
+                tiltControlEnabled: false,
+                keyBindings: {
+                    up: 'w',
+                    down: 's',
+                    left: 'a',
+                    right: 'd'
+                }
             };
+
+            var allowedKeyBindingMap = (function() {
+                var base = {
+                    up: true,
+                    down: true,
+                    left: true,
+                    right: true,
+                    space: true,
+                    enter: true,
+                    shift: true,
+                    ctrl: true,
+                    alt: true,
+                    meta: true,
+                    tab: true,
+                    home: true,
+                    end: true,
+                    pageup: true,
+                    pagedown: true,
+                    insert: true,
+                    delete: true,
+                    capslock: true
+                };
+                for (var i = 0; i <= 9; i++) {
+                    base[i.toString()] = true;
+                    base['num' + i] = true;
+                }
+                for (var code = 65; code <= 90; code++) {
+                    base[String.fromCharCode(code).toLowerCase()] = true;
+                }
+                for (var f = 1; f <= 12; f++) {
+                    base['f' + f] = true;
+                }
+                return base;
+            })();
 
             var players = [],
                 currentPlayer = null,
@@ -565,6 +635,329 @@
                 } catch (err) {
                     return null;
                 }
+            }
+
+
+            function canonicalKeyName(raw) {
+                if (raw === undefined || raw === null) {
+                    return '';
+                }
+                var key = raw.toString().trim().toLowerCase();
+                if (!key) {
+                    return '';
+                }
+                var aliasMap = {
+                    arrowup: 'up',
+                    arrowdown: 'down',
+                    arrowleft: 'left',
+                    arrowright: 'right',
+                    spacebar: 'space',
+                    ' ': 'space',
+                    space: 'space',
+                    control: 'ctrl',
+                    option: 'alt',
+                    altgraph: 'alt',
+                    command: 'meta',
+                    windows: 'meta',
+                    win: 'meta',
+                    os: 'meta',
+                    return: 'enter',
+                    escape: 'escape',
+                    esc: 'escape'
+                };
+                if (aliasMap[key]) {
+                    return aliasMap[key];
+                }
+                if (key.indexOf('key') === 0 && key.length === 4) {
+                    return key.substring(3);
+                }
+                if (key.indexOf('digit') === 0 && key.length === 6) {
+                    return key.substring(5);
+                }
+                if (key.indexOf('numpad') === 0 && key.length === 7) {
+                    return 'num' + key.substring(6);
+                }
+                if (key.indexOf('arrow') === 0 && key.length > 5) {
+                    return key.substring(5);
+                }
+                return key;
+            }
+
+
+            function normalizeKeyBindingValue(value) {
+                var key = canonicalKeyName(value);
+                if (!key) {
+                    return '';
+                }
+                if (allowedKeyBindingMap[key]) {
+                    return key;
+                }
+                return '';
+            }
+
+
+            function normalizeKeyFromEvent(event) {
+                if (!event) {
+                    return '';
+                }
+                var key = normalizeKeyBindingValue(event.key);
+                if (key) {
+                    return key;
+                }
+                key = normalizeKeyBindingValue(event.code);
+                if (key) {
+                    return key;
+                }
+                if (typeof event.which === 'number') {
+                    var fallback = normalizeKeyBindingValue(String.fromCharCode(event.which));
+                    if (fallback) {
+                        return fallback;
+                    }
+                }
+                return '';
+            }
+
+
+            function sanitizeKeyBindings(bindings) {
+                var source = (bindings && typeof bindings === 'object') ? bindings : {};
+                var sanitized = {};
+                keyBindingDirections.forEach(function(direction) {
+                    var normalized = normalizeKeyBindingValue(source[direction]);
+                    if (!normalized) {
+                        normalized = defaultSettings.keyBindings[direction];
+                    }
+                    sanitized[direction] = normalized;
+                });
+                return sanitized;
+            }
+
+
+            function cloneKeyBindings(bindings) {
+                var sanitized = sanitizeKeyBindings(bindings);
+                var clone = {};
+                keyBindingDirections.forEach(function(direction) {
+                    clone[direction] = sanitized[direction];
+                });
+                return clone;
+            }
+
+
+            function formatKeyBindingDisplay(key) {
+                if (!key) {
+                    return '—';
+                }
+                var displayMap = {
+                    up: '↑',
+                    down: '↓',
+                    left: '←',
+                    right: '→',
+                    space: 'Space',
+                    enter: 'Enter',
+                    shift: 'Shift',
+                    ctrl: 'Ctrl',
+                    alt: 'Alt',
+                    meta: 'Meta',
+                    tab: 'Tab',
+                    home: 'Home',
+                    end: 'End',
+                    pageup: 'Page Up',
+                    pagedown: 'Page Down',
+                    insert: 'Insert',
+                    delete: 'Delete',
+                    capslock: 'Caps Lock'
+                };
+                if (displayMap[key]) {
+                    return displayMap[key];
+                }
+                if (/^f\d{1,2}$/i.test(key)) {
+                    return key.toUpperCase();
+                }
+                if (/^num\d$/.test(key)) {
+                    return key.toUpperCase();
+                }
+                if (key.length === 1) {
+                    return key.toUpperCase();
+                }
+                return key.replace(/^(\w)/, function(match, p1) {
+                    return p1 ? p1.toUpperCase() : match;
+                });
+            }
+
+
+            function hasDuplicateKeyBindings(bindings) {
+                if (!bindings) {
+                    return false;
+                }
+                var seen = {};
+                var duplicate = false;
+                keyBindingDirections.forEach(function(direction) {
+                    var key = bindings[direction];
+                    if (!key) {
+                        return;
+                    }
+                    if (seen[key]) {
+                        duplicate = true;
+                    } else {
+                        seen[key] = true;
+                    }
+                });
+                return duplicate;
+            }
+
+
+            function updateSettingsKeyBindingMessage() {
+                if (!window.jQuery) {
+                    return;
+                }
+                var messageEl = jQuery('#settings-keybinding-message');
+                if (!messageEl.length) {
+                    return;
+                }
+                if (keybindingMessageOverride) {
+                    messageEl.text(t(keybindingMessageOverride));
+                    return;
+                }
+                if (settingsKeyBindingDraft && hasDuplicateKeyBindings(settingsKeyBindingDraft)) {
+                    messageEl.text(t('settings.keybindingDuplicate'));
+                } else {
+                    messageEl.text('');
+                }
+            }
+
+
+            function clearKeybindingMessageOverride() {
+                keybindingMessageOverride = null;
+                if (keybindingMessageTimeout) {
+                    clearTimeout(keybindingMessageTimeout);
+                    keybindingMessageTimeout = null;
+                }
+            }
+
+
+            function showTemporaryKeybindingMessage(messageKey) {
+                if (!messageKey) {
+                    return;
+                }
+                keybindingMessageOverride = messageKey;
+                if (keybindingMessageTimeout) {
+                    clearTimeout(keybindingMessageTimeout);
+                }
+                keybindingMessageTimeout = setTimeout(function() {
+                    keybindingMessageOverride = null;
+                    keybindingMessageTimeout = null;
+                    updateSettingsKeyBindingMessage();
+                }, 2600);
+                updateSettingsKeyBindingMessage();
+            }
+
+
+            function updateSettingsKeyBindingUi() {
+                if (!window.jQuery) {
+                    return;
+                }
+                var activeBindings = settingsKeyBindingDraft || (gameSettings && gameSettings.keyBindings) || defaultSettings.keyBindings;
+                activeBindings = sanitizeKeyBindings(activeBindings);
+                keyBindingDirections.forEach(function(direction) {
+                    var button = jQuery(".keybinding-button[data-direction='" + direction + "']");
+                    if (!button.length) {
+                        return;
+                    }
+                    if (awaitingKeyBindingDirection === direction) {
+                        button.addClass('waiting');
+                        button.text(t('settings.keybindingWaiting'));
+                    } else {
+                        button.removeClass('waiting');
+                        var key = activeBindings[direction];
+                        button.text(formatKeyBindingDisplay(key));
+                    }
+                });
+                if (settingsKeyBindingDraft) {
+                    updateSettingsKeyBindingMessage();
+                } else {
+                    if (!keybindingMessageOverride) {
+                        jQuery('#settings-keybinding-message').text('');
+                    }
+                }
+            }
+
+
+            function beginKeybindingCapture(direction, button) {
+                if (!direction) {
+                    return;
+                }
+                awaitingKeyBindingDirection = direction;
+                awaitingKeyBindingButton = button || null;
+                clearKeybindingMessageOverride();
+                updateSettingsKeyBindingUi();
+            }
+
+
+            function finishKeybindingCapture(direction, key) {
+                if (!direction || !key) {
+                    return;
+                }
+                if (!settingsKeyBindingDraft) {
+                    settingsKeyBindingDraft = cloneKeyBindings(defaultSettings.keyBindings);
+                }
+                settingsKeyBindingDraft[direction] = key;
+                awaitingKeyBindingDirection = null;
+                awaitingKeyBindingButton = null;
+                clearKeybindingMessageOverride();
+                updateSettingsKeyBindingUi();
+            }
+
+
+            function cancelKeybindingCapture(options) {
+                options = options || {};
+                if (!awaitingKeyBindingDirection) {
+                    return;
+                }
+                awaitingKeyBindingDirection = null;
+                awaitingKeyBindingButton = null;
+                if (options.showCancelled) {
+                    showTemporaryKeybindingMessage('settings.keybindingCancelled');
+                } else {
+                    clearKeybindingMessageOverride();
+                }
+                updateSettingsKeyBindingUi();
+            }
+
+
+            function applyCustomKeyBindings() {
+                if (customAxisBinding && typeof customAxisBinding.clear === 'function') {
+                    customAxisBinding.clear();
+                }
+                customAxisBinding = null;
+                var bindings = (gameSettings && gameSettings.keyBindings) ? sanitizeKeyBindings(gameSettings.keyBindings) : cloneKeyBindings(defaultSettings.keyBindings);
+                if (!gameSettings) {
+                    gameSettings = {};
+                }
+                gameSettings.keyBindings = cloneKeyBindings(bindings);
+                if (KeyboardJS && KeyboardJS.bind && typeof KeyboardJS.bind.axis === 'function') {
+                    customAxisBinding = KeyboardJS.bind.axis(bindings.left, bindings.right, bindings.down, bindings.up, onMoveKey);
+                }
+            }
+
+
+            function onSettingsKeyCapture(event) {
+                if (!awaitingKeyBindingDirection) {
+                    return;
+                }
+                if (event && typeof event.preventDefault === 'function') {
+                    event.preventDefault();
+                    event.stopPropagation();
+                }
+                var isEscapeKey = event && (event.key === 'Escape' || event.key === 'Esc');
+                var key = normalizeKeyFromEvent(event);
+                if (isEscapeKey || key === 'escape') {
+                    cancelKeybindingCapture({ showCancelled: true });
+                    return;
+                }
+                if (!key) {
+                    showTemporaryKeybindingMessage('settings.keybindingUnsupported');
+                    return;
+                }
+                finishKeybindingCapture(awaitingKeyBindingDirection, key);
             }
 
 
@@ -748,6 +1141,13 @@
                 jQuery('#settings-cancel').text(t('settings.cancel'));
                 jQuery('#settings-language option[value="de"]').text(t('language.de'));
                 jQuery('#settings-language option[value="en"]').text(t('language.en'));
+                jQuery('#settings-controls-heading').text(t('settings.keybindingHeading'));
+                jQuery('#settings-controls-description').text(t('settings.keybindingInstruction'));
+                jQuery('#settings-key-up-label').text(t('settings.keybindingUp'));
+                jQuery('#settings-key-down-label').text(t('settings.keybindingDown'));
+                jQuery('#settings-key-left-label').text(t('settings.keybindingLeft'));
+                jQuery('#settings-key-right-label').text(t('settings.keybindingRight'));
+                jQuery('#settings-reset-keybindings').text(t('settings.keybindingReset'));
 
                 jQuery('#scoreboard-title').text(t('scoreboard.title'));
                 jQuery('#scoreboard-th-rank').text(t('scoreboard.rank'));
@@ -762,6 +1162,7 @@
                     jQuery('#instructions').center();
                 }
                 updateTiltUi();
+                updateSettingsKeyBindingUi();
                 updateInventoryMenu();
                 updateShopMenu();
                 updateCoinCounter();
@@ -1881,6 +2282,8 @@
                         gameSettings[key] = defaultSettings[key];
                     }
                 }
+                gameSettings.keyBindings = cloneKeyBindings(gameSettings.keyBindings || defaultSettings.keyBindings);
+                applyCustomKeyBindings();
                 victoryLlmConfig.enabled = !!gameSettings.victoryLlmEnabled;
                 if (gameSettings.tiltControlEnabled) {
                     enableTiltControl({ silent: true }, function(success) {
@@ -2540,6 +2943,11 @@
             function openSettingsMenu() {
                 jQuery('#settings-victory-llm').prop('checked', !!gameSettings.victoryLlmEnabled);
                 jQuery('#settings-language').val(gameSettings.language || defaultSettings.language);
+                settingsKeyBindingDraft = cloneKeyBindings(gameSettings.keyBindings || defaultSettings.keyBindings);
+                clearKeybindingMessageOverride();
+                awaitingKeyBindingDirection = null;
+                awaitingKeyBindingButton = null;
+                updateSettingsKeyBindingUi();
                 updateTiltUi();
                 jQuery('#settings-menu').fadeIn(150);
             }
@@ -2549,10 +2957,13 @@
                 if (saveChanges) {
                     gameSettings.victoryLlmEnabled = jQuery('#settings-victory-llm').is(':checked');
                     gameSettings.language = jQuery('#settings-language').val() || defaultSettings.language;
+                    gameSettings.keyBindings = cloneKeyBindings(settingsKeyBindingDraft || gameSettings.keyBindings || defaultSettings.keyBindings);
                     applySettings();
                     setLanguage(gameSettings.language, {skipSave: true});
                     saveSettings();
                 }
+                cancelKeybindingCapture();
+                settingsKeyBindingDraft = null;
                 jQuery('#settings-menu').fadeOut(150);
             }
 
@@ -3224,8 +3635,11 @@
                 $('#victory').hide();
 
                 // Bind keyboard and resize events.
-                KeyboardJS.bind.axis('left', 'right', 'down', 'up', onMoveKey);
-                KeyboardJS.bind.axis('w', 's', 'a', 'd', onMoveKey);
+                arrowAxisBinding = KeyboardJS.bind.axis('left', 'right', 'down', 'up', onMoveKey);
+                applyCustomKeyBindings();
+                if (document && document.addEventListener) {
+                    document.addEventListener('keydown', onSettingsKeyCapture, true);
+                }
                 KeyboardJS.bind.key('b', function() {
                     toggleInventoryMenu();
                 });
@@ -3323,6 +3737,17 @@
                     if (event.target === this) {
                         closeSettingsMenu(false);
                     }
+                });
+                $('#settings-menu').on('click', '.keybinding-button', function() {
+                    var direction = $(this).attr('data-direction');
+                    beginKeybindingCapture(direction, this);
+                });
+                $('#settings-reset-keybindings').on('click', function() {
+                    settingsKeyBindingDraft = cloneKeyBindings(defaultSettings.keyBindings);
+                    awaitingKeyBindingDirection = null;
+                    awaitingKeyBindingButton = null;
+                    clearKeybindingMessageOverride();
+                    updateSettingsKeyBindingUi();
                 });
 
                 $('#scoreboard-menu').on('click', function(event) {
@@ -3869,6 +4294,55 @@
                 line-height: 1.4;
             }
 
+            .keybinding-grid {
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+                gap: 10px 16px;
+                margin-top: 10px;
+            }
+
+            .keybinding-row {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                gap: 10px;
+            }
+
+            .keybinding-label {
+                font-size: 14px;
+            }
+
+            .keybinding-button {
+                background: #1f1f1f;
+                border: 1px solid #555;
+                color: #f4f4f4;
+                font-weight: bold;
+                padding: 8px 12px;
+                min-width: 120px;
+                transition: background 0.2s ease, border-color 0.2s ease;
+            }
+
+            .keybinding-button:hover {
+                background: #2b2b2b;
+                border-color: #6b6b6b;
+            }
+
+            .keybinding-button.waiting {
+                background: #2b3a5b;
+                border-color: #6f8bff;
+                animation: keybindingPulse 1s ease-in-out infinite alternate;
+            }
+
+            @keyframes keybindingPulse {
+                from { box-shadow: 0 0 0 rgba(111, 139, 255, 0.0); }
+                to { box-shadow: 0 0 8px rgba(111, 139, 255, 0.6); }
+            }
+
+            .keybinding-reset {
+                margin-top: 12px;
+                align-self: flex-start;
+            }
+
             #scoreboard-menu table {
                 width: 100%;
                 border-collapse: collapse;
@@ -3981,6 +4455,30 @@
                     <option value='de'></option>
                     <option value='en'></option>
                 </select>
+            </div>
+            <div class='settings-group'>
+                <h3 id='settings-controls-heading'></h3>
+                <p id='settings-controls-description' class='settings-note'></p>
+                <div class='keybinding-grid'>
+                    <div class='keybinding-row'>
+                        <span class='keybinding-label' id='settings-key-up-label'></span>
+                        <button type='button' class='keybinding-button' data-direction='up'></button>
+                    </div>
+                    <div class='keybinding-row'>
+                        <span class='keybinding-label' id='settings-key-down-label'></span>
+                        <button type='button' class='keybinding-button' data-direction='down'></button>
+                    </div>
+                    <div class='keybinding-row'>
+                        <span class='keybinding-label' id='settings-key-left-label'></span>
+                        <button type='button' class='keybinding-button' data-direction='left'></button>
+                    </div>
+                    <div class='keybinding-row'>
+                        <span class='keybinding-label' id='settings-key-right-label'></span>
+                        <button type='button' class='keybinding-button' data-direction='right'></button>
+                    </div>
+                </div>
+                <div id='settings-keybinding-message' class='settings-note'></div>
+                <button id='settings-reset-keybindings' type='button' class='secondary keybinding-reset'></button>
             </div>
             <div class='menu-buttons'>
                 <button id='settings-save' type='button'></button>
