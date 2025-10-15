@@ -24,6 +24,25 @@
                 ballMesh       = undefined,
                 ballRadius     = 0.25,
                 keyAxis        = [0, 0],
+                touchAxis      = [0, 0],
+                touchPointerAxes = {},
+                tiltAxis       = [0, 0],
+                tiltTargetAxis = [0, 0],
+                tiltControlEnabled = false,
+                tiltPermissionState = 'unknown',
+                tiltControlSupported = (typeof window !== 'undefined' && typeof window.DeviceOrientationEvent !== 'undefined'),
+                tiltSmoothingFactor = 0.2,
+                tiltMaxAngle = 35,
+                tiltDeadZone = 3,
+                keyBindingDirections = ['up', 'down', 'left', 'right', 'bomb'],
+                arrowAxisBinding = null,
+                customAxisBinding = null,
+                bombKeyBinding = null,
+                settingsKeyBindingDraft = null,
+                awaitingKeyBindingDirection = null,
+                awaitingKeyBindingButton = null,
+                keybindingMessageOverride = null,
+                keybindingMessageTimeout = null,
                 ironTexture    = undefined,
                 planeTexture   = undefined,
                 brickTexture   = undefined,
@@ -31,6 +50,12 @@
                 levelIndex     = 1,
                 isPreparingLevel = false,
                 lastMazeName   = '',
+                availableMazeAlgorithms = [
+                    { key: 'depth-first', labelKey: 'level.depthFirstName' },
+                    { key: 'prim', labelKey: 'level.primName' },
+                    { key: 'kruskal', labelKey: 'level.kruskalName' },
+                    { key: 'eller', labelKey: 'level.ellerName' }
+                ],
                 victoryTimeout = null,
                 pendingVictoryPromise = null,
                 pendingVictoryMessage = null,
@@ -73,6 +98,8 @@
                             resumeButton: 'Zurück ins Spiel',
                             settingsButton: 'Einstellungen',
                             scoreboardButton: 'Rangliste anzeigen',
+                            inventoryButton: 'Inventar öffnen',
+                            shopButton: 'Shop öffnen',
                             noPlayersOption: 'Keine Spieler vorhanden',
                             messageCreateFirst: 'Lege zuerst einen Spieler an, um zu starten.',
                             messageSelectPlayer: 'Bitte wähle einen Spieler aus.',
@@ -82,7 +109,7 @@
                             messageNameEmpty: 'Name darf nicht leer sein.',
                             deleteConfirm: 'Möchtest du den Spieler "{name}" wirklich löschen?',
                             currentNone: 'Kein Spieler ausgewählt',
-                            currentWithLevel: 'Aktueller Spieler: {name} (Level {level}, Gesamtzeit {time})',
+                            currentWithLevel: 'Aktueller Spieler: {name} (Level {level}, Gesamtzeit {time}, Münzen {coins})',
                             menuButton: 'Menü',
                             saveGameButton: 'Spiel speichern',
                             loadGameButton: 'Spiel laden',
@@ -94,9 +121,26 @@
                         settings: {
                             title: 'Einstellungen',
                             victoryLlm: 'KI-Glückwunschtexte aktivieren',
+                            tiltControl: 'Bewegungssteuerung aktivieren',
                             language: 'Sprache',
                             save: 'Speichern',
-                            cancel: 'Abbrechen'
+                            cancel: 'Abbrechen',
+                            tiltEnabled: 'Bewegungssteuerung ist aktiv. Neige dein Gerät, um die Kugel zu steuern.',
+                            tiltDisabled: 'Bewegungssteuerung ist deaktiviert.',
+                            tiltUnavailable: 'Bewegungssteuerung wird auf diesem Gerät nicht unterstützt.',
+                            tiltNeedsPermission: 'Tippe, um die Bewegungssteuerung zu aktivieren (Erlaubnis erforderlich).',
+                            keybindingHeading: 'Tastenbelegung',
+                            keybindingInstruction: 'Tippe auf eine Richtung oder Aktion und drücke anschließend die gewünschte Taste.',
+                            keybindingUp: 'Nach oben',
+                            keybindingDown: 'Nach unten',
+                            keybindingLeft: 'Nach links',
+                            keybindingRight: 'Nach rechts',
+                            keybindingBomb: 'Bombe einsetzen',
+                            keybindingWaiting: 'Taste drücken...',
+                            keybindingReset: 'Standardtasten wiederherstellen',
+                            keybindingDuplicate: 'Mehrere Richtungen nutzen dieselbe Taste. Dies kann die Steuerung erschweren.',
+                            keybindingUnsupported: 'Diese Taste wird nicht unterstützt. Bitte versuche es erneut.',
+                            keybindingCancelled: 'Tastenzuordnung abgebrochen.'
                         },
                         language: {
                             de: 'Deutsch',
@@ -113,7 +157,7 @@
                             entry: '{rank}. {name} - Level {level} ({time})'
                         },
                         instructions: {
-                            text: '<strong>So spielst du Astray:</strong><br><br>Nutze die Pfeiltasten, um die Kugel zu steuern und den Ausgang zu finden.<br><br>Vim-Fans: h, j, k, l'
+                            text: '<strong>So spielst du Astray:</strong><br><br>Nutze die Pfeiltasten oder WASD, um die Kugel zu steuern und die rote Ausgangsplatte zu finden.<br><br>Über das Einstellungsmenü kannst du die Tastenbelegung für Bewegung und Bomben anpassen.<br><br>Auf Geräten mit Bewegungssensor kannst du dein Gerät neigen, um die Kugel zu bewegen.<br><br>Auf Touch-Geräten findest du am unteren Bildschirmrand zusätzliche Pfeile zur Steuerung.<br><br>Drücke die Taste B, um dein Inventar zu öffnen, Booster zu aktivieren oder den Shop zu besuchen.<br><br>Drücke die Taste 1 (Standard) oder deine zugewiesene Bombentaste, um eine Bombe zu zünden.'
                         },
                         help: 'Halte die Taste "I" für Anweisungen gedrückt.',
                         victory: {
@@ -123,7 +167,11 @@
                         level: {
                             loading: 'Level {level} wird geladen...',
                             prefix: 'Level',
-                            standardName: 'Standard-Labyrinth'
+                            standardName: 'Standard-Labyrinth',
+                            depthFirstName: 'Tiefensuche-Labyrinth',
+                            primName: 'Prim-Labyrinth',
+                            kruskalName: 'Kruskal-Labyrinth',
+                            ellerName: 'Eller-Labyrinth'
                         },
                         toplist: {
                             empty: 'Keine Einträge vorhanden.',
@@ -145,6 +193,60 @@
                             grip: { name: 'Gleit-Booster' },
                             coinrush: { name: 'Münz-Multiplikator' },
                             vision: { name: 'Licht-Booster' }
+                        },
+                        inventory: {
+                            title: 'Inventar',
+                            coinsLabel: 'Münzen',
+                            bombsHeading: 'Bomben',
+                            bombCount: 'Bomben: {count}',
+                            useBomb: 'Bombe einsetzen',
+                            bombUnavailable: 'Nur im Spiel verwendbar.',
+                            boostersHeading: 'Booster',
+                            boosterCount: '{name}: {count}',
+                            noBoosters: 'Keine Booster im Inventar.',
+                            useBooster: 'Aktivieren',
+                            boosterUnavailable: 'Nur im Spiel verwendbar.',
+                            bombUsed: 'Bombe gezündet!',
+                            bombNoWalls: 'Keine Mauern in Reichweite.',
+                            boosterUsed: 'Booster aktiviert: {name}',
+                            openShop: 'Zum Shop',
+                            close: 'Schließen'
+                        },
+                        shop: {
+                            title: 'Shop',
+                            description: 'Tausche deine Münzen gegen hilfreiche Gegenstände.',
+                            balance: 'Guthaben: {coins}',
+                            cost: 'Kosten: {cost}',
+                            buyButton: 'Kaufen',
+                            close: 'Schließen',
+                            back: 'Zurück zum Inventar',
+                            notEnoughCoins: 'Nicht genügend Münzen.',
+                            purchaseSuccess: '{item} gekauft!',
+                            items: {
+                                bomb: {
+                                    name: 'Bombe',
+                                    description: 'Sprengt angrenzende Mauern frei, um neue Wege zu öffnen.'
+                                },
+                                speed: {
+                                    name: 'Tempo-Booster',
+                                    description: 'Erhöht kurzfristig die Beschleunigung der Kugel.'
+                                },
+                                grip: {
+                                    name: 'Gleit-Booster',
+                                    description: 'Reduziert das Rutschen und verbessert die Kontrolle.'
+                                },
+                                coinrush: {
+                                    name: 'Münz-Multiplikator',
+                                    description: 'Verdoppelt vorübergehend den Wert eingesammelter Münzen.'
+                                },
+                                vision: {
+                                    name: 'Licht-Booster',
+                                    description: 'Erhellt die Umgebung für bessere Übersicht.'
+                                }
+                            }
+                        },
+                        hud: {
+                            coins: 'Münzen: {count}'
                         }
                     },
                     en: {
@@ -160,6 +262,8 @@
                             resumeButton: 'Return to game',
                             settingsButton: 'Settings',
                             scoreboardButton: 'Show leaderboard',
+                            inventoryButton: 'Open inventory',
+                            shopButton: 'Open shop',
                             noPlayersOption: 'No players available',
                             messageCreateFirst: 'Create a player first to start.',
                             messageSelectPlayer: 'Please select a player.',
@@ -169,7 +273,7 @@
                             messageNameEmpty: 'Name must not be empty.',
                             deleteConfirm: 'Do you really want to delete the player "{name}"?',
                             currentNone: 'No player selected',
-                            currentWithLevel: 'Current player: {name} (Level {level}, total time {time})',
+                            currentWithLevel: 'Current player: {name} (Level {level}, total time {time}, coins {coins})',
                             menuButton: 'Menu',
                             saveGameButton: 'Save game',
                             loadGameButton: 'Load game',
@@ -181,9 +285,26 @@
                         settings: {
                             title: 'Settings',
                             victoryLlm: 'Enable AI victory messages',
+                            tiltControl: 'Enable motion controls',
                             language: 'Language',
                             save: 'Save',
-                            cancel: 'Cancel'
+                            cancel: 'Cancel',
+                            tiltEnabled: 'Motion controls are enabled. Tilt your device to move the ball.',
+                            tiltDisabled: 'Motion controls are off.',
+                            tiltUnavailable: 'Motion controls are not supported on this device.',
+                            tiltNeedsPermission: 'Tap to enable motion controls (permission required).',
+                            keybindingHeading: 'Key bindings',
+                            keybindingInstruction: 'Tap a direction or action and then press the desired key.',
+                            keybindingUp: 'Up',
+                            keybindingDown: 'Down',
+                            keybindingLeft: 'Left',
+                            keybindingRight: 'Right',
+                            keybindingBomb: 'Use bomb',
+                            keybindingWaiting: 'Press a key...',
+                            keybindingReset: 'Restore default keys',
+                            keybindingDuplicate: 'Multiple directions share the same key. This may make movement harder.',
+                            keybindingUnsupported: 'That key is not supported. Please try again.',
+                            keybindingCancelled: 'Key assignment cancelled.'
                         },
                         language: {
                             de: 'German',
@@ -200,7 +321,7 @@
                             entry: '{rank}. {name} - Level {level} ({time})'
                         },
                         instructions: {
-                            text: '<strong>How to play Astray:</strong><br><br>Use the arrow keys to move the ball and find the exit.<br><br>Vim trainees: h, j, k, l'
+                            text: '<strong>How to play Astray:</strong><br><br>Use the arrow keys or WASD to move the ball and locate the red exit plate.<br><br>Use the Settings menu to remap the movement and bomb controls.<br><br>Devices with motion sensors let you tilt to move the ball.<br><br>Touch devices display small on-screen arrows near the bottom for easy steering.<br><br>Press the B key to open your inventory, trigger boosters, or visit the shop.<br><br>Press 1 (default) or your assigned bomb key to deploy a bomb.'
                         },
                         help: 'Hold down the "I" key for instructions.',
                         victory: {
@@ -210,7 +331,11 @@
                         level: {
                             loading: 'Loading level {level}...',
                             prefix: 'Level',
-                            standardName: 'Standard maze'
+                            standardName: 'Standard maze',
+                            depthFirstName: 'Depth-first maze',
+                            primName: 'Prim maze',
+                            kruskalName: 'Kruskal maze',
+                            ellerName: 'Eller maze'
                         },
                         toplist: {
                             empty: 'No entries yet.',
@@ -232,6 +357,60 @@
                             grip: { name: 'Glide boost' },
                             coinrush: { name: 'Coin multiplier' },
                             vision: { name: 'Light boost' }
+                        },
+                        inventory: {
+                            title: 'Inventory',
+                            coinsLabel: 'Coins',
+                            bombsHeading: 'Bombs',
+                            bombCount: 'Bombs: {count}',
+                            useBomb: 'Use bomb',
+                            bombUnavailable: 'Only available in-game.',
+                            boostersHeading: 'Boosters',
+                            boosterCount: '{name}: {count}',
+                            noBoosters: 'No boosters in your inventory.',
+                            useBooster: 'Activate',
+                            boosterUnavailable: 'Only available in-game.',
+                            bombUsed: 'Bomb deployed!',
+                            bombNoWalls: 'No walls in range.',
+                            boosterUsed: 'Booster activated: {name}',
+                            openShop: 'Go to shop',
+                            close: 'Close'
+                        },
+                        shop: {
+                            title: 'Shop',
+                            description: 'Trade your coins for helpful items.',
+                            balance: 'Balance: {coins}',
+                            cost: 'Cost: {cost}',
+                            buyButton: 'Buy',
+                            close: 'Close',
+                            back: 'Back to inventory',
+                            notEnoughCoins: 'Not enough coins.',
+                            purchaseSuccess: 'Purchased {item}!',
+                            items: {
+                                bomb: {
+                                    name: 'Bomb',
+                                    description: 'Blasts nearby walls to open new paths.'
+                                },
+                                speed: {
+                                    name: 'Speed boost',
+                                    description: 'Temporarily increases the marble\'s acceleration.'
+                                },
+                                grip: {
+                                    name: 'Glide boost',
+                                    description: 'Reduces sliding and improves control.'
+                                },
+                                coinrush: {
+                                    name: 'Coin multiplier',
+                                    description: 'Doubles the value of collected coins for a short time.'
+                                },
+                                vision: {
+                                    name: 'Light boost',
+                                    description: 'Brightens the maze for better visibility.'
+                                }
+                            }
+                        },
+                        hud: {
+                            coins: 'Coins: {count}'
                         }
                     }
                 },
@@ -282,8 +461,23 @@
                     coinGeometry: null,
                     coinMaterial: null,
                     boosterGeometry: null,
-                    boosterMaterials: {}
+                    boosterMaterials: {},
+                    exitGeometry: null,
+                    exitMaterial: null
                 },
+                exitMesh = null,
+                wallBodies = {},
+                inventoryPreviousState = null,
+                shopPreviousState = null,
+                inventoryMessageTimeout = null,
+                shopMessageTimeout = null,
+                shopCatalog = [
+                    { id: 'bomb', type: 'bomb', cost: 30 },
+                    { id: 'speed', type: 'booster', boosterId: 'speed', cost: 25 },
+                    { id: 'grip', type: 'booster', boosterId: 'grip', cost: 25 },
+                    { id: 'coinrush', type: 'booster', boosterId: 'coinrush', cost: 35 },
+                    { id: 'vision', type: 'booster', boosterId: 'vision', cost: 20 }
+                ],
 
             // Box2D shortcuts
                 b2World        = Box2D.Dynamics.b2World,
@@ -317,8 +511,50 @@
 
             var defaultSettings = {
                 victoryLlmEnabled: true,
-                language: 'de'
+                language: 'de',
+                tiltControlEnabled: false,
+                keyBindings: {
+                    up: 'w',
+                    down: 's',
+                    left: 'a',
+                    right: 'd',
+                    bomb: '1'
+                }
             };
+
+            var allowedKeyBindingMap = (function() {
+                var base = {
+                    up: true,
+                    down: true,
+                    left: true,
+                    right: true,
+                    space: true,
+                    enter: true,
+                    shift: true,
+                    ctrl: true,
+                    alt: true,
+                    meta: true,
+                    tab: true,
+                    home: true,
+                    end: true,
+                    pageup: true,
+                    pagedown: true,
+                    insert: true,
+                    delete: true,
+                    capslock: true
+                };
+                for (var i = 0; i <= 9; i++) {
+                    base[i.toString()] = true;
+                    base['num' + i] = true;
+                }
+                for (var code = 65; code <= 90; code++) {
+                    base[String.fromCharCode(code).toLowerCase()] = true;
+                }
+                for (var f = 1; f <= 12; f++) {
+                    base['f' + f] = true;
+                }
+                return base;
+            })();
 
             var players = [],
                 currentPlayer = null,
@@ -409,6 +645,468 @@
             }
 
 
+            function canonicalKeyName(raw) {
+                if (raw === undefined || raw === null) {
+                    return '';
+                }
+                var key = raw.toString().trim().toLowerCase();
+                if (!key) {
+                    return '';
+                }
+                var aliasMap = {
+                    arrowup: 'up',
+                    arrowdown: 'down',
+                    arrowleft: 'left',
+                    arrowright: 'right',
+                    spacebar: 'space',
+                    ' ': 'space',
+                    space: 'space',
+                    control: 'ctrl',
+                    option: 'alt',
+                    altgraph: 'alt',
+                    command: 'meta',
+                    windows: 'meta',
+                    win: 'meta',
+                    os: 'meta',
+                    return: 'enter',
+                    escape: 'escape',
+                    esc: 'escape'
+                };
+                if (aliasMap[key]) {
+                    return aliasMap[key];
+                }
+                if (key.indexOf('key') === 0 && key.length === 4) {
+                    return key.substring(3);
+                }
+                if (key.indexOf('digit') === 0 && key.length === 6) {
+                    return key.substring(5);
+                }
+                if (key.indexOf('numpad') === 0 && key.length === 7) {
+                    return 'num' + key.substring(6);
+                }
+                if (key.indexOf('arrow') === 0 && key.length > 5) {
+                    return key.substring(5);
+                }
+                return key;
+            }
+
+
+            function normalizeKeyBindingValue(value) {
+                var key = canonicalKeyName(value);
+                if (!key) {
+                    return '';
+                }
+                if (allowedKeyBindingMap[key]) {
+                    return key;
+                }
+                return '';
+            }
+
+
+            function normalizeKeyFromEvent(event) {
+                if (!event) {
+                    return '';
+                }
+                var key = normalizeKeyBindingValue(event.key);
+                if (key) {
+                    return key;
+                }
+                key = normalizeKeyBindingValue(event.code);
+                if (key) {
+                    return key;
+                }
+                if (typeof event.which === 'number') {
+                    var fallback = normalizeKeyBindingValue(String.fromCharCode(event.which));
+                    if (fallback) {
+                        return fallback;
+                    }
+                }
+                return '';
+            }
+
+
+            function sanitizeKeyBindings(bindings) {
+                var source = (bindings && typeof bindings === 'object') ? bindings : {};
+                var sanitized = {};
+                keyBindingDirections.forEach(function(direction) {
+                    var normalized = normalizeKeyBindingValue(source[direction]);
+                    if (!normalized) {
+                        normalized = defaultSettings.keyBindings[direction];
+                    }
+                    sanitized[direction] = normalized;
+                });
+                return sanitized;
+            }
+
+
+            function cloneKeyBindings(bindings) {
+                var sanitized = sanitizeKeyBindings(bindings);
+                var clone = {};
+                keyBindingDirections.forEach(function(direction) {
+                    clone[direction] = sanitized[direction];
+                });
+                return clone;
+            }
+
+
+            function formatKeyBindingDisplay(key) {
+                if (!key) {
+                    return '—';
+                }
+                var displayMap = {
+                    up: '↑',
+                    down: '↓',
+                    left: '←',
+                    right: '→',
+                    space: 'Space',
+                    enter: 'Enter',
+                    shift: 'Shift',
+                    ctrl: 'Ctrl',
+                    alt: 'Alt',
+                    meta: 'Meta',
+                    tab: 'Tab',
+                    home: 'Home',
+                    end: 'End',
+                    pageup: 'Page Up',
+                    pagedown: 'Page Down',
+                    insert: 'Insert',
+                    delete: 'Delete',
+                    capslock: 'Caps Lock'
+                };
+                if (displayMap[key]) {
+                    return displayMap[key];
+                }
+                if (/^f\d{1,2}$/i.test(key)) {
+                    return key.toUpperCase();
+                }
+                if (/^num\d$/.test(key)) {
+                    return key.toUpperCase();
+                }
+                if (key.length === 1) {
+                    return key.toUpperCase();
+                }
+                return key.replace(/^(\w)/, function(match, p1) {
+                    return p1 ? p1.toUpperCase() : match;
+                });
+            }
+
+
+            function hasDuplicateKeyBindings(bindings) {
+                if (!bindings) {
+                    return false;
+                }
+                var seen = {};
+                var duplicate = false;
+                keyBindingDirections.forEach(function(direction) {
+                    var key = bindings[direction];
+                    if (!key) {
+                        return;
+                    }
+                    if (seen[key]) {
+                        duplicate = true;
+                    } else {
+                        seen[key] = true;
+                    }
+                });
+                return duplicate;
+            }
+
+
+            function updateSettingsKeyBindingMessage() {
+                if (!window.jQuery) {
+                    return;
+                }
+                var messageEl = jQuery('#settings-keybinding-message');
+                if (!messageEl.length) {
+                    return;
+                }
+                if (keybindingMessageOverride) {
+                    messageEl.text(t(keybindingMessageOverride));
+                    return;
+                }
+                if (settingsKeyBindingDraft && hasDuplicateKeyBindings(settingsKeyBindingDraft)) {
+                    messageEl.text(t('settings.keybindingDuplicate'));
+                } else {
+                    messageEl.text('');
+                }
+            }
+
+
+            function clearKeybindingMessageOverride() {
+                keybindingMessageOverride = null;
+                if (keybindingMessageTimeout) {
+                    clearTimeout(keybindingMessageTimeout);
+                    keybindingMessageTimeout = null;
+                }
+            }
+
+
+            function showTemporaryKeybindingMessage(messageKey) {
+                if (!messageKey) {
+                    return;
+                }
+                keybindingMessageOverride = messageKey;
+                if (keybindingMessageTimeout) {
+                    clearTimeout(keybindingMessageTimeout);
+                }
+                keybindingMessageTimeout = setTimeout(function() {
+                    keybindingMessageOverride = null;
+                    keybindingMessageTimeout = null;
+                    updateSettingsKeyBindingMessage();
+                }, 2600);
+                updateSettingsKeyBindingMessage();
+            }
+
+
+            function updateSettingsKeyBindingUi() {
+                if (!window.jQuery) {
+                    return;
+                }
+                var activeBindings = settingsKeyBindingDraft || (gameSettings && gameSettings.keyBindings) || defaultSettings.keyBindings;
+                activeBindings = sanitizeKeyBindings(activeBindings);
+                keyBindingDirections.forEach(function(direction) {
+                    var button = jQuery(".keybinding-button[data-direction='" + direction + "']");
+                    if (!button.length) {
+                        return;
+                    }
+                    if (awaitingKeyBindingDirection === direction) {
+                        button.addClass('waiting');
+                        button.text(t('settings.keybindingWaiting'));
+                    } else {
+                        button.removeClass('waiting');
+                        var key = activeBindings[direction];
+                        button.text(formatKeyBindingDisplay(key));
+                    }
+                });
+                if (settingsKeyBindingDraft) {
+                    updateSettingsKeyBindingMessage();
+                } else {
+                    if (!keybindingMessageOverride) {
+                        jQuery('#settings-keybinding-message').text('');
+                    }
+                }
+            }
+
+
+            function beginKeybindingCapture(direction, button) {
+                if (!direction) {
+                    return;
+                }
+                awaitingKeyBindingDirection = direction;
+                awaitingKeyBindingButton = button || null;
+                clearKeybindingMessageOverride();
+                updateSettingsKeyBindingUi();
+            }
+
+
+            function finishKeybindingCapture(direction, key) {
+                if (!direction || !key) {
+                    return;
+                }
+                if (!settingsKeyBindingDraft) {
+                    settingsKeyBindingDraft = cloneKeyBindings(defaultSettings.keyBindings);
+                }
+                settingsKeyBindingDraft[direction] = key;
+                awaitingKeyBindingDirection = null;
+                awaitingKeyBindingButton = null;
+                clearKeybindingMessageOverride();
+                updateSettingsKeyBindingUi();
+            }
+
+
+            function cancelKeybindingCapture(options) {
+                options = options || {};
+                if (!awaitingKeyBindingDirection) {
+                    return;
+                }
+                awaitingKeyBindingDirection = null;
+                awaitingKeyBindingButton = null;
+                if (options.showCancelled) {
+                    showTemporaryKeybindingMessage('settings.keybindingCancelled');
+                } else {
+                    clearKeybindingMessageOverride();
+                }
+                updateSettingsKeyBindingUi();
+            }
+
+
+            function applyCustomKeyBindings() {
+                if (customAxisBinding && typeof customAxisBinding.clear === 'function') {
+                    customAxisBinding.clear();
+                }
+                customAxisBinding = null;
+                if (bombKeyBinding && typeof bombKeyBinding.clear === 'function') {
+                    bombKeyBinding.clear();
+                }
+                bombKeyBinding = null;
+                var bindings = (gameSettings && gameSettings.keyBindings) ? sanitizeKeyBindings(gameSettings.keyBindings) : cloneKeyBindings(defaultSettings.keyBindings);
+                if (!gameSettings) {
+                    gameSettings = {};
+                }
+                gameSettings.keyBindings = cloneKeyBindings(bindings);
+                if (KeyboardJS && KeyboardJS.bind && typeof KeyboardJS.bind.axis === 'function') {
+                    customAxisBinding = KeyboardJS.bind.axis(bindings.left, bindings.right, bindings.down, bindings.up, onMoveKey);
+                }
+                if (KeyboardJS && KeyboardJS.bind && typeof KeyboardJS.bind.key === 'function' && bindings.bomb) {
+                    bombKeyBinding = KeyboardJS.bind.key(bindings.bomb, function() {
+                        if (awaitingKeyBindingDirection) {
+                            return;
+                        }
+                        useInventoryBomb();
+                    });
+                }
+            }
+
+
+            function onSettingsKeyCapture(event) {
+                if (!awaitingKeyBindingDirection) {
+                    return;
+                }
+                if (event && typeof event.preventDefault === 'function') {
+                    event.preventDefault();
+                    event.stopPropagation();
+                }
+                var isEscapeKey = event && (event.key === 'Escape' || event.key === 'Esc');
+                var key = normalizeKeyFromEvent(event);
+                if (isEscapeKey || key === 'escape') {
+                    cancelKeybindingCapture({ showCancelled: true });
+                    return;
+                }
+                if (!key) {
+                    showTemporaryKeybindingMessage('settings.keybindingUnsupported');
+                    return;
+                }
+                finishKeybindingCapture(awaitingKeyBindingDirection, key);
+            }
+
+
+            function ensurePlayerInventory(player) {
+                if (!player) {
+                    return;
+                }
+                if (typeof player.coins !== 'number' || isNaN(player.coins)) {
+                    player.coins = 0;
+                }
+                if (!player.inventory || typeof player.inventory !== 'object') {
+                    player.inventory = {};
+                }
+                if (typeof player.inventory.bombs !== 'number' || isNaN(player.inventory.bombs)) {
+                    player.inventory.bombs = 0;
+                }
+                if (!player.inventory.boosters || typeof player.inventory.boosters !== 'object') {
+                    player.inventory.boosters = {};
+                }
+                boosterOrder.forEach(function(boosterId) {
+                    var value = player.inventory.boosters[boosterId];
+                    if (typeof value !== 'number' || isNaN(value)) {
+                        player.inventory.boosters[boosterId] = 0;
+                    }
+                });
+            }
+
+
+            function getCoinWord(count, lang) {
+                var language = lang || currentLanguage;
+                var itemsLang = translations[language] && translations[language].items;
+                if (!itemsLang || !itemsLang.coin) {
+                    return count === 1 ? 'coin' : 'coins';
+                }
+                return count === 1 ? itemsLang.coin.singular : itemsLang.coin.plural;
+            }
+
+
+            function formatCoinAmount(count, lang) {
+                return (count || 0) + ' ' + getCoinWord(count || 0, lang);
+            }
+
+
+            function addCoinsToPlayer(amount) {
+                if (!currentPlayer) {
+                    return;
+                }
+                ensurePlayerInventory(currentPlayer);
+                var numericAmount = parseInt(amount, 10);
+                if (isNaN(numericAmount) || !isFinite(numericAmount)) {
+                    return;
+                }
+                currentPlayer.coins = Math.max(0, (currentPlayer.coins || 0) + numericAmount);
+                savePlayers();
+                updateCoinCounter();
+                updateInventoryMenu();
+                updateShopMenu();
+                updateStartMenuState();
+            }
+
+
+            function updateCoinCounter() {
+                if (!window.jQuery) {
+                    return;
+                }
+                var $counter = jQuery('#coin-counter');
+                if (!$counter.length) {
+                    return;
+                }
+                if (!currentPlayer) {
+                    $counter.hide();
+                    return;
+                }
+                ensurePlayerInventory(currentPlayer);
+                var coins = currentPlayer.coins || 0;
+                $counter.text(t('hud.coins', {count: coins}));
+                $counter.show();
+            }
+
+
+            function showInventoryMessage(text) {
+                if (!window.jQuery) {
+                    return;
+                }
+                var $message = jQuery('#inventory-message');
+                if (!$message.length) {
+                    return;
+                }
+                $message.stop(true, true);
+                if (inventoryMessageTimeout) {
+                    clearTimeout(inventoryMessageTimeout);
+                    inventoryMessageTimeout = null;
+                }
+                if (!text) {
+                    $message.fadeOut(150);
+                    return;
+                }
+                $message.text(text).fadeIn(120);
+                inventoryMessageTimeout = setTimeout(function() {
+                    $message.fadeOut(200);
+                    inventoryMessageTimeout = null;
+                }, 4000);
+            }
+
+
+            function showShopMessage(text) {
+                if (!window.jQuery) {
+                    return;
+                }
+                var $message = jQuery('#shop-message');
+                if (!$message.length) {
+                    return;
+                }
+                $message.stop(true, true);
+                if (shopMessageTimeout) {
+                    clearTimeout(shopMessageTimeout);
+                    shopMessageTimeout = null;
+                }
+                if (!text) {
+                    $message.fadeOut(150);
+                    return;
+                }
+                $message.text(text).fadeIn(120);
+                shopMessageTimeout = setTimeout(function() {
+                    $message.fadeOut(200);
+                    shopMessageTimeout = null;
+                }, 4000);
+            }
+
+
             function showMenuMessage(text) {
                 if (window.jQuery) {
                     jQuery('#menu-message').text(text || '');
@@ -448,15 +1146,28 @@
                 jQuery('#load-game').text(t('menu.loadGameButton'));
                 jQuery('#open-settings').text(t('menu.settingsButton'));
                 jQuery('#open-scoreboard').text(t('menu.scoreboardButton'));
+                jQuery('#open-inventory').text(t('menu.inventoryButton'));
+                jQuery('#open-shop').text(t('menu.shopButton'));
                 jQuery('#menu-button').text(t('menu.menuButton'));
+                jQuery('#inventory-button').text(t('menu.inventoryButton'));
+                jQuery('#shop-button').text(t('menu.shopButton'));
 
                 jQuery('#settings-title').text(t('settings.title'));
                 jQuery('#settings-victory-text').text(t('settings.victoryLlm'));
+                jQuery('#settings-tilt-label').text(t('settings.tiltControl'));
                 jQuery('#settings-language-label').text(t('settings.language'));
                 jQuery('#settings-save').text(t('settings.save'));
                 jQuery('#settings-cancel').text(t('settings.cancel'));
                 jQuery('#settings-language option[value="de"]').text(t('language.de'));
                 jQuery('#settings-language option[value="en"]').text(t('language.en'));
+                jQuery('#settings-controls-heading').text(t('settings.keybindingHeading'));
+                jQuery('#settings-controls-description').text(t('settings.keybindingInstruction'));
+                jQuery('#settings-key-up-label').text(t('settings.keybindingUp'));
+                jQuery('#settings-key-down-label').text(t('settings.keybindingDown'));
+                jQuery('#settings-key-left-label').text(t('settings.keybindingLeft'));
+                jQuery('#settings-key-right-label').text(t('settings.keybindingRight'));
+                jQuery('#settings-key-bomb-label').text(t('settings.keybindingBomb'));
+                jQuery('#settings-reset-keybindings').text(t('settings.keybindingReset'));
 
                 jQuery('#scoreboard-title').text(t('scoreboard.title'));
                 jQuery('#scoreboard-th-rank').text(t('scoreboard.rank'));
@@ -470,6 +1181,11 @@
                 if (jQuery.fn && typeof jQuery.fn.center === 'function') {
                     jQuery('#instructions').center();
                 }
+                updateTiltUi();
+                updateSettingsKeyBindingUi();
+                updateInventoryMenu();
+                updateShopMenu();
+                updateCoinCounter();
             }
 
 
@@ -493,6 +1209,404 @@
                 if (!options.skipSave) {
                     saveSettings();
                 }
+            }
+
+
+            function canUseBomb() {
+                if (!currentPlayer) {
+                    return false;
+                }
+                ensurePlayerInventory(currentPlayer);
+                if (!hasStartedGame || !wWorld || !ballMesh || !maze) {
+                    return false;
+                }
+                if (gameState !== 'play') {
+                    return false;
+                }
+                return (currentPlayer.inventory.bombs || 0) > 0;
+            }
+
+
+            function canUseBooster(boosterId) {
+                if (!currentPlayer || !boosterId) {
+                    return false;
+                }
+                ensurePlayerInventory(currentPlayer);
+                if (!hasStartedGame || !wWorld || !ballMesh || !maze) {
+                    return false;
+                }
+                if (gameState !== 'play') {
+                    return false;
+                }
+                var boosters = currentPlayer.inventory.boosters || {};
+                return (boosters[boosterId] || 0) > 0;
+            }
+
+
+            function removeWallAt(x, y) {
+                if (!maze || typeof x !== 'number' || typeof y !== 'number') {
+                    return false;
+                }
+                var dimension = maze.dimension || maze.length;
+                if (x < 0 || y < 0 || x >= dimension || y >= dimension) {
+                    return false;
+                }
+                if (!maze[x] || !maze[x][y]) {
+                    return false;
+                }
+                maze[x][y] = false;
+                var key = x + ',' + y;
+                if (wallBodies && wallBodies[key] && wWorld) {
+                    try {
+                        wWorld.DestroyBody(wallBodies[key]);
+                    } catch (err) {
+                        console.warn('Konnte Mauersegment nicht entfernen.', err);
+                    }
+                    delete wallBodies[key];
+                }
+                return true;
+            }
+
+
+            function rebuildMazeMesh() {
+                if (!scene || !maze) {
+                    return;
+                }
+                if (mazeMesh) {
+                    scene.remove(mazeMesh);
+                }
+                mazeMesh = generate_maze_mesh(maze);
+                scene.add(mazeMesh);
+            }
+
+
+            function detonateBombAtPlayer() {
+                if (!ballMesh || !maze) {
+                    return false;
+                }
+                var centerX = Math.floor(ballMesh.position.x + 0.5);
+                var centerY = Math.floor(ballMesh.position.y + 0.5);
+                var removed = 0;
+                for (var dx = -1; dx <= 1; dx++) {
+                    for (var dy = -1; dy <= 1; dy++) {
+                        if (dx === 0 && dy === 0) {
+                            continue;
+                        }
+                        var tx = centerX + dx;
+                        var ty = centerY + dy;
+                        if (removeWallAt(tx, ty)) {
+                            removed++;
+                        }
+                    }
+                }
+                if (removed > 0) {
+                    rebuildMazeMesh();
+                }
+                return removed > 0;
+            }
+
+
+            function useInventoryBomb() {
+                if (!canUseBomb()) {
+                    showInventoryMessage(t('inventory.bombUnavailable'));
+                    return;
+                }
+                ensurePlayerInventory(currentPlayer);
+                var success = detonateBombAtPlayer();
+                if (success) {
+                    currentPlayer.inventory.bombs = Math.max(0, (currentPlayer.inventory.bombs || 0) - 1);
+                    savePlayers();
+                    updateInventoryMenu();
+                    showInventoryMessage(t('inventory.bombUsed'));
+                } else {
+                    showInventoryMessage(t('inventory.bombNoWalls'));
+                }
+            }
+
+
+            function useInventoryBooster(boosterId) {
+                if (!canUseBooster(boosterId)) {
+                    showInventoryMessage(t('inventory.boosterUnavailable'));
+                    return;
+                }
+                ensurePlayerInventory(currentPlayer);
+                var boosters = currentPlayer.inventory.boosters || {};
+                boosters[boosterId] = Math.max(0, (boosters[boosterId] || 0) - 1);
+                activateBooster(boosterId);
+                savePlayers();
+                updateInventoryMenu();
+                showInventoryMessage(t('inventory.boosterUsed', { name: getBoosterName(boosterId, currentLanguage) }));
+            }
+
+
+            function updateInventoryMenu() {
+                if (!window.jQuery) {
+                    return;
+                }
+                var $menu = jQuery('#inventory-menu');
+                if (!$menu.length) {
+                    return;
+                }
+                var hasPlayer = !!currentPlayer;
+                var coins = 0;
+                var bombs = 0;
+                if (hasPlayer) {
+                    ensurePlayerInventory(currentPlayer);
+                    coins = currentPlayer.coins || 0;
+                    bombs = currentPlayer.inventory.bombs || 0;
+                }
+                jQuery('#inventory-title').text(t('inventory.title'));
+                jQuery('#inventory-coins-label').text(t('inventory.coinsLabel'));
+                jQuery('#inventory-coins-value').text(coins);
+                jQuery('#inventory-bombs-heading').text(t('inventory.bombsHeading'));
+                jQuery('#inventory-bomb-count').text(t('inventory.bombCount', {count: bombs}));
+                jQuery('#inventory-boosters-heading').text(t('inventory.boostersHeading'));
+                var $bombButton = jQuery('#inventory-use-bomb');
+                if ($bombButton.length) {
+                    $bombButton.text(t('inventory.useBomb'));
+                    var bombUsable = canUseBomb();
+                    $bombButton.prop('disabled', !bombUsable);
+                    $bombButton.attr('title', bombUsable ? '' : t('inventory.bombUnavailable'));
+                }
+                var $list = jQuery('#inventory-booster-list');
+                var $empty = jQuery('#inventory-no-boosters');
+                var boostersAvailable = false;
+                if ($list.length) {
+                    $list.empty();
+                    if (hasPlayer) {
+                        boosterOrder.forEach(function(boosterId) {
+                            var count = (currentPlayer.inventory.boosters && currentPlayer.inventory.boosters[boosterId]) || 0;
+                            var name = getBoosterName(boosterId, currentLanguage);
+                            var $item = jQuery('<li class="inventory-booster"></li>');
+                            var label = t('inventory.boosterCount', {name: name, count: count});
+                            $item.append('<span class="inventory-booster-label">' + label + '</span>');
+                            var $button = jQuery('<button type="button" class="inventory-use-booster" data-booster-id="' + boosterId + '"></button>');
+                            $button.text(t('inventory.useBooster'));
+                            var boosterUsable = canUseBooster(boosterId);
+                            $button.prop('disabled', !boosterUsable);
+                            $button.attr('title', boosterUsable ? '' : t('inventory.boosterUnavailable'));
+                            $item.append($button);
+                            $list.append($item);
+                            if (count > 0) {
+                                boostersAvailable = true;
+                            }
+                        });
+                    }
+                }
+                if ($empty.length) {
+                    $empty.text(t('inventory.noBoosters'));
+                    $empty.toggle(!boostersAvailable);
+                }
+                var $openShop = jQuery('#inventory-open-shop');
+                if ($openShop.length) {
+                    $openShop.text(t('inventory.openShop'));
+                    $openShop.prop('disabled', !hasPlayer);
+                }
+                var $close = jQuery('#inventory-close');
+                if ($close.length) {
+                    $close.text(t('inventory.close'));
+                }
+                updateCoinCounter();
+            }
+
+
+            function updateShopMenu() {
+                if (!window.jQuery) {
+                    return;
+                }
+                var $menu = jQuery('#shop-menu');
+                if (!$menu.length) {
+                    return;
+                }
+                var hasPlayer = !!currentPlayer;
+                var coins = 0;
+                if (hasPlayer) {
+                    ensurePlayerInventory(currentPlayer);
+                    coins = currentPlayer.coins || 0;
+                }
+                jQuery('#shop-title').text(t('shop.title'));
+                jQuery('#shop-description').text(t('shop.description'));
+                jQuery('#shop-balance').text(t('shop.balance', {coins: formatCoinAmount(coins, currentLanguage)}));
+                var $close = jQuery('#shop-close');
+                if ($close.length) {
+                    $close.text(t('shop.close'));
+                }
+                var $back = jQuery('#shop-back');
+                if ($back.length) {
+                    $back.text(t('shop.back'));
+                }
+                var $list = jQuery('#shop-items');
+                if ($list.length) {
+                    $list.empty();
+                    shopCatalog.forEach(function(item) {
+                        var name = t('shop.items.' + item.id + '.name');
+                        var description = t('shop.items.' + item.id + '.description');
+                        var costText = t('shop.cost', {cost: formatCoinAmount(item.cost, currentLanguage)});
+                        var $entry = jQuery('<li class="shop-item"></li>');
+                        $entry.append('<div class="shop-item-header">' + name + '</div>');
+                        $entry.append('<div class="shop-item-description">' + description + '</div>');
+                        $entry.append('<div class="shop-item-cost">' + costText + '</div>');
+                        var $button = jQuery('<button type="button" class="shop-buy" data-item-id="' + item.id + '"></button>');
+                        var affordable = hasPlayer && coins >= item.cost;
+                        $button.text(t('shop.buyButton'));
+                        $button.prop('disabled', !affordable);
+                        $button.attr('title', affordable ? '' : t('shop.notEnoughCoins'));
+                        $entry.append($button);
+                        $list.append($entry);
+                    });
+                }
+                showShopMessage('');
+                updateCoinCounter();
+            }
+
+
+            function openInventoryMenu(options) {
+                options = options || {};
+                if (!window.jQuery) {
+                    return;
+                }
+                if (!currentPlayer) {
+                    return;
+                }
+                ensurePlayerInventory(currentPlayer);
+                var $menu = jQuery('#inventory-menu');
+                if (!$menu.length) {
+                    return;
+                }
+                if (!options.skipStateChange) {
+                    if (jQuery('#start-menu:visible').length === 0 && gameState !== 'menu') {
+                        inventoryPreviousState = gameState;
+                        gameState = 'menu';
+                    } else if (!inventoryPreviousState) {
+                        inventoryPreviousState = null;
+                    }
+                }
+                updateInventoryMenu();
+                $menu.fadeIn(150);
+                showInventoryMessage('');
+            }
+
+
+            function closeInventoryMenu(options) {
+                options = options || {};
+                if (!window.jQuery) {
+                    return;
+                }
+                var $menu = jQuery('#inventory-menu');
+                if (!$menu.length || !$menu.is(':visible')) {
+                    return;
+                }
+                $menu.fadeOut(150);
+                showInventoryMessage('');
+                if (!options.skipRestore && inventoryPreviousState && jQuery('#start-menu:visible').length === 0) {
+                    gameState = inventoryPreviousState;
+                }
+                inventoryPreviousState = null;
+            }
+
+
+            function toggleInventoryMenu() {
+                if (window.jQuery && jQuery('#shop-menu:visible').length) {
+                    closeShopMenu();
+                    return;
+                }
+                if (window.jQuery && jQuery('#inventory-menu:visible').length) {
+                    closeInventoryMenu();
+                } else {
+                    openInventoryMenu();
+                }
+            }
+
+
+            function openShopMenu(options) {
+                options = options || {};
+                if (!window.jQuery) {
+                    return;
+                }
+                if (!currentPlayer) {
+                    return;
+                }
+                ensurePlayerInventory(currentPlayer);
+                var $menu = jQuery('#shop-menu');
+                if (!$menu.length) {
+                    return;
+                }
+                var resumeState = null;
+                if (!options.skipInventoryClose && window.jQuery && jQuery('#inventory-menu:visible').length) {
+                    resumeState = inventoryPreviousState;
+                    closeInventoryMenu({ skipRestore: true });
+                }
+                var desiredPrevious = null;
+                if (!options.skipStateChange) {
+                    if (jQuery('#start-menu:visible').length === 0 && gameState !== 'menu') {
+                        desiredPrevious = gameState;
+                        gameState = 'menu';
+                    } else if (resumeState) {
+                        desiredPrevious = resumeState;
+                    }
+                } else if (resumeState) {
+                    desiredPrevious = resumeState;
+                }
+                shopPreviousState = desiredPrevious;
+                updateShopMenu();
+                $menu.fadeIn(150);
+                showShopMessage('');
+            }
+
+
+            function closeShopMenu(options) {
+                options = options || {};
+                if (!window.jQuery) {
+                    return;
+                }
+                var $menu = jQuery('#shop-menu');
+                if (!$menu.length || !$menu.is(':visible')) {
+                    return;
+                }
+                $menu.fadeOut(150);
+                showShopMessage('');
+                if (!options.skipRestore && shopPreviousState && jQuery('#start-menu:visible').length === 0) {
+                    gameState = shopPreviousState;
+                }
+                shopPreviousState = null;
+            }
+
+
+            function purchaseShopItem(itemId) {
+                if (!currentPlayer) {
+                    showShopMessage(t('shop.notEnoughCoins'));
+                    return;
+                }
+                var item = null;
+                for (var i = 0; i < shopCatalog.length; i++) {
+                    if (shopCatalog[i].id === itemId) {
+                        item = shopCatalog[i];
+                        break;
+                    }
+                }
+                if (!item) {
+                    return;
+                }
+                ensurePlayerInventory(currentPlayer);
+                if ((currentPlayer.coins || 0) < item.cost) {
+                    showShopMessage(t('shop.notEnoughCoins'));
+                    return;
+                }
+                currentPlayer.coins = Math.max(0, (currentPlayer.coins || 0) - item.cost);
+                if (item.type === 'bomb') {
+                    currentPlayer.inventory.bombs = (currentPlayer.inventory.bombs || 0) + 1;
+                } else if (item.type === 'booster' && item.boosterId) {
+                    if (!currentPlayer.inventory.boosters) {
+                        currentPlayer.inventory.boosters = {};
+                    }
+                    currentPlayer.inventory.boosters[item.boosterId] = (currentPlayer.inventory.boosters[item.boosterId] || 0) + 1;
+                }
+                savePlayers();
+                updateInventoryMenu();
+                updateShopMenu();
+                updateCoinCounter();
+                showShopMessage(t('shop.purchaseSuccess', { item: t('shop.items.' + item.id + '.name') }));
+                updateStartMenuState();
             }
 
 
@@ -653,6 +1767,33 @@
             }
 
 
+            function refreshExitIndicator() {
+                if (!scene) {
+                    return;
+                }
+                if (exitMesh && exitMesh.parent) {
+                    exitMesh.parent.remove(exitMesh);
+                }
+                exitMesh = null;
+                if (typeof currentExitTarget.x !== 'number' || typeof currentExitTarget.y !== 'number') {
+                    return;
+                }
+                if (!itemResources.exitGeometry) {
+                    if (typeof THREE.BoxGeometry === 'function') {
+                        itemResources.exitGeometry = new THREE.BoxGeometry(0.9, 0.9, 0.08, 1, 1, 1);
+                    } else {
+                        itemResources.exitGeometry = new THREE.CubeGeometry(0.9, 0.9, 0.08, 1, 1, 1);
+                    }
+                }
+                if (!itemResources.exitMaterial) {
+                    itemResources.exitMaterial = new THREE.MeshPhongMaterial({color: 0xff3030, emissive: 0x660000});
+                }
+                exitMesh = new THREE.Mesh(itemResources.exitGeometry, itemResources.exitMaterial);
+                exitMesh.position.set(currentExitTarget.x, currentExitTarget.y, 0.04);
+                scene.add(exitMesh);
+            }
+
+
             function spawnItemsForCurrentLevel(field) {
                 clearActiveItems();
                 if (!currentLevelConfig || !scene || !field) {
@@ -756,6 +1897,7 @@
                     if (currentRunStats) {
                         currentRunStats.coins = (currentRunStats.coins || 0) + coinValue;
                     }
+                    addCoinsToPlayer(coinValue);
                 } else if (item.kind === 'booster' && item.boosterId) {
                     activateBooster(item.boosterId);
                     if (currentRunStats) {
@@ -1021,11 +2163,44 @@
                                             totalTime = tt;
                                         }
                                     }
+                                    var coins = 0;
+                                    if (player && typeof player.coins !== 'undefined') {
+                                        var coinValue = parseInt(player.coins, 10);
+                                        if (!isNaN(coinValue) && isFinite(coinValue) && coinValue > 0) {
+                                            coins = coinValue;
+                                        }
+                                    }
+                                    var bombs = 0;
+                                    var boosterCounts = {};
+                                    boosterOrder.forEach(function(boosterId) {
+                                        boosterCounts[boosterId] = 0;
+                                    });
+                                    if (player && player.inventory) {
+                                        if (typeof player.inventory.bombs !== 'undefined') {
+                                            var bombValue = parseInt(player.inventory.bombs, 10);
+                                            if (!isNaN(bombValue) && isFinite(bombValue) && bombValue > 0) {
+                                                bombs = bombValue;
+                                            }
+                                        }
+                                        if (player.inventory.boosters && typeof player.inventory.boosters === 'object') {
+                                            boosterOrder.forEach(function(boosterId) {
+                                                var boosterValue = parseInt(player.inventory.boosters[boosterId], 10);
+                                                if (!isNaN(boosterValue) && isFinite(boosterValue) && boosterValue > 0) {
+                                                    boosterCounts[boosterId] = boosterValue;
+                                                }
+                                            });
+                                        }
+                                    }
                                     return {
                                         name: name.substring(0, 40),
                                         highestLevel: highest,
                                         totalTimeMs: totalTime,
-                                        saveData: player && player.saveData ? deepClone(player.saveData) : null
+                                        saveData: player && player.saveData ? deepClone(player.saveData) : null,
+                                        coins: coins,
+                                        inventory: {
+                                            bombs: bombs,
+                                            boosters: boosterCounts
+                                        }
                                     };
                                 }).filter(function(player) {
                                     return player.name.length > 0;
@@ -1040,6 +2215,9 @@
                 if (!Array.isArray(players)) {
                     players = [];
                 }
+                players.forEach(function(player) {
+                    ensurePlayerInventory(player);
+                });
                 try {
                     if (window.localStorage) {
                         var rawSettings = localStorage.getItem(STORAGE_KEY_SETTINGS);
@@ -1127,6 +2305,7 @@
                     for (var i = 0; i < players.length; i++) {
                         if (players[i].name === name) {
                             currentPlayer = players[i];
+                            ensurePlayerInventory(currentPlayer);
                             break;
                         }
                     }
@@ -1135,6 +2314,9 @@
                 renderPlayerSelect();
                 renderScoreboard();
                 updateStartMenuState();
+                updateCoinCounter();
+                updateInventoryMenu();
+                updateShopMenu();
             }
 
 
@@ -1147,7 +2329,21 @@
                         gameSettings[key] = defaultSettings[key];
                     }
                 }
+                gameSettings.keyBindings = cloneKeyBindings(gameSettings.keyBindings || defaultSettings.keyBindings);
+                applyCustomKeyBindings();
                 victoryLlmConfig.enabled = !!gameSettings.victoryLlmEnabled;
+                if (gameSettings.tiltControlEnabled) {
+                    enableTiltControl({ silent: true }, function(success) {
+                        if (!success && gameSettings && gameSettings.tiltControlEnabled) {
+                            gameSettings.tiltControlEnabled = false;
+                            saveSettings();
+                        }
+                        updateTiltUi();
+                    });
+                } else {
+                    disableTiltControl({ skipPreference: true, skipSave: true });
+                    updateTiltUi();
+                }
             }
 
 
@@ -1279,14 +2475,302 @@
                 var $info = jQuery('#current-player-info');
                 if ($info.length) {
                     if (hasPlayer) {
+                        ensurePlayerInventory(currentPlayer);
                         $info.text(t('menu.currentWithLevel', {
                             name: currentPlayer.name,
                             level: currentPlayer.highestLevel || 0,
-                            time: formatDuration(currentPlayer.totalTimeMs || 0)
+                            time: formatDuration(currentPlayer.totalTimeMs || 0),
+                            coins: currentPlayer.coins || 0
                         }));
                     } else {
                         $info.text(t('menu.currentNone'));
                     }
+                }
+                var $openInventoryButton = jQuery('#open-inventory');
+                if ($openInventoryButton.length) {
+                    $openInventoryButton.prop('disabled', !hasPlayer);
+                }
+                var $openShopButton = jQuery('#open-shop');
+                if ($openShopButton.length) {
+                    $openShopButton.prop('disabled', !hasPlayer);
+                }
+                var startMenuVisible = window.jQuery ? jQuery('#start-menu:visible').length > 0 : false;
+                var showHudButtons = hasPlayer && hasStartedGame && !startMenuVisible;
+                var $hudInventory = jQuery('#inventory-button');
+                if ($hudInventory.length) {
+                    $hudInventory.text(t('menu.inventoryButton'));
+                    if (showHudButtons) {
+                        $hudInventory.show();
+                    } else {
+                        $hudInventory.hide();
+                    }
+                }
+                var $hudShop = jQuery('#shop-button');
+                if ($hudShop.length) {
+                    $hudShop.text(t('menu.shopButton'));
+                    if (showHudButtons) {
+                        $hudShop.show();
+                    } else {
+                        $hudShop.hide();
+                    }
+                }
+                updateCoinCounter();
+            }
+
+
+            function requiresTiltPermission() {
+                return typeof window !== 'undefined' &&
+                    typeof window.DeviceOrientationEvent !== 'undefined' &&
+                    typeof window.DeviceOrientationEvent.requestPermission === 'function';
+            }
+
+
+            function getDeviceOrientationAngle() {
+                if (typeof window === 'undefined') {
+                    return 0;
+                }
+                if (typeof window.orientation === 'number') {
+                    return window.orientation;
+                }
+                if (window.screen && window.screen.orientation) {
+                    if (typeof window.screen.orientation.angle === 'number') {
+                        return window.screen.orientation.angle;
+                    }
+                    var orientationType = window.screen.orientation.type;
+                    if (typeof orientationType === 'string') {
+                        if (orientationType.indexOf('landscape-primary') === 0) {
+                            return 90;
+                        }
+                        if (orientationType.indexOf('landscape-secondary') === 0) {
+                            return -90;
+                        }
+                        if (orientationType.indexOf('portrait-secondary') === 0) {
+                            return 180;
+                        }
+                        if (orientationType.indexOf('portrait-primary') === 0) {
+                            return 0;
+                        }
+                    }
+                }
+                if (window.matchMedia) {
+                    var landscapeQuery = window.matchMedia('(orientation: landscape)');
+                    if (landscapeQuery && landscapeQuery.matches) {
+                        return window.innerWidth > window.innerHeight ? 90 : 0;
+                    }
+                }
+                return 0;
+            }
+
+
+            function normalizeTiltInput(angle) {
+                if (typeof angle !== 'number' || isNaN(angle)) {
+                    return 0;
+                }
+                if (angle > 180 || angle < -180) {
+                    angle = ((angle + 180) % 360 + 360) % 360 - 180;
+                }
+                var maxAngle = Math.max(tiltMaxAngle, tiltDeadZone + 0.01);
+                var clamped = Math.max(-maxAngle, Math.min(maxAngle, angle));
+                if (Math.abs(clamped) <= tiltDeadZone) {
+                    return 0;
+                }
+                var range = maxAngle - tiltDeadZone;
+                if (range <= 0) {
+                    return 0;
+                }
+                var sign = clamped < 0 ? -1 : 1;
+                var adjusted = (Math.abs(clamped) - tiltDeadZone) / range;
+                if (!isFinite(adjusted)) {
+                    adjusted = 0;
+                }
+                adjusted = Math.max(0, Math.min(1, adjusted));
+                return adjusted * sign;
+            }
+
+
+            function handleDeviceOrientation(event) {
+                if (!tiltControlEnabled) {
+                    return;
+                }
+                var gamma = (event && typeof event.gamma === 'number') ? event.gamma : 0;
+                var beta = (event && typeof event.beta === 'number') ? event.beta : 0;
+                var angle = getDeviceOrientationAngle();
+                var targetX;
+                var targetY;
+                switch (angle) {
+                    case 90:
+                    case -270:
+                        targetX = normalizeTiltInput(beta);
+                        targetY = normalizeTiltInput(-gamma);
+                        break;
+                    case -90:
+                    case 270:
+                        targetX = normalizeTiltInput(-beta);
+                        targetY = normalizeTiltInput(gamma);
+                        break;
+                    case 180:
+                    case -180:
+                        targetX = normalizeTiltInput(-gamma);
+                        targetY = normalizeTiltInput(-beta);
+                        break;
+                    default:
+                        targetX = normalizeTiltInput(gamma);
+                        targetY = normalizeTiltInput(beta);
+                        break;
+                }
+                tiltTargetAxis[0] = targetX;
+                tiltTargetAxis[1] = targetY;
+            }
+
+
+            function enableTiltControl(options, callback) {
+                options = options || {};
+                var onResult = (typeof callback === 'function') ? callback : function() {};
+                if (!tiltControlSupported) {
+                    tiltControlEnabled = false;
+                    tiltPermissionState = 'unavailable';
+                    updateTiltUi();
+                    onResult(false);
+                    return;
+                }
+                if (tiltControlEnabled) {
+                    if (gameSettings && !gameSettings.tiltControlEnabled) {
+                        gameSettings.tiltControlEnabled = true;
+                        saveSettings();
+                    }
+                    tiltPermissionState = 'granted';
+                    updateTiltUi();
+                    onResult(true);
+                    return;
+                }
+
+                function finishEnable() {
+                    if (typeof window !== 'undefined' && typeof window.addEventListener === 'function') {
+                        window.addEventListener('deviceorientation', handleDeviceOrientation, true);
+                    }
+                    tiltControlEnabled = true;
+                    tiltPermissionState = 'granted';
+                    tiltAxis[0] = 0;
+                    tiltAxis[1] = 0;
+                    tiltTargetAxis[0] = 0;
+                    tiltTargetAxis[1] = 0;
+                    if (gameSettings && !gameSettings.tiltControlEnabled) {
+                        gameSettings.tiltControlEnabled = true;
+                        saveSettings();
+                    }
+                    updateTiltUi();
+                    onResult(true);
+                }
+
+                if (requiresTiltPermission()) {
+                    if (tiltPermissionState === 'denied') {
+                        updateTiltUi();
+                        onResult(false);
+                        return;
+                    }
+                    if (options.silent && tiltPermissionState !== 'granted') {
+                        updateTiltUi();
+                        onResult(false);
+                        return;
+                    }
+                    try {
+                        var permissionPromise = window.DeviceOrientationEvent.requestPermission();
+                        if (permissionPromise && typeof permissionPromise.then === 'function') {
+                            permissionPromise.then(function(state) {
+                                tiltPermissionState = state;
+                                if (state === 'granted') {
+                                    finishEnable();
+                                } else {
+                                    disableTiltControl({ skipPreference: true, skipUiUpdate: true, skipSave: true });
+                                    if (state === 'denied') {
+                                        tiltPermissionState = 'denied';
+                                    }
+                                    updateTiltUi();
+                                    onResult(false);
+                                }
+                            }).catch(function(err) {
+                                console.warn('Motion control permission request failed.', err);
+                                tiltPermissionState = 'denied';
+                                disableTiltControl({ skipPreference: true, skipUiUpdate: true, skipSave: true });
+                                updateTiltUi();
+                                onResult(false);
+                            });
+                        } else if (permissionPromise === 'granted') {
+                            finishEnable();
+                        } else {
+                            if (typeof permissionPromise === 'string') {
+                                tiltPermissionState = permissionPromise;
+                            }
+                            disableTiltControl({ skipPreference: true, skipUiUpdate: true, skipSave: true });
+                            updateTiltUi();
+                            onResult(false);
+                        }
+                    } catch (err) {
+                        console.warn('Motion control permission request threw an error.', err);
+                        tiltPermissionState = 'denied';
+                        disableTiltControl({ skipPreference: true, skipUiUpdate: true, skipSave: true });
+                        updateTiltUi();
+                        onResult(false);
+                    }
+                } else {
+                    finishEnable();
+                }
+            }
+
+
+            function disableTiltControl(options) {
+                options = options || {};
+                if (tiltControlEnabled && typeof window !== 'undefined' && typeof window.removeEventListener === 'function') {
+                    window.removeEventListener('deviceorientation', handleDeviceOrientation, true);
+                }
+                tiltControlEnabled = false;
+                tiltAxis[0] = 0;
+                tiltAxis[1] = 0;
+                tiltTargetAxis[0] = 0;
+                tiltTargetAxis[1] = 0;
+                if (!options.skipPreference && gameSettings && gameSettings.tiltControlEnabled) {
+                    gameSettings.tiltControlEnabled = false;
+                    if (!options.skipSave) {
+                        saveSettings();
+                    }
+                }
+                if (!options.skipUiUpdate) {
+                    updateTiltUi();
+                }
+            }
+
+
+            function updateTiltUi() {
+                if (!window.jQuery) {
+                    return;
+                }
+                var $checkbox = jQuery('#settings-tilt-control');
+                var $note = jQuery('#settings-tilt-note');
+                if (!$checkbox.length) {
+                    return;
+                }
+                if (!tiltControlSupported) {
+                    $checkbox.prop('checked', false);
+                    $checkbox.prop('disabled', true);
+                    if ($note.length) {
+                        $note.text(t('settings.tiltUnavailable'));
+                    }
+                    return;
+                }
+                $checkbox.prop('disabled', false);
+                $checkbox.prop('checked', !!(gameSettings && gameSettings.tiltControlEnabled));
+                if ($note.length) {
+                    var noteKey;
+                    if (tiltControlEnabled || (gameSettings && gameSettings.tiltControlEnabled && tiltPermissionState === 'granted')) {
+                        noteKey = 'settings.tiltEnabled';
+                    } else if (requiresTiltPermission() && tiltPermissionState !== 'granted') {
+                        noteKey = 'settings.tiltNeedsPermission';
+                    } else if (gameSettings && gameSettings.tiltControlEnabled) {
+                        noteKey = 'settings.tiltEnabled';
+                    } else {
+                        noteKey = 'settings.tiltDisabled';
+                    }
+                    $note.text(t(noteKey));
                 }
             }
 
@@ -1309,8 +2793,14 @@
                     name: trimmed.substring(0, 40),
                     highestLevel: 0,
                     totalTimeMs: 0,
-                    saveData: null
+                    saveData: null,
+                    coins: 0,
+                    inventory: {
+                        bombs: 0,
+                        boosters: {}
+                    }
                 };
+                ensurePlayerInventory(newPlayer);
                 players.push(newPlayer);
                 currentPlayer = newPlayer;
                 hasStartedGame = false;
@@ -1319,6 +2809,8 @@
                 renderPlayerSelect();
                 renderScoreboard();
                 updateStartMenuState();
+                updateInventoryMenu();
+                updateShopMenu();
                 return { ok: true, message: t('menu.messagePlayerCreated') };
             }
 
@@ -1335,12 +2827,18 @@
                     return player.name !== nameToDelete;
                 });
                 currentPlayer = players.length > 0 ? players[0] : null;
+                if (currentPlayer) {
+                    ensurePlayerInventory(currentPlayer);
+                }
                 hasStartedGame = false;
                 savePlayers();
                 persistCurrentPlayerName();
                 renderPlayerSelect();
                 renderScoreboard();
                 updateStartMenuState();
+                updateCoinCounter();
+                updateInventoryMenu();
+                updateShopMenu();
                 showStartMenu(false);
                 gameState = 'menu';
                 resetGameStateForPlayer();
@@ -1395,6 +2893,9 @@
                 savePlayers();
                 renderScoreboard();
                 updateStartMenuState();
+                updateCoinCounter();
+                updateInventoryMenu();
+                updateShopMenu();
                 hasStartedGame = true;
                 previousGameState = null;
                 hideStartMenu({restore: false});
@@ -1406,6 +2907,7 @@
                 mazeDimension = 11;
                 levelIndex = 1;
                 keyAxis = [0, 0];
+                clearAllTouchPointers();
                 lastMazeName = t('level.standardName');
                 pendingVictoryMessage = null;
                 pendingVictoryPromise = null;
@@ -1431,6 +2933,9 @@
                 planeMesh = undefined;
                 light = undefined;
                 ballMesh = undefined;
+                wallBodies = {};
+                inventoryPreviousState = null;
+                shopPreviousState = null;
             }
 
 
@@ -1447,6 +2952,7 @@
                     jQuery('#menu-message').text('');
                 }
                 gameState = 'initialize';
+                updateStartMenuState();
             }
 
 
@@ -1477,12 +2983,19 @@
                 } else {
                     jQuery('#menu-button').hide();
                 }
+                updateStartMenuState();
             }
 
 
             function openSettingsMenu() {
                 jQuery('#settings-victory-llm').prop('checked', !!gameSettings.victoryLlmEnabled);
                 jQuery('#settings-language').val(gameSettings.language || defaultSettings.language);
+                settingsKeyBindingDraft = cloneKeyBindings(gameSettings.keyBindings || defaultSettings.keyBindings);
+                clearKeybindingMessageOverride();
+                awaitingKeyBindingDirection = null;
+                awaitingKeyBindingButton = null;
+                updateSettingsKeyBindingUi();
+                updateTiltUi();
                 jQuery('#settings-menu').fadeIn(150);
             }
 
@@ -1491,10 +3004,13 @@
                 if (saveChanges) {
                     gameSettings.victoryLlmEnabled = jQuery('#settings-victory-llm').is(':checked');
                     gameSettings.language = jQuery('#settings-language').val() || defaultSettings.language;
+                    gameSettings.keyBindings = cloneKeyBindings(settingsKeyBindingDraft || gameSettings.keyBindings || defaultSettings.keyBindings);
                     applySettings();
                     setLanguage(gameSettings.language, {skipSave: true});
                     saveSettings();
                 }
+                cancelKeybindingCapture();
+                settingsKeyBindingDraft = null;
                 jQuery('#settings-menu').fadeOut(150);
             }
 
@@ -1552,57 +3068,44 @@
             function configureExit(field) {
                 var dimension = field.dimension || field.length;
                 currentExitApproachCell = null;
-                var candidates = [];
-                function pushCandidate(boundaryX, boundaryY, neighborX, neighborY) {
-                    if (boundaryX < 0 || boundaryX >= dimension || boundaryY < 0 || boundaryY >= dimension) {
-                        return;
-                    }
-                    if (neighborX < 0 || neighborX >= dimension || neighborY < 0 || neighborY >= dimension) {
-                        return;
-                    }
-                    if (neighborX === 1 && neighborY === 1) {
-                        return;
-                    }
-                    candidates.push({
-                        bx: boundaryX,
-                        by: boundaryY,
-                        nx: neighborX,
-                        ny: neighborY
-                    });
+                currentExitTarget.x = null;
+                currentExitTarget.y = null;
+                if (!field || !dimension) {
+                    return;
                 }
-                for (var y = 1; y < dimension - 1; y += 2) {
-                    pushCandidate(dimension - 1, y, dimension - 2, y); // right edge
-                    pushCandidate(0, y, 1, y); // left edge
-                }
-                for (var x = 1; x < dimension - 1; x += 2) {
-                    pushCandidate(x, dimension - 1, x, dimension - 2); // bottom edge
-                    pushCandidate(x, 0, x, 1); // top edge
-                }
+                var candidates = collectWalkableCells(field).filter(function(cell) {
+                    if (!cell) {
+                        return false;
+                    }
+                    if (cell.x === 1 && cell.y === 1) {
+                        return false;
+                    }
+                    if (cell.x <= 0 || cell.y <= 0 || cell.x >= dimension - 1 || cell.y >= dimension - 1) {
+                        return false;
+                    }
+                    return true;
+                });
                 if (candidates.length === 0) {
-                    field[dimension-1][dimension-2] = false;
-                    if (dimension - 2 >= 0 && dimension - 2 < dimension) {
-                        field[dimension - 2][dimension - 2] = false;
-                        currentExitTarget.x = dimension - 2;
-                        currentExitTarget.y = dimension - 2;
-                        currentExitApproachCell = {x: dimension - 2, y: dimension - 2};
-                    } else {
-                        currentExitTarget.x = dimension - 1;
-                        currentExitTarget.y = dimension - 2;
-                    }
+                    currentExitTarget.x = 1;
+                    currentExitTarget.y = 1;
+                    currentExitApproachCell = {x: 1, y: 1};
+                    field[1][1] = false;
                     return;
                 }
                 var chosen = candidates[Math.floor(Math.random() * candidates.length)];
-                field[chosen.bx][chosen.by] = false;
-                field[chosen.nx][chosen.ny] = false;
-                currentExitApproachCell = {x: chosen.nx, y: chosen.ny};
-                currentExitTarget.x = chosen.nx;
-                currentExitTarget.y = chosen.ny;
+                if (chosen && field[chosen.x] && field[chosen.x][chosen.y]) {
+                    field[chosen.x][chosen.y] = false;
+                }
+                currentExitApproachCell = {x: chosen.x, y: chosen.y};
+                currentExitTarget.x = chosen.x;
+                currentExitTarget.y = chosen.y;
             }
 
 
-            function startLevelWithField(field) {
+            function startLevelWithField(field, options) {
+                options = options || {};
                 randomizeLevelTextures();
-                lastMazeName = t('level.standardName');
+                lastMazeName = options.name || t('level.standardName');
                 maze = ensureMazeOpenings(field);
                 configureExit(maze);
                 keyAxis = [0, 0];
@@ -1634,7 +3137,8 @@
                 levelIndex = Math.max(1, Math.floor((mazeDimension - 1) / 2 - 4));
                 updateLevelLabel('loading');
                 var dimension = mazeDimension;
-                lastMazeName = t('level.standardName');
+                var algorithmInfo = getMazeAlgorithmForLevel(levelIndex);
+                var mazeLabelKey = (algorithmInfo && algorithmInfo.labelKey) || 'level.standardName';
                 if (!nextLevelConfig) {
                     nextLevelConfig = generateItemsForLevel(levelIndex);
                 }
@@ -1647,8 +3151,28 @@
                 } else {
                     currentRunStats = {coins: 0, boosters: [], totalTimeMs: 0, lastLevelDurationMs: 0};
                 }
-                startLevelWithField(generateSquareMaze(dimension));
+                if (typeof MazeGenerator !== 'undefined' && MazeGenerator.build) {
+                    var mazeResult = MazeGenerator.build({
+                        algorithm: algorithmInfo.key,
+                        dimension: dimension
+                    });
+                    startLevelWithField(mazeResult.field, { name: t(mazeLabelKey) });
+                } else {
+                    startLevelWithField(generateSquareMaze(dimension), { name: t(mazeLabelKey) });
+                }
                 isPreparingLevel = false;
+            }
+
+
+            function getMazeAlgorithmForLevel(level) {
+                if (!availableMazeAlgorithms || availableMazeAlgorithms.length === 0) {
+                    return { key: 'depth-first', labelKey: 'level.standardName' };
+                }
+                var index = 0;
+                if (typeof level === 'number' && level > 0) {
+                    index = (level - 1) % availableMazeAlgorithms.length;
+                }
+                return availableMazeAlgorithms[index];
             }
 
             
@@ -1672,12 +3196,15 @@
                 bodyDef.type = b2Body.b2_staticBody;
                 fixDef.shape = new b2PolygonShape();
                 fixDef.shape.SetAsBox(0.5, 0.5);
+                wallBodies = {};
                 for (var i = 0; i < maze.dimension; i++) {
                     for (var j = 0; j < maze.dimension; j++) {
                         if (maze[i][j]) {
                             bodyDef.position.x = i;
                             bodyDef.position.y = j;
-                            wWorld.CreateBody(bodyDef).CreateFixture(fixDef);
+                            var wallBody = wWorld.CreateBody(bodyDef);
+                            wallBody.CreateFixture(fixDef);
+                            wallBodies[i + ',' + j] = wallBody;
                         }
                     }
                 }
@@ -1756,22 +3283,42 @@
                 planeMesh = new THREE.Mesh(g, m);
                 planeMesh.position.set((mazeDimension-1)/2, (mazeDimension-1)/2, 0);
                 planeMesh.rotation.set(Math.PI/2, 0, 0);
-                scene.add(planeMesh);                
+                scene.add(planeMesh);
+
+                refreshExitIndicator();
 
             }
 
 
             function updatePhysicsWorld() {
 
-                // Apply "friction". 
+                // Apply "friction".
                 var lv = wBall.GetLinearVelocity();
                 lv.Multiply(currentFrictionFactor);
                 wBall.SetLinearVelocity(lv);
-                
+
                 // Apply user-directed force.
                 var impulseStrength = baseImpulseStrength * currentImpulseMultiplier;
-                var f = new b2Vec2(keyAxis[0] * wBall.GetMass() * impulseStrength, keyAxis[1] * wBall.GetMass() * impulseStrength);
-                wBall.ApplyImpulse(f, wBall.GetPosition());          
+                var axisX = keyAxis[0] + touchAxis[0];
+                var axisY = keyAxis[1] + touchAxis[1];
+                if (tiltControlEnabled) {
+                    tiltAxis[0] += (tiltTargetAxis[0] - tiltAxis[0]) * tiltSmoothingFactor;
+                    tiltAxis[1] += (tiltTargetAxis[1] - tiltAxis[1]) * tiltSmoothingFactor;
+                    if (Math.abs(tiltAxis[0]) < 0.02) {
+                        tiltAxis[0] = 0;
+                    }
+                    if (Math.abs(tiltAxis[1]) < 0.02) {
+                        tiltAxis[1] = 0;
+                    }
+                    axisX += tiltAxis[0];
+                    axisY += tiltAxis[1];
+                }
+                if (axisX > 1) { axisX = 1; }
+                if (axisX < -1) { axisX = -1; }
+                if (axisY > 1) { axisY = 1; }
+                if (axisY < -1) { axisY = -1; }
+                var f = new b2Vec2(axisX * wBall.GetMass() * impulseStrength, axisY * wBall.GetMass() * impulseStrength);
+                wBall.ApplyImpulse(f, wBall.GetPosition());
                 keyAxis = [0,0];
 
                 // Take a time step.
@@ -1911,7 +3458,176 @@
                 keyAxis = axis.slice(0);
             }
 
-            
+
+            function parseTouchControlAxis(element) {
+                if (!element || typeof element.getAttribute !== 'function') {
+                    return [0, 0];
+                }
+                var axisX = parseFloat(element.getAttribute('data-axis-x'));
+                var axisY = parseFloat(element.getAttribute('data-axis-y'));
+                if (isNaN(axisX)) { axisX = 0; }
+                if (isNaN(axisY)) { axisY = 0; }
+                return [axisX, axisY];
+            }
+
+
+            function recomputeTouchAxis() {
+                var axisX = 0;
+                var axisY = 0;
+                for (var pointerId in touchPointerAxes) {
+                    if (!Object.prototype.hasOwnProperty.call(touchPointerAxes, pointerId)) {
+                        continue;
+                    }
+                    axisX += touchPointerAxes[pointerId][0];
+                    axisY += touchPointerAxes[pointerId][1];
+                }
+                if (axisX > 1) { axisX = 1; }
+                if (axisX < -1) { axisX = -1; }
+                if (axisY > 1) { axisY = 1; }
+                if (axisY < -1) { axisY = -1; }
+                touchAxis[0] = axisX;
+                touchAxis[1] = axisY;
+            }
+
+
+            function registerTouchPointer(id, axis) {
+                if (!id) {
+                    return;
+                }
+                touchPointerAxes[id] = axis.slice ? axis.slice(0) : [axis[0], axis[1]];
+                recomputeTouchAxis();
+            }
+
+
+            function unregisterTouchPointer(id) {
+                if (!id || !Object.prototype.hasOwnProperty.call(touchPointerAxes, id)) {
+                    return;
+                }
+                delete touchPointerAxes[id];
+                recomputeTouchAxis();
+            }
+
+
+            function clearAllTouchPointers() {
+                touchPointerAxes = {};
+                touchAxis[0] = 0;
+                touchAxis[1] = 0;
+            }
+
+
+            function setupTouchControls() {
+                clearAllTouchPointers();
+                var container = document.getElementById('touch-controls');
+                if (!container) {
+                    return;
+                }
+                var buttons = container.querySelectorAll('.touch-control-button');
+                if (!buttons || buttons.length === 0) {
+                    return;
+                }
+
+                var usePointerEvents = typeof window !== 'undefined' && !!window.PointerEvent;
+
+                if (usePointerEvents) {
+                    var pointerStart = function(event) {
+                        if (event && typeof event.preventDefault === 'function') {
+                            event.preventDefault();
+                        }
+                        var axis = parseTouchControlAxis(event.currentTarget);
+                        var pointerId = (event && event.pointerId != null) ? ('p' + event.pointerId) : 'mouse';
+                        registerTouchPointer(pointerId, axis);
+                    };
+
+                    var pointerEnd = function(event) {
+                        if (event && typeof event.preventDefault === 'function') {
+                            event.preventDefault();
+                        }
+                        var pointerId = (event && event.pointerId != null) ? ('p' + event.pointerId) : 'mouse';
+                        unregisterTouchPointer(pointerId);
+                    };
+
+                    for (var i = 0; i < buttons.length; i++) {
+                        var button = buttons[i];
+                        button.addEventListener('pointerdown', pointerStart, false);
+                        button.addEventListener('pointerup', pointerEnd, false);
+                        button.addEventListener('pointercancel', pointerEnd, false);
+                        button.addEventListener('pointerleave', pointerEnd, false);
+                        button.addEventListener('pointerout', pointerEnd, false);
+                        button.addEventListener('contextmenu', function(event) {
+                            if (event && typeof event.preventDefault === 'function') {
+                                event.preventDefault();
+                            }
+                        }, false);
+                    }
+                } else {
+                    var touchStart = function(event) {
+                        if (event && typeof event.preventDefault === 'function') {
+                            event.preventDefault();
+                        }
+                        var axis = parseTouchControlAxis(event.currentTarget);
+                        var touches = (event && event.changedTouches) ? event.changedTouches : [];
+                        if (!touches || touches.length === 0) {
+                            registerTouchPointer('touch', axis);
+                            return;
+                        }
+                        for (var ti = 0; ti < touches.length; ti++) {
+                            var touchId = 't' + touches[ti].identifier;
+                            registerTouchPointer(touchId, axis);
+                        }
+                    };
+
+                    var touchEnd = function(event) {
+                        if (event && typeof event.preventDefault === 'function') {
+                            event.preventDefault();
+                        }
+                        var touches = (event && event.changedTouches) ? event.changedTouches : [];
+                        if (!touches || touches.length === 0) {
+                            unregisterTouchPointer('touch');
+                            return;
+                        }
+                        for (var ti = 0; ti < touches.length; ti++) {
+                            var touchId = 't' + touches[ti].identifier;
+                            unregisterTouchPointer(touchId);
+                        }
+                    };
+
+                    var mouseStart = function(event) {
+                        if (event && typeof event.preventDefault === 'function') {
+                            event.preventDefault();
+                        }
+                        var axis = parseTouchControlAxis(event.currentTarget);
+                        registerTouchPointer('mouse', axis);
+                    };
+
+                    var mouseEnd = function(event) {
+                        if (event && typeof event.preventDefault === 'function') {
+                            event.preventDefault();
+                        }
+                        unregisterTouchPointer('mouse');
+                    };
+
+                    for (var j = 0; j < buttons.length; j++) {
+                        var touchButton = buttons[j];
+                        touchButton.addEventListener('touchstart', touchStart, false);
+                        touchButton.addEventListener('touchend', touchEnd, false);
+                        touchButton.addEventListener('touchcancel', touchEnd, false);
+                        touchButton.addEventListener('mousedown', mouseStart, false);
+                        touchButton.addEventListener('mouseup', mouseEnd, false);
+                        touchButton.addEventListener('mouseleave', mouseEnd, false);
+                        touchButton.addEventListener('contextmenu', function(event) {
+                            if (event && typeof event.preventDefault === 'function') {
+                                event.preventDefault();
+                            }
+                        }, false);
+                    }
+                }
+
+                if (typeof window !== 'undefined' && typeof window.addEventListener === 'function') {
+                    window.addEventListener('blur', clearAllTouchPointers);
+                }
+            }
+
+
             jQuery.fn.centerv = function () {
                 wh = window.innerHeight;
                 h = this.outerHeight();
@@ -1954,10 +3670,17 @@
                 $('#victory').hide();
 
                 // Bind keyboard and resize events.
-                KeyboardJS.bind.axis('left', 'right', 'down', 'up', onMoveKey);
-                KeyboardJS.bind.axis('h', 'l', 'j', 'k', onMoveKey);
+                arrowAxisBinding = KeyboardJS.bind.axis('left', 'right', 'down', 'up', onMoveKey);
+                applyCustomKeyBindings();
+                if (document && document.addEventListener) {
+                    document.addEventListener('keydown', onSettingsKeyCapture, true);
+                }
+                KeyboardJS.bind.key('b', function() {
+                    toggleInventoryMenu();
+                });
                 $(window).resize(onResize);
-                
+                setupTouchControls();
+
                 loadPersistentState();
                 setLanguage(gameSettings.language || defaultSettings.language, {
                     skipSave: true,
@@ -2023,6 +3746,20 @@
                     closeSettingsMenu(false);
                 });
 
+                $('#settings-tilt-control').on('change', function() {
+                    var $checkbox = $(this);
+                    if ($checkbox.is(':checked')) {
+                        enableTiltControl({}, function(success) {
+                            if (!success) {
+                                $checkbox.prop('checked', false);
+                                updateTiltUi();
+                            }
+                        });
+                    } else {
+                        disableTiltControl();
+                    }
+                });
+
                 $('#open-scoreboard').on('click', function() {
                     openScoreboardMenu();
                 });
@@ -2036,10 +3773,88 @@
                         closeSettingsMenu(false);
                     }
                 });
+                $('#settings-menu').on('click', '.keybinding-button', function() {
+                    var direction = $(this).attr('data-direction');
+                    beginKeybindingCapture(direction, this);
+                });
+                $('#settings-reset-keybindings').on('click', function() {
+                    settingsKeyBindingDraft = cloneKeyBindings(defaultSettings.keyBindings);
+                    awaitingKeyBindingDirection = null;
+                    awaitingKeyBindingButton = null;
+                    clearKeybindingMessageOverride();
+                    updateSettingsKeyBindingUi();
+                });
 
                 $('#scoreboard-menu').on('click', function(event) {
                     if (event.target === this) {
                         closeScoreboardMenu();
+                    }
+                });
+
+                $('#open-inventory').on('click', function() {
+                    openInventoryMenu();
+                });
+
+                $('#open-shop').on('click', function() {
+                    openShopMenu();
+                });
+
+                $('#inventory-button').on('click', function() {
+                    openInventoryMenu();
+                });
+
+                $('#shop-button').on('click', function() {
+                    openShopMenu();
+                });
+
+                $('#inventory-open-shop').on('click', function() {
+                    openShopMenu();
+                });
+
+                $('#inventory-close').on('click', function() {
+                    closeInventoryMenu();
+                });
+
+                $('#inventory-use-bomb').on('click', function() {
+                    useInventoryBomb();
+                });
+
+                $('#inventory-booster-list').on('click', '.inventory-use-booster', function() {
+                    var boosterId = $(this).attr('data-booster-id');
+                    if (boosterId) {
+                        useInventoryBooster(boosterId);
+                    }
+                });
+
+                $('#inventory-menu').on('click', function(event) {
+                    if (event.target === this) {
+                        closeInventoryMenu();
+                    }
+                });
+
+                $('#shop-close').on('click', function() {
+                    closeShopMenu();
+                });
+
+                $('#shop-back').on('click', function() {
+                    var resumeState = shopPreviousState;
+                    closeShopMenu({ skipRestore: true });
+                    if (resumeState) {
+                        inventoryPreviousState = resumeState;
+                    }
+                    openInventoryMenu({ skipStateChange: true });
+                });
+
+                $('#shop-items').on('click', '.shop-buy', function() {
+                    var itemId = $(this).attr('data-item-id');
+                    if (itemId) {
+                        purchaseShopItem(itemId);
+                    }
+                });
+
+                $('#shop-menu').on('click', function(event) {
+                    if (event.target === this) {
+                        closeShopMenu();
                     }
                 });
 
@@ -2054,6 +3869,14 @@
                 });
 
                 KeyboardJS.bind.key('escape', function() {
+                    if ($('#shop-menu:visible').length) {
+                        closeShopMenu();
+                        return;
+                    }
+                    if ($('#inventory-menu:visible').length) {
+                        closeInventoryMenu();
+                        return;
+                    }
                     if ($('#settings-menu:visible').length) {
                         closeSettingsMenu(false);
                         return;
@@ -2115,8 +3938,19 @@
                 left: 0px;
                 top: 0px;
                 padding: 4px;
-                color: yellow;   
+                color: yellow;
                 font-weight: bold;
+            }
+
+            #coin-counter {
+                position: absolute;
+                left: 0px;
+                top: 28px;
+                padding: 4px;
+                color: #ffd700;
+                font-weight: bold;
+                z-index: 4100;
+                display: none;
             }
 
             #victory {
@@ -2153,6 +3987,118 @@
 
             #menu-button:hover {
                 background: rgba(70, 70, 70, 0.8);
+            }
+
+            #inventory-button,
+            #shop-button {
+                position: absolute;
+                right: 8px;
+                padding: 6px 12px;
+                background: rgba(0,0,0,0.7);
+                color: white;
+                border: 1px solid #8a8a8a;
+                border-radius: 4px;
+                font-size: 12px;
+                cursor: pointer;
+                z-index: 4095;
+                display: none;
+                user-select: none;
+            }
+
+            #inventory-button {
+                top: 40px;
+            }
+
+            #shop-button {
+                top: 72px;
+            }
+
+            #inventory-button:hover,
+            #shop-button:hover {
+                background: rgba(70, 70, 70, 0.8);
+            }
+
+            #touch-controls {
+                position: fixed;
+                bottom: 16px;
+                left: 50%;
+                width: 160px;
+                height: 120px;
+                transform: translateX(-50%);
+                display: none;
+                z-index: 4200;
+                pointer-events: none;
+            }
+
+            #touch-controls .touch-control-button {
+                position: absolute;
+                width: 52px;
+                height: 52px;
+                border-radius: 50%;
+                background: rgba(0, 0, 0, 0.6);
+                color: #ffffff;
+                border: 1px solid rgba(255, 255, 255, 0.4);
+                font-size: 24px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                touch-action: none;
+                pointer-events: auto;
+                box-shadow: 0 3px 8px rgba(0, 0, 0, 0.45);
+                transition: background 0.15s ease, transform 0.15s ease;
+            }
+
+            #touch-controls .touch-control-button:active {
+                background: rgba(80, 80, 80, 0.85);
+                transform: scale(0.95) translateZ(0);
+            }
+
+            #touch-controls .touch-control-button:focus-visible {
+                outline: 2px solid #8cff8c;
+                outline-offset: 2px;
+            }
+
+            #touch-controls .touch-up {
+                top: 0;
+                left: 50%;
+                transform: translate(-50%, 0);
+            }
+
+            #touch-controls .touch-down {
+                bottom: 0;
+                left: 50%;
+                transform: translate(-50%, 0);
+            }
+
+            #touch-controls .touch-left {
+                left: 0;
+                top: 50%;
+                transform: translate(0, -50%);
+            }
+
+            #touch-controls .touch-right {
+                right: 0;
+                top: 50%;
+                transform: translate(0, -50%);
+            }
+
+            @media (hover: none) and (pointer: coarse) {
+                #touch-controls {
+                    display: block;
+                }
+            }
+
+            @media (max-width: 480px) {
+                #touch-controls {
+                    width: 140px;
+                    height: 110px;
+                }
+
+                #touch-controls .touch-control-button {
+                    width: 46px;
+                    height: 46px;
+                    font-size: 20px;
+                }
             }
 
             .menu-overlay {
@@ -2204,6 +4150,94 @@
                 color: white;
                 border: 1px solid #555;
                 box-sizing: border-box;
+            }
+
+            .menu-message {
+                display: none;
+                margin-top: 8px;
+                margin-bottom: 8px;
+            }
+
+            #inventory-message {
+                color: #8cff8c;
+            }
+
+            #shop-message {
+                color: #8cff8c;
+            }
+
+            .inventory-balance {
+                font-weight: bold;
+                margin-bottom: 12px;
+            }
+
+            .inventory-section {
+                margin-bottom: 18px;
+            }
+
+            .inventory-empty {
+                font-style: italic;
+                color: rgba(255,255,255,0.6);
+            }
+
+            #inventory-booster-list {
+                list-style: none;
+                padding: 0;
+                margin: 0;
+            }
+
+            #inventory-booster-list li {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                margin-bottom: 8px;
+                gap: 12px;
+            }
+
+            .inventory-booster-label {
+                flex: 1;
+            }
+
+            #inventory-booster-list button,
+            #inventory-use-bomb,
+            #inventory-open-shop,
+            #inventory-close,
+            #shop-items .shop-buy,
+            #shop-back,
+            #shop-close {
+                padding: 6px 12px;
+                font-size: 12px;
+            }
+
+            #shop-items {
+                list-style: none;
+                padding: 0;
+                margin: 16px 0;
+            }
+
+            #shop-items .shop-item {
+                border: 1px solid rgba(255,255,255,0.12);
+                border-radius: 6px;
+                padding: 12px;
+                margin-bottom: 12px;
+                background: rgba(0,0,0,0.35);
+            }
+
+            .shop-item-header {
+                font-weight: bold;
+                margin-bottom: 4px;
+            }
+
+            .shop-item-description {
+                font-size: 14px;
+                margin-bottom: 6px;
+                color: rgba(255,255,255,0.8);
+            }
+
+            .shop-item-cost {
+                font-size: 13px;
+                margin-bottom: 10px;
+                color: #ffd700;
             }
 
             .menu-panel input[type='text']::placeholder {
@@ -2288,6 +4322,62 @@
                 margin-bottom: 16px;
             }
 
+            #settings-menu .settings-note {
+                margin-top: 6px;
+                font-size: 13px;
+                color: #bbbbbb;
+                line-height: 1.4;
+            }
+
+            .keybinding-grid {
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+                gap: 10px 16px;
+                margin-top: 10px;
+            }
+
+            .keybinding-row {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                gap: 10px;
+            }
+
+            .keybinding-label {
+                font-size: 14px;
+            }
+
+            .keybinding-button {
+                background: #1f1f1f;
+                border: 1px solid #555;
+                color: #f4f4f4;
+                font-weight: bold;
+                padding: 8px 12px;
+                min-width: 120px;
+                transition: background 0.2s ease, border-color 0.2s ease;
+            }
+
+            .keybinding-button:hover {
+                background: #2b2b2b;
+                border-color: #6b6b6b;
+            }
+
+            .keybinding-button.waiting {
+                background: #2b3a5b;
+                border-color: #6f8bff;
+                animation: keybindingPulse 1s ease-in-out infinite alternate;
+            }
+
+            @keyframes keybindingPulse {
+                from { box-shadow: 0 0 0 rgba(111, 139, 255, 0.0); }
+                to { box-shadow: 0 0 8px rgba(111, 139, 255, 0.6); }
+            }
+
+            .keybinding-reset {
+                margin-top: 12px;
+                align-self: flex-start;
+            }
+
             #scoreboard-menu table {
                 width: 100%;
                 border-collapse: collapse;
@@ -2320,12 +4410,25 @@
     <body>
     
     <div id='instructions'></div>
-    
+
     <div id='help'></div>
 
     <div id='level'></div>
 
+    <div id='coin-counter'></div>
+
+    <button id='inventory-button' type='button'></button>
+
+    <button id='shop-button' type='button'></button>
+
     <div id='menu-button'>
+    </div>
+
+    <div id='touch-controls' role='group' aria-label='Touch movement controls'>
+        <button type='button' class='touch-control-button touch-up' data-axis-x='0' data-axis-y='-1' aria-label='Move up'>&#9650;</button>
+        <button type='button' class='touch-control-button touch-left' data-axis-x='-1' data-axis-y='0' aria-label='Move left'>&#9664;</button>
+        <button type='button' class='touch-control-button touch-down' data-axis-x='0' data-axis-y='1' aria-label='Move down'>&#9660;</button>
+        <button type='button' class='touch-control-button touch-right' data-axis-x='1' data-axis-y='0' aria-label='Move right'>&#9654;</button>
     </div>
 
     <div id='start-menu' class='menu-overlay'>
@@ -2359,6 +4462,8 @@
                 <button id='load-game' type='button' class='secondary'></button>
                 <button id='open-settings' type='button' class='secondary'></button>
                 <button id='open-scoreboard' type='button' class='secondary'></button>
+                <button id='open-inventory' type='button' class='secondary'></button>
+                <button id='open-shop' type='button' class='secondary'></button>
             </div>
         </div>
     </div>
@@ -2373,11 +4478,46 @@
                 </label>
             </div>
             <div class='settings-group'>
+                <label>
+                    <input type='checkbox' id='settings-tilt-control'>
+                    <span id='settings-tilt-label'></span>
+                </label>
+                <div id='settings-tilt-note' class='settings-note'></div>
+            </div>
+            <div class='settings-group'>
                 <label id='settings-language-label' for='settings-language'></label>
                 <select id='settings-language'>
                     <option value='de'></option>
                     <option value='en'></option>
                 </select>
+            </div>
+            <div class='settings-group'>
+                <h3 id='settings-controls-heading'></h3>
+                <p id='settings-controls-description' class='settings-note'></p>
+                <div class='keybinding-grid'>
+                    <div class='keybinding-row'>
+                        <span class='keybinding-label' id='settings-key-up-label'></span>
+                        <button type='button' class='keybinding-button' data-direction='up'></button>
+                    </div>
+                    <div class='keybinding-row'>
+                        <span class='keybinding-label' id='settings-key-down-label'></span>
+                        <button type='button' class='keybinding-button' data-direction='down'></button>
+                    </div>
+                    <div class='keybinding-row'>
+                        <span class='keybinding-label' id='settings-key-left-label'></span>
+                        <button type='button' class='keybinding-button' data-direction='left'></button>
+                    </div>
+                    <div class='keybinding-row'>
+                        <span class='keybinding-label' id='settings-key-right-label'></span>
+                        <button type='button' class='keybinding-button' data-direction='right'></button>
+                    </div>
+                    <div class='keybinding-row'>
+                        <span class='keybinding-label' id='settings-key-bomb-label'></span>
+                        <button type='button' class='keybinding-button' data-direction='bomb'></button>
+                    </div>
+                </div>
+                <div id='settings-keybinding-message' class='settings-note'></div>
+                <button id='settings-reset-keybindings' type='button' class='secondary keybinding-reset'></button>
             </div>
             <div class='menu-buttons'>
                 <button id='settings-save' type='button'></button>
@@ -2406,8 +4546,46 @@
         </div>
     </div>
 
+    <div id='inventory-menu' class='menu-overlay'>
+        <div class='menu-panel inventory-panel'>
+            <h2 id='inventory-title'></h2>
+            <div class='inventory-balance'>
+                <span id='inventory-coins-label'></span>: <span id='inventory-coins-value'>0</span>
+            </div>
+            <div id='inventory-message' class='menu-message'></div>
+            <div class='inventory-section'>
+                <h3 id='inventory-bombs-heading'></h3>
+                <p id='inventory-bomb-count'></p>
+                <button id='inventory-use-bomb' type='button'></button>
+            </div>
+            <div class='inventory-section'>
+                <h3 id='inventory-boosters-heading'></h3>
+                <p id='inventory-no-boosters' class='inventory-empty'></p>
+                <ul id='inventory-booster-list'></ul>
+            </div>
+            <div class='menu-buttons'>
+                <button id='inventory-open-shop' type='button'></button>
+                <button id='inventory-close' type='button' class='secondary'></button>
+            </div>
+        </div>
+    </div>
+
+    <div id='shop-menu' class='menu-overlay'>
+        <div class='menu-panel shop-panel'>
+            <h2 id='shop-title'></h2>
+            <div id='shop-description'></div>
+            <div id='shop-balance'></div>
+            <div id='shop-message' class='menu-message'></div>
+            <ul id='shop-items'></ul>
+            <div class='menu-buttons'>
+                <button id='shop-back' type='button' class='secondary'></button>
+                <button id='shop-close' type='button' class='secondary'></button>
+            </div>
+        </div>
+    </div>
+
     <div id='victory'></div>
-    
+
     </body>
 
 </html>

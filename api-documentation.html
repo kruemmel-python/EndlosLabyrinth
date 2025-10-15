@@ -425,48 +425,66 @@
 <section id="maze.js">
     <h2>maze.js</h2>
 
-    <p>This file contains the core logic for generating a square maze using a recursive backtracking algorithm. It initializes a grid and then carves paths through it to create a solvable maze structure.</p>
+    <p>
+        The maze generation module has been significantly expanded. In addition to the legacy
+        <code>generateSquareMaze</code> helper, the file now exposes a <code>MazeGenerator</code> namespace with
+        interchangeable algorithms, path-finding helpers, start/end point selection and simple rendering
+        utilities.  All algorithms still return boolean grids (<code>true</code> for a wall, <code>false</code> for a
+        passage) so the existing game code continues to work unchanged.
+    </p>
 
     <h3><code>generateSquareMaze(dimension)</code></h3>
-    <p>Generates a square maze of a specified dimension. The maze is represented as a 2D array where <code>true</code> indicates a wall and <code>false</code> indicates a path.</p>
-    <p><strong>Initialize the field.</strong></p>
-    <p><strong>Gnerate the maze recursively.</strong></p>
+    <p>
+        Backwards compatible facade for the classic recursive backtracking generator. It simply proxies to
+        <code>MazeGenerator.generateDepthFirst</code> and keeps the historical <code>dimension</code> property on the
+        returned grid.
+    </p>
 
-    <h4>Parameters:</h4>
+    <h3><code>MazeGenerator</code> (global namespace)</h3>
+    <p>
+        Provides a high-level API around maze creation and analysis:
+    </p>
     <ul>
-        <li>
-            <code>dimension</code> (<code>number</code>): The size of the square maze (e.g., 11 for an 11x11 maze). This value should typically be an odd number to ensure proper wall/path generation.
-        </li>
+        <li><code>build(options)</code>: Generate a maze with the selected algorithm and optional helpers (automatic start/end placement, solving, ASCII export).</li>
+        <li><code>generateDepthFirst(options)</code>: Recursive backtracking (legacy default).</li>
+        <li><code>generatePrim(options)</code>: Randomized Prim's algorithm for denser, cave-like mazes.</li>
+        <li><code>generateKruskal(options)</code>: Kruskal/Minimum-Spanning-Tree-based generator with uniform passages.</li>
+        <li><code>generateEller(options)</code>: Eller's algorithm for efficient streaming generation row by row.</li>
+        <li><code>generateHex(options)</code>: Prim-style growth on a hexagonal grid, returning axial coordinates and adjacency.</li>
+        <li><code>chooseEndpoints(grid, strategy)</code>: Determine start/end cells (longest-path by default, <code>"corners"</code> as alternative).</li>
+        <li><code>solve(grid, start, end)</code>: Breadth-first solver returning the path between two cells.</li>
+        <li><code>longestPath(grid)</code>: Convenience wrapper that computes the maze's diameter path.</li>
+        <li><code>toString(grid)</code>: Create a text/ASCII representation useful for debugging or logging.</li>
+        <li><code>drawOnCanvas(canvas, grid, options)</code>: Render a maze on an HTML <code>&lt;canvas&gt;</code> with optional colouring for start/end/path.</li>
     </ul>
 
-    <h4>Returns:</h4>
+    <h3>Generation Algorithms</h3>
+    <p>
+        Every algorithm accepts either a <code>dimension</code> (for square layouts) or explicit <code>width</code> and
+        <code>height</code>.  Even values are automatically rounded up to the next odd number to preserve border
+        walls.
+    </p>
     <ul>
-        <li>
-            <code>Array&lt;Array&lt;boolean&gt;&gt;</code>: A 2D array representing the generated maze. <code>true</code> signifies a wall, and <code>false</code> signifies a path. The array also has a <code>dimension</code> property set to the input dimension.
-        </li>
+        <li><strong>Depth-first search:</strong> Classic recursive backtracking using randomized directions.</li>
+        <li><strong>Randomized Prim:</strong> Maintains a frontier of candidate cells, carving towards already-open passages to create organic structures.</li>
+        <li><strong>Kruskal:</strong> Builds a minimum spanning tree over the cell graph via a disjoint-set union, producing uniform corridor lengths.</li>
+        <li><strong>Eller:</strong> Processes the maze row by row with dynamic set merging, ideal for generating tall mazes or streaming output.</li>
     </ul>
 
-    <h4>Internal Function: <code>iterate(field, x, y)</code></h4>
-    <p>A recursive helper function used by <code>generateSquareMaze</code> to carve paths through the maze grid. It implements the core logic of the recursive backtracking algorithm.</p>
+    <h3>Additional Topologies</h3>
+    <p>
+        <code>generateHex</code> grows a maze on a hexagonal grid described in axial coordinates. Each cell lists its connected neighbours, enabling downstream rendering or simulation on non-square tilings.
+    </p>
 
-    <h4>Parameters:</h4>
+    <h3>Analysis &amp; Utilities</h3>
+    <p>
+        The helper functions unlock new gameplay features and tooling:
+    </p>
     <ul>
-        <li>
-            <code>field</code> (<code>Array&lt;Array&lt;boolean&gt;&gt;</code>): The current state of the maze grid being generated.
-        </li>
-        <li>
-            <code>x</code> (<code>number</code>): The current X-coordinate (column) in the grid.
-        </li>
-        <li>
-            <code>y</code> (<code>number</code>): The current Y-coordinate (row) in the grid.
-        </li>
-    </ul>
-
-    <h4>Returns:</h4>
-    <ul>
-        <li>
-            <code>Array&lt;Array&lt;boolean&gt;&gt;</code>: The updated maze grid after carving paths from the current position.
-        </li>
+        <li><strong>Automatic endpoints:</strong> <code>chooseEndpoints</code> selects two distant cells (or opposing corners) for start/finish placement.</li>
+        <li><strong>Solving support:</strong> <code>solve</code> returns the shortest path between two coordinates, enabling hint systems or automated testing.</li>
+        <li><strong>Longest path discovery:</strong> <code>longestPath</code> exposes the maze diameter for analytics or challenge modes.</li>
+        <li><strong>Rendering helpers:</strong> <code>drawOnCanvas</code> quickly visualises a maze without requiring the full 3D scene graph.</li>
     </ul>
 </section>
 <section id="index.html">
@@ -492,6 +510,7 @@
         <li><code>maze</code>, <code>mazeMesh</code>: Data structure for the maze layout and its Three.js mesh representation.</li>
         <li><code>mazeDimension</code>: The current size of the square maze (e.g., 11x11).</li>
         <li><code>planeMesh</code>, <code>ballMesh</code>: Three.js meshes for the ground plane and the player's ball.</li>
+        <li><code>exitMesh</code>: A Three.js mesh that renders the red exit plate inside the maze.</li>
         <li><code>ballRadius</code>: Radius of the player's ball.</li>
         <li><code>keyAxis</code>: Array <code>[x, y]</code> representing the current input direction from keyboard.</li>
         <li><code>ironTexture</code>, <code>planeTexture</code>, <code>brickTexture</code>: Three.js textures for the ball, ground, and maze walls.</li>
@@ -515,13 +534,13 @@
         <li><code>baseImpulseStrength</code>, <code>baseFrictionFactor</code>: Default values for ball physics.</li>
         <li><code>boosterTimeouts</code>: Object to store timeouts for active booster effects.</li>
         <li><code>defaultLightIntensity</code>, <code>visionBoostActive</code>: Variables related to lighting and a specific booster effect.</li>
-        <li><code>itemResources</code>: Object to cache Three.js geometries and materials for in-game items (coins, boosters).</li>
+        <li><code>itemResources</code>: Object to cache Three.js geometries and materials for in-game items (coins, boosters, exit plate).</li>
         <li><code>b2World</code>, <code>b2FixtureDef</code>, <code>b2BodyDef</code>, <code>b2Body</code>, <code>b2CircleShape</code>, <code>b2PolygonShape</code>, <code>b2Settings</code>, <code>b2Vec2</code>: Box2D shortcuts for physics objects.</li>
         <li><code>wWorld</code>, <code>wBall</code>: Box2D world and the physics body for the ball.</li>
         <li><code>victoryLlmDefaults</code>: Default configuration for the AI-powered victory message feature.</li>
         <li><code>victoryDisplayDurationMs</code>: Duration for which victory messages are displayed.</li>
         <li><code>STORAGE_KEY_PLAYERS</code>, <code>STORAGE_KEY_SETTINGS</code>, <code>STORAGE_KEY_CURRENT_PLAYER</code>: Keys for localStorage to persist game data.</li>
-        <li><code>defaultSettings</code>: Default game settings.</li>
+        <li><code>defaultSettings</code>: Default game settings, covering language, the tilt toggle, and a <code>keyBindings</code> map for configurable movement controls plus the bomb hotkey.</li>
         <li><code>players</code>, <code>currentPlayer</code>: Arrays and objects managing player profiles and the currently active player.</li>
         <li><code>hasStartedGame</code>: Boolean indicating if a game has been started.</li>
         <li><code>previousGameState</code>: Stores the game state before pausing to the menu.</li>
@@ -614,6 +633,49 @@
                 <li><code>obj</code> (object): The object to clone.</li>
             </ul>
             <p><strong>Returns:</strong> A deep copy of the object, or <code>null</code> if input is null or cloning fails.</p>
+        </li>
+        <li>
+            <h3><code>sanitizeKeyBindings(bindings)</code></h3>
+            <p>Normalizes a movement key mapping, falling back to defaults for missing or unsupported keys.</p>
+            <ul>
+                <li><code>bindings</code> (object): Direction-to-key mapping to sanitize.</li>
+            </ul>
+            <p><strong>Returns:</strong> A normalized mapping with <code>up</code>, <code>down</code>, <code>left</code>, and <code>right</code> keys.</p>
+        </li>
+        <li>
+            <h3><code>cloneKeyBindings(bindings)</code></h3>
+            <p>Creates a sanitized clone of a key-binding map so UI code can edit it without mutating saved settings.</p>
+            <ul>
+                <li><code>bindings</code> (object): The source binding map.</li>
+            </ul>
+            <p><strong>Returns:</strong> A deep copy of the normalized binding map.</p>
+        </li>
+        <li>
+            <h3><code>formatKeyBindingDisplay(key)</code></h3>
+            <p>Formats a binding key into a human-friendly label (e.g., arrows render as directional glyphs, letters uppercase).</p>
+            <ul>
+                <li><code>key</code> (string): Canonical KeyboardJS key token.</li>
+            </ul>
+            <p><strong>Returns:</strong> A display string for settings buttons.</p>
+        </li>
+        <li>
+            <h3><code>applyCustomKeyBindings()</code></h3>
+            <p>Clears the previous custom axis binding and registers the currently selected movement keys with KeyboardJS.</p>
+        </li>
+        <li>
+            <h3><code>beginKeybindingCapture(direction, button)</code></h3>
+            <p>Puts the settings UI into capture mode so the next key press remaps the requested direction.</p>
+            <ul>
+                <li><code>direction</code> (string): One of <code>'up'</code>, <code>'down'</code>, <code>'left'</code>, or <code>'right'</code>.</li>
+                <li><code>button</code> (HTMLElement): The button that initiated capture (used for styling).</li>
+            </ul>
+        </li>
+        <li>
+            <h3><code>cancelKeybindingCapture(options)</code></h3>
+            <p>Exits capture mode without changing bindings. Optionally shows a cancellation message.</p>
+            <ul>
+                <li><code>options</code> (object, optional): <code>{ showCancelled: boolean }</code>.</li>
+            </ul>
         </li>
         <li>
             <h3><code>showMenuMessage(text)</code></h3>
@@ -754,6 +816,38 @@
             <ul>
                 <li><code>index</code> (number): The index of the item to collect.</li>
             </ul>
+        </li>
+        <li>
+            <h3><code>ensurePlayerInventory(player)</code></h3>
+            <p>Normalizes coin, bomb, and booster counts when loading a player profile so persisted inventory data remains valid across releases.</p>
+        </li>
+        <li>
+            <h3><code>addCoinsToPlayer(amount)</code></h3>
+            <p>Persists collected coins for the active player and refreshes the HUD, inventory, and shop overlays.</p>
+        </li>
+        <li>
+            <h3><code>updateInventoryMenu()</code> &amp; <code>updateShopMenu()</code></h3>
+            <p>Rebuild the inventory and shop overlays with localized labels, current balances, booster stacks, and enabled button states.</p>
+        </li>
+        <li>
+            <h3><code>openInventoryMenu(options)</code> / <code>closeInventoryMenu(options)</code></h3>
+            <p>Toggle the inventory overlay while remembering whether gameplay should resume after it closes.</p>
+        </li>
+        <li>
+            <h3><code>openShopMenu(options)</code> / <code>closeShopMenu(options)</code></h3>
+            <p>Show or hide the coin shop, optionally returning to the inventory overlay and restoring the previous game state.</p>
+        </li>
+        <li>
+            <h3><code>purchaseShopItem(itemId)</code></h3>
+            <p>Spends coins on bombs or boosters, updates the inventory, saves the player profile, and emits localized feedback.</p>
+        </li>
+        <li>
+            <h3><code>useInventoryBomb()</code> &amp; <code>detonateBombAtPlayer()</code></h3>
+            <p>Consumes a bomb, clears adjacent wall tiles, rebuilds the maze mesh, and removes the corresponding Box2D fixtures.</p>
+        </li>
+        <li>
+            <h3><code>useInventoryBooster(boosterId)</code></h3>
+            <p>Activates a stored booster from the inventory and decrements the persisted booster count.</p>
         </li>
         <li>
             <h3><code>activateBooster(boosterId)</code></h3>
