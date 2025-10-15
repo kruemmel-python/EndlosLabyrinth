@@ -28,10 +28,12 @@
                     tiltMaxAngle = 35,
                     tiltDeadZone = 3,
                     keyBindingDirections = ['up', 'down', 'left', 'right', 'bomb'],
+                    touchControlSlots = ['up', 'down', 'left', 'right'],
                     arrowAxisBinding = null,
                     customAxisBinding = null,
                     bombKeyBinding = null,
                     settingsKeyBindingDraft = null,
+                    settingsTouchBindingDraft = null,
                     awaitingKeyBindingDirection = null,
                     awaitingKeyBindingButton = null,
                     keybindingMessageOverride = null,
@@ -134,7 +136,20 @@
                                 keybindingReset: 'Standardtasten wiederherstellen',
                                 keybindingDuplicate: 'Mehrere Richtungen nutzen dieselbe Taste. Dies kann die Steuerung erschweren.',
                                 keybindingUnsupported: 'Diese Taste wird nicht unterstützt. Bitte versuche es erneut.',
-                                keybindingCancelled: 'Tastenzuordnung abgebrochen.'
+                                keybindingCancelled: 'Tastenzuordnung abgebrochen.',
+                                touchHeading: 'Touch-Steuerung',
+                                touchInstruction: 'Wähle für jede Bildschirmtaste die gewünschte Richtung aus.',
+                                touchUp: 'Obere Pfeiltaste',
+                                touchDown: 'Untere Pfeiltaste',
+                                touchLeft: 'Linke Pfeiltaste',
+                                touchRight: 'Rechte Pfeiltaste',
+                                touchReset: 'Touch-Pfeile zurücksetzen',
+                                touchAria: {
+                                    up: 'Nach oben bewegen',
+                                    down: 'Nach unten bewegen',
+                                    left: 'Nach links bewegen',
+                                    right: 'Nach rechts bewegen'
+                                }
                             },
                             language: {
                                 de: 'Deutsch',
@@ -299,7 +314,20 @@
                                 keybindingReset: 'Restore default keys',
                                 keybindingDuplicate: 'Multiple directions share the same key. This may make movement harder.',
                                 keybindingUnsupported: 'That key is not supported. Please try again.',
-                                keybindingCancelled: 'Key assignment cancelled.'
+                                keybindingCancelled: 'Key assignment cancelled.',
+                                touchHeading: 'Touch controls',
+                                touchInstruction: 'Choose which movement each on-screen arrow should trigger.',
+                                touchUp: 'Top arrow',
+                                touchDown: 'Bottom arrow',
+                                touchLeft: 'Left arrow',
+                                touchRight: 'Right arrow',
+                                touchReset: 'Reset touch arrows',
+                                touchAria: {
+                                    up: 'Move up',
+                                    down: 'Move down',
+                                    left: 'Move left',
+                                    right: 'Move right'
+                                }
                             },
                             language: {
                                 de: 'German',
@@ -514,7 +542,27 @@
                         left: 'a',
                         right: 'd',
                         bomb: '1'
+                    },
+                    touchBindings: {
+                        up: 'up',
+                        down: 'down',
+                        left: 'left',
+                        right: 'right'
                     }
+                };
+
+                var touchDirectionVectors = {
+                    up: [0, -1],
+                    down: [0, 1],
+                    left: [-1, 0],
+                    right: [1, 0]
+                };
+
+                var touchDirectionIcons = {
+                    up: '▲',
+                    down: '▼',
+                    left: '◀',
+                    right: '▶'
                 };
 
                 var allowedKeyBindingMap = (function() {
@@ -741,6 +789,73 @@
                         clone[direction] = sanitized[direction];
                     });
                     return clone;
+                }
+
+
+                function sanitizeTouchBindings(bindings) {
+                    var source = (bindings && typeof bindings === 'object') ? bindings : {};
+                    var sanitized = {};
+                    touchControlSlots.forEach(function(slot) {
+                        var value = source[slot];
+                        if (!value || !touchDirectionVectors[value]) {
+                            value = defaultSettings.touchBindings[slot];
+                        }
+                        sanitized[slot] = value;
+                    });
+                    return sanitized;
+                }
+
+
+                function cloneTouchBindings(bindings) {
+                    var sanitized = sanitizeTouchBindings(bindings);
+                    var clone = {};
+                    touchControlSlots.forEach(function(slot) {
+                        clone[slot] = sanitized[slot];
+                    });
+                    return clone;
+                }
+
+
+                function resolveTouchDirectionVector(direction) {
+                    var base = touchDirectionVectors[direction];
+                    if (!base) {
+                        return [0, 0];
+                    }
+                    return [base[0], base[1]];
+                }
+
+
+                function applyTouchBindingsToDom(bindings) {
+                    var active = sanitizeTouchBindings(bindings);
+                    touchControlSlots.forEach(function(slot) {
+                        var direction = active[slot];
+                        var vector = resolveTouchDirectionVector(direction);
+                        var button = document.querySelector('#touch-controls .touch-' + slot);
+                        if (!button) {
+                            return;
+                        }
+                        button.setAttribute('data-direction', direction);
+                        button.setAttribute('data-axis-x', vector[0]);
+                        button.setAttribute('data-axis-y', vector[1]);
+                        button.textContent = touchDirectionIcons[direction] || '•';
+                        button.setAttribute('aria-label', t('settings.touchAria.' + direction));
+                    });
+                }
+
+
+                function updateSettingsTouchBindingUi() {
+                    if (!window.jQuery) {
+                        return;
+                    }
+                    var active = settingsTouchBindingDraft || (gameSettings && gameSettings.touchBindings) || defaultSettings.touchBindings;
+                    active = sanitizeTouchBindings(active);
+                    touchControlSlots.forEach(function(slot) {
+                        var select = jQuery(".touch-binding-select[data-slot='" + slot + "']");
+                        if (!select.length) {
+                            return;
+                        }
+                        select.val(active[slot]);
+                    });
                 }
 
 
@@ -1163,6 +1278,28 @@
                     jQuery('#settings-key-right-label').text(t('settings.keybindingRight'));
                     jQuery('#settings-key-bomb-label').text(t('settings.keybindingBomb'));
                     jQuery('#settings-reset-keybindings').text(t('settings.keybindingReset'));
+                    jQuery('#settings-touch-heading').text(t('settings.touchHeading'));
+                    jQuery('#settings-touch-description').text(t('settings.touchInstruction'));
+                    jQuery('#settings-touch-up-label').text(t('settings.touchUp'));
+                    jQuery('#settings-touch-down-label').text(t('settings.touchDown'));
+                    jQuery('#settings-touch-left-label').text(t('settings.touchLeft'));
+                    jQuery('#settings-touch-right-label').text(t('settings.touchRight'));
+                    jQuery('#settings-reset-touchbindings').text(t('settings.touchReset'));
+                    var touchOptionLabels = {
+                        up: t('settings.keybindingUp'),
+                        down: t('settings.keybindingDown'),
+                        left: t('settings.keybindingLeft'),
+                        right: t('settings.keybindingRight')
+                    };
+                    touchControlSlots.forEach(function(slot) {
+                        var select = jQuery(".touch-binding-select[data-slot='" + slot + "']");
+                        if (!select.length) {
+                            return;
+                        }
+                        Object.keys(touchOptionLabels).forEach(function(direction) {
+                            select.find("option[value='" + direction + "']").text(touchOptionLabels[direction]);
+                        });
+                    });
 
                     jQuery('#scoreboard-title').text(t('scoreboard.title'));
                     jQuery('#scoreboard-th-rank').text(t('scoreboard.rank'));
@@ -1178,6 +1315,8 @@
                     }
                     updateTiltUi();
                     updateSettingsKeyBindingUi();
+                    updateSettingsTouchBindingUi();
+                    applyTouchBindingsToDom(gameSettings && gameSettings.touchBindings ? gameSettings.touchBindings : defaultSettings.touchBindings);
                     updateInventoryMenu();
                     updateShopMenu();
                     updateCoinCounter();
@@ -2325,7 +2464,10 @@
                         }
                     }
                     gameSettings.keyBindings = cloneKeyBindings(gameSettings.keyBindings || defaultSettings.keyBindings);
+                    gameSettings.touchBindings = cloneTouchBindings(gameSettings.touchBindings || defaultSettings.touchBindings);
                     applyCustomKeyBindings();
+                    applyTouchBindingsToDom(gameSettings.touchBindings);
+                    updateSettingsTouchBindingUi();
                     victoryLlmConfig.enabled = !!gameSettings.victoryLlmEnabled;
                     if (gameSettings.tiltControlEnabled) {
                         enableTiltControl({ silent: true }, function(success) {
@@ -2989,10 +3131,12 @@
                     jQuery('#settings-victory-llm').prop('checked', !!gameSettings.victoryLlmEnabled);
                     jQuery('#settings-language').val(gameSettings.language || defaultSettings.language);
                     settingsKeyBindingDraft = cloneKeyBindings(gameSettings.keyBindings || defaultSettings.keyBindings);
+                    settingsTouchBindingDraft = cloneTouchBindings(gameSettings.touchBindings || defaultSettings.touchBindings);
                     clearKeybindingMessageOverride();
                     awaitingKeyBindingDirection = null;
                     awaitingKeyBindingButton = null;
                     updateSettingsKeyBindingUi();
+                    updateSettingsTouchBindingUi();
                     updateTiltUi();
                     jQuery('#settings-menu').fadeIn(150);
                 }
@@ -3003,12 +3147,14 @@
                         gameSettings.victoryLlmEnabled = jQuery('#settings-victory-llm').is(':checked');
                         gameSettings.language = jQuery('#settings-language').val() || defaultSettings.language;
                         gameSettings.keyBindings = cloneKeyBindings(settingsKeyBindingDraft || gameSettings.keyBindings || defaultSettings.keyBindings);
+                        gameSettings.touchBindings = cloneTouchBindings(settingsTouchBindingDraft || gameSettings.touchBindings || defaultSettings.touchBindings);
                         applySettings();
                         setLanguage(gameSettings.language, {skipSave: true});
                         saveSettings();
                     }
                     cancelKeybindingCapture();
                     settingsKeyBindingDraft = null;
+                    settingsTouchBindingDraft = null;
                     jQuery('#settings-menu').fadeOut(150);
                 }
 
@@ -3461,6 +3607,11 @@
                     if (!element || typeof element.getAttribute !== 'function') {
                         return [0, 0];
                     }
+                    var direction = element.getAttribute('data-direction');
+                    if (direction && touchDirectionVectors[direction]) {
+                        var vector = resolveTouchDirectionVector(direction);
+                        return [vector[0], vector[1]];
+                    }
                     var axisX = parseFloat(element.getAttribute('data-axis-x'));
                     var axisY = parseFloat(element.getAttribute('data-axis-y'));
                     if (isNaN(axisX)) { axisX = 0; }
@@ -3515,6 +3666,7 @@
 
                 function setupTouchControls() {
                     clearAllTouchPointers();
+                    applyTouchBindingsToDom((gameSettings && gameSettings.touchBindings) || defaultSettings.touchBindings);
                     var container = document.getElementById('touch-controls');
                     if (!container) {
                         return;
@@ -3781,6 +3933,26 @@
                         awaitingKeyBindingButton = null;
                         clearKeybindingMessageOverride();
                         updateSettingsKeyBindingUi();
+                    });
+                    $('#settings-menu').on('change', '.touch-binding-select', function() {
+                        var slot = $(this).attr('data-slot');
+                        if (!slot) {
+                            return;
+                        }
+                        if (!settingsTouchBindingDraft) {
+                            settingsTouchBindingDraft = cloneTouchBindings(gameSettings.touchBindings || defaultSettings.touchBindings);
+                        }
+                        var value = $(this).val();
+                        if (!value || !touchDirectionVectors[value]) {
+                            settingsTouchBindingDraft[slot] = defaultSettings.touchBindings[slot];
+                        } else {
+                            settingsTouchBindingDraft[slot] = value;
+                        }
+                        updateSettingsTouchBindingUi();
+                    });
+                    $('#settings-reset-touchbindings').on('click', function() {
+                        settingsTouchBindingDraft = cloneTouchBindings(defaultSettings.touchBindings);
+                        updateSettingsTouchBindingUi();
                     });
 
                     $('#scoreboard-menu').on('click', function(event) {

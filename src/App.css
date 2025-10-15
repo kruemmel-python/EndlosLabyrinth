@@ -475,8 +475,46 @@ to { box-shadow: 0 0 8px rgba(111, 139, 255, 0.6); }
 }
 
 .keybinding-reset {
-margin-top: 12px;
-align-self: flex-start;
+  margin-top: 12px;
+  align-self: flex-start;
+}
+
+.touchbinding-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 10px 16px;
+  margin-top: 10px;
+}
+
+.touchbinding-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.touchbinding-label {
+  font-size: 14px;
+}
+
+.touch-binding-select {
+  flex: 1;
+  background: #1f1f1f;
+  border: 1px solid #555;
+  color: #f4f4f4;
+  padding: 8px 10px;
+  min-width: 140px;
+}
+
+.touch-binding-select:focus {
+  outline: none;
+  border-color: #6f8bff;
+  box-shadow: 0 0 0 2px rgba(111, 139, 255, 0.25);
+}
+
+.touchbinding-reset {
+  margin-top: 12px;
+  align-self: flex-start;
 }
 
 #scoreboard-menu table {

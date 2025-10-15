@@ -81,8 +81,8 @@ export default function App() {
         <button
           type="button"
           className="touch-control-button touch-up"
-          data-axis-x="0"
-          data-axis-y="-1"
+          data-touch-slot="up"
+          data-direction="up"
           aria-label="Move up"
         >
           ▲
@@ -90,8 +90,8 @@ export default function App() {
         <button
           type="button"
           className="touch-control-button touch-left"
-          data-axis-x="-1"
-          data-axis-y="0"
+          data-touch-slot="left"
+          data-direction="left"
           aria-label="Move left"
         >
           ◀
@@ -99,8 +99,8 @@ export default function App() {
         <button
           type="button"
           className="touch-control-button touch-down"
-          data-axis-x="0"
-          data-axis-y="1"
+          data-touch-slot="down"
+          data-direction="down"
           aria-label="Move down"
         >
           ▼
@@ -108,8 +108,8 @@ export default function App() {
         <button
           type="button"
           className="touch-control-button touch-right"
-          data-axis-x="1"
-          data-axis-y="0"
+          data-touch-slot="right"
+          data-direction="right"
           aria-label="Move right"
         >
           ▶
@@ -198,6 +198,50 @@ export default function App() {
             </div>
             <div id="settings-keybinding-message" className="settings-note"></div>
             <button id="settings-reset-keybindings" type="button" className="secondary keybinding-reset"></button>
+          </div>
+
+          <div className="settings-group">
+            <h3 id="settings-touch-heading"></h3>
+            <p id="settings-touch-description" className="settings-note"></p>
+            <div className="touchbinding-grid">
+              <div className="touchbinding-row">
+                <label className="touchbinding-label" id="settings-touch-up-label" htmlFor="settings-touch-up"></label>
+                <select id="settings-touch-up" className="touch-binding-select" data-slot="up">
+                  <option value="up"></option>
+                  <option value="down"></option>
+                  <option value="left"></option>
+                  <option value="right"></option>
+                </select>
+              </div>
+              <div className="touchbinding-row">
+                <label className="touchbinding-label" id="settings-touch-down-label" htmlFor="settings-touch-down"></label>
+                <select id="settings-touch-down" className="touch-binding-select" data-slot="down">
+                  <option value="up"></option>
+                  <option value="down"></option>
+                  <option value="left"></option>
+                  <option value="right"></option>
+                </select>
+              </div>
+              <div className="touchbinding-row">
+                <label className="touchbinding-label" id="settings-touch-left-label" htmlFor="settings-touch-left"></label>
+                <select id="settings-touch-left" className="touch-binding-select" data-slot="left">
+                  <option value="up"></option>
+                  <option value="down"></option>
+                  <option value="left"></option>
+                  <option value="right"></option>
+                </select>
+              </div>
+              <div className="touchbinding-row">
+                <label className="touchbinding-label" id="settings-touch-right-label" htmlFor="settings-touch-right"></label>
+                <select id="settings-touch-right" className="touch-binding-select" data-slot="right">
+                  <option value="up"></option>
+                  <option value="down"></option>
+                  <option value="left"></option>
+                  <option value="right"></option>
+                </select>
+              </div>
+            </div>
+            <button id="settings-reset-touchbindings" type="button" className="secondary touchbinding-reset"></button>
           </div>
           <div className="menu-buttons">
             <button id="settings-save" type="button"></button>
