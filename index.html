@@ -155,7 +155,7 @@
                             entry: '{rank}. {name} - Level {level} ({time})'
                         },
                         instructions: {
-                            text: '<strong>So spielst du Astray:</strong><br><br>Nutze die Pfeiltasten oder WASD, um die Kugel zu steuern und den Ausgang zu finden.<br><br>Über das Einstellungsmenü kannst du die Tastenbelegung anpassen.<br><br>Auf Geräten mit Bewegungssensor kannst du dein Gerät neigen, um die Kugel zu bewegen.<br><br>Auf Touch-Geräten findest du am unteren Bildschirmrand zusätzliche Pfeile zur Steuerung.<br><br>Drücke die Taste B, um dein Inventar zu öffnen, Booster zu aktivieren oder den Shop zu besuchen.'
+                            text: '<strong>So spielst du Astray:</strong><br><br>Nutze die Pfeiltasten oder WASD, um die Kugel zu steuern und die rote Ausgangsplatte zu finden.<br><br>Über das Einstellungsmenü kannst du die Tastenbelegung anpassen.<br><br>Auf Geräten mit Bewegungssensor kannst du dein Gerät neigen, um die Kugel zu bewegen.<br><br>Auf Touch-Geräten findest du am unteren Bildschirmrand zusätzliche Pfeile zur Steuerung.<br><br>Drücke die Taste B, um dein Inventar zu öffnen, Booster zu aktivieren oder den Shop zu besuchen.'
                         },
                         help: 'Halte die Taste "I" für Anweisungen gedrückt.',
                         victory: {
@@ -318,7 +318,7 @@
                             entry: '{rank}. {name} - Level {level} ({time})'
                         },
                         instructions: {
-                            text: '<strong>How to play Astray:</strong><br><br>Use the arrow keys or WASD to move the ball and find the exit.<br><br>Use the Settings menu to remap your movement keys.<br><br>Devices with motion sensors let you tilt to move the ball.<br><br>Touch devices display small on-screen arrows near the bottom for easy steering.<br><br>Press the B key to open your inventory, trigger boosters, or visit the shop.'
+                            text: '<strong>How to play Astray:</strong><br><br>Use the arrow keys or WASD to move the ball and locate the red exit plate.<br><br>Use the Settings menu to remap your movement keys.<br><br>Devices with motion sensors let you tilt to move the ball.<br><br>Touch devices display small on-screen arrows near the bottom for easy steering.<br><br>Press the B key to open your inventory, trigger boosters, or visit the shop.'
                         },
                         help: 'Hold down the "I" key for instructions.',
                         victory: {
@@ -458,8 +458,11 @@
                     coinGeometry: null,
                     coinMaterial: null,
                     boosterGeometry: null,
-                    boosterMaterials: {}
+                    boosterMaterials: {},
+                    exitGeometry: null,
+                    exitMaterial: null
                 },
+                exitMesh = null,
                 wallBodies = {},
                 inventoryPreviousState = null,
                 shopPreviousState = null,
@@ -1747,6 +1750,29 @@
             }
 
 
+            function refreshExitIndicator() {
+                if (!scene) {
+                    return;
+                }
+                if (exitMesh && exitMesh.parent) {
+                    exitMesh.parent.remove(exitMesh);
+                }
+                exitMesh = null;
+                if (typeof currentExitTarget.x !== 'number' || typeof currentExitTarget.y !== 'number') {
+                    return;
+                }
+                if (!itemResources.exitGeometry) {
+                    itemResources.exitGeometry = new THREE.BoxGeometry(0.9, 0.9, 0.08, 1, 1, 1);
+                }
+                if (!itemResources.exitMaterial) {
+                    itemResources.exitMaterial = new THREE.MeshPhongMaterial({color: 0xff3030, emissive: 0x660000});
+                }
+                exitMesh = new THREE.Mesh(itemResources.exitGeometry, itemResources.exitMaterial);
+                exitMesh.position.set(currentExitTarget.x, currentExitTarget.y, 0.04);
+                scene.add(exitMesh);
+            }
+
+
             function spawnItemsForCurrentLevel(field) {
                 clearActiveItems();
                 if (!currentLevelConfig || !scene || !field) {
@@ -3021,51 +3047,37 @@
             function configureExit(field) {
                 var dimension = field.dimension || field.length;
                 currentExitApproachCell = null;
-                var candidates = [];
-                function pushCandidate(boundaryX, boundaryY, neighborX, neighborY) {
-                    if (boundaryX < 0 || boundaryX >= dimension || boundaryY < 0 || boundaryY >= dimension) {
-                        return;
-                    }
-                    if (neighborX < 0 || neighborX >= dimension || neighborY < 0 || neighborY >= dimension) {
-                        return;
-                    }
-                    if (neighborX === 1 && neighborY === 1) {
-                        return;
-                    }
-                    candidates.push({
-                        bx: boundaryX,
-                        by: boundaryY,
-                        nx: neighborX,
-                        ny: neighborY
-                    });
+                currentExitTarget.x = null;
+                currentExitTarget.y = null;
+                if (!field || !dimension) {
+                    return;
                 }
-                for (var y = 1; y < dimension - 1; y += 2) {
-                    pushCandidate(dimension - 1, y, dimension - 2, y); // right edge
-                    pushCandidate(0, y, 1, y); // left edge
-                }
-                for (var x = 1; x < dimension - 1; x += 2) {
-                    pushCandidate(x, dimension - 1, x, dimension - 2); // bottom edge
-                    pushCandidate(x, 0, x, 1); // top edge
-                }
+                var candidates = collectWalkableCells(field).filter(function(cell) {
+                    if (!cell) {
+                        return false;
+                    }
+                    if (cell.x === 1 && cell.y === 1) {
+                        return false;
+                    }
+                    if (cell.x <= 0 || cell.y <= 0 || cell.x >= dimension - 1 || cell.y >= dimension - 1) {
+                        return false;
+                    }
+                    return true;
+                });
                 if (candidates.length === 0) {
-                    field[dimension-1][dimension-2] = false;
-                    if (dimension - 2 >= 0 && dimension - 2 < dimension) {
-                        field[dimension - 2][dimension - 2] = false;
-                        currentExitTarget.x = dimension - 2;
-                        currentExitTarget.y = dimension - 2;
-                        currentExitApproachCell = {x: dimension - 2, y: dimension - 2};
-                    } else {
-                        currentExitTarget.x = dimension - 1;
-                        currentExitTarget.y = dimension - 2;
-                    }
+                    currentExitTarget.x = 1;
+                    currentExitTarget.y = 1;
+                    currentExitApproachCell = {x: 1, y: 1};
+                    field[1][1] = false;
                     return;
                 }
                 var chosen = candidates[Math.floor(Math.random() * candidates.length)];
-                field[chosen.bx][chosen.by] = false;
-                field[chosen.nx][chosen.ny] = false;
-                currentExitApproachCell = {x: chosen.nx, y: chosen.ny};
-                currentExitTarget.x = chosen.nx;
-                currentExitTarget.y = chosen.ny;
+                if (chosen && field[chosen.x] && field[chosen.x][chosen.y]) {
+                    field[chosen.x][chosen.y] = false;
+                }
+                currentExitApproachCell = {x: chosen.x, y: chosen.y};
+                currentExitTarget.x = chosen.x;
+                currentExitTarget.y = chosen.y;
             }
 
 
@@ -3250,7 +3262,9 @@
                 planeMesh = new THREE.Mesh(g, m);
                 planeMesh.position.set((mazeDimension-1)/2, (mazeDimension-1)/2, 0);
                 planeMesh.rotation.set(Math.PI/2, 0, 0);
-                scene.add(planeMesh);                
+                scene.add(planeMesh);
+
+                refreshExitIndicator();
 
             }
 

@@ -510,6 +510,7 @@
         <li><code>maze</code>, <code>mazeMesh</code>: Data structure for the maze layout and its Three.js mesh representation.</li>
         <li><code>mazeDimension</code>: The current size of the square maze (e.g., 11x11).</li>
         <li><code>planeMesh</code>, <code>ballMesh</code>: Three.js meshes for the ground plane and the player's ball.</li>
+        <li><code>exitMesh</code>: A Three.js mesh that renders the red exit plate inside the maze.</li>
         <li><code>ballRadius</code>: Radius of the player's ball.</li>
         <li><code>keyAxis</code>: Array <code>[x, y]</code> representing the current input direction from keyboard.</li>
         <li><code>ironTexture</code>, <code>planeTexture</code>, <code>brickTexture</code>: Three.js textures for the ball, ground, and maze walls.</li>
@@ -533,7 +534,7 @@
         <li><code>baseImpulseStrength</code>, <code>baseFrictionFactor</code>: Default values for ball physics.</li>
         <li><code>boosterTimeouts</code>: Object to store timeouts for active booster effects.</li>
         <li><code>defaultLightIntensity</code>, <code>visionBoostActive</code>: Variables related to lighting and a specific booster effect.</li>
-        <li><code>itemResources</code>: Object to cache Three.js geometries and materials for in-game items (coins, boosters).</li>
+        <li><code>itemResources</code>: Object to cache Three.js geometries and materials for in-game items (coins, boosters, exit plate).</li>
         <li><code>b2World</code>, <code>b2FixtureDef</code>, <code>b2BodyDef</code>, <code>b2Body</code>, <code>b2CircleShape</code>, <code>b2PolygonShape</code>, <code>b2Settings</code>, <code>b2Vec2</code>: Box2D shortcuts for physics objects.</li>
         <li><code>wWorld</code>, <code>wBall</code>: Box2D world and the physics body for the ball.</li>
         <li><code>victoryLlmDefaults</code>: Default configuration for the AI-powered victory message feature.</li>
