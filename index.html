@@ -34,9 +34,10 @@
                 tiltSmoothingFactor = 0.2,
                 tiltMaxAngle = 35,
                 tiltDeadZone = 3,
-                keyBindingDirections = ['up', 'down', 'left', 'right'],
+                keyBindingDirections = ['up', 'down', 'left', 'right', 'bomb'],
                 arrowAxisBinding = null,
                 customAxisBinding = null,
+                bombKeyBinding = null,
                 settingsKeyBindingDraft = null,
                 awaitingKeyBindingDirection = null,
                 awaitingKeyBindingButton = null,
@@ -129,11 +130,12 @@
                             tiltUnavailable: 'Bewegungssteuerung wird auf diesem Gerät nicht unterstützt.',
                             tiltNeedsPermission: 'Tippe, um die Bewegungssteuerung zu aktivieren (Erlaubnis erforderlich).',
                             keybindingHeading: 'Tastenbelegung',
-                            keybindingInstruction: 'Tippe auf eine Richtung und drücke anschließend die gewünschte Taste.',
+                            keybindingInstruction: 'Tippe auf eine Richtung oder Aktion und drücke anschließend die gewünschte Taste.',
                             keybindingUp: 'Nach oben',
                             keybindingDown: 'Nach unten',
                             keybindingLeft: 'Nach links',
                             keybindingRight: 'Nach rechts',
+                            keybindingBomb: 'Bombe einsetzen',
                             keybindingWaiting: 'Taste drücken...',
                             keybindingReset: 'Standardtasten wiederherstellen',
                             keybindingDuplicate: 'Mehrere Richtungen nutzen dieselbe Taste. Dies kann die Steuerung erschweren.',
@@ -155,7 +157,7 @@
                             entry: '{rank}. {name} - Level {level} ({time})'
                         },
                         instructions: {
-                            text: '<strong>So spielst du Astray:</strong><br><br>Nutze die Pfeiltasten oder WASD, um die Kugel zu steuern und die rote Ausgangsplatte zu finden.<br><br>Über das Einstellungsmenü kannst du die Tastenbelegung anpassen.<br><br>Auf Geräten mit Bewegungssensor kannst du dein Gerät neigen, um die Kugel zu bewegen.<br><br>Auf Touch-Geräten findest du am unteren Bildschirmrand zusätzliche Pfeile zur Steuerung.<br><br>Drücke die Taste B, um dein Inventar zu öffnen, Booster zu aktivieren oder den Shop zu besuchen.'
+                            text: '<strong>So spielst du Astray:</strong><br><br>Nutze die Pfeiltasten oder WASD, um die Kugel zu steuern und die rote Ausgangsplatte zu finden.<br><br>Über das Einstellungsmenü kannst du die Tastenbelegung für Bewegung und Bomben anpassen.<br><br>Auf Geräten mit Bewegungssensor kannst du dein Gerät neigen, um die Kugel zu bewegen.<br><br>Auf Touch-Geräten findest du am unteren Bildschirmrand zusätzliche Pfeile zur Steuerung.<br><br>Drücke die Taste B, um dein Inventar zu öffnen, Booster zu aktivieren oder den Shop zu besuchen.<br><br>Drücke die Taste 1 (Standard) oder deine zugewiesene Bombentaste, um eine Bombe zu zünden.'
                         },
                         help: 'Halte die Taste "I" für Anweisungen gedrückt.',
                         victory: {
@@ -292,11 +294,12 @@
                             tiltUnavailable: 'Motion controls are not supported on this device.',
                             tiltNeedsPermission: 'Tap to enable motion controls (permission required).',
                             keybindingHeading: 'Key bindings',
-                            keybindingInstruction: 'Tap a direction and then press the desired key.',
+                            keybindingInstruction: 'Tap a direction or action and then press the desired key.',
                             keybindingUp: 'Up',
                             keybindingDown: 'Down',
                             keybindingLeft: 'Left',
                             keybindingRight: 'Right',
+                            keybindingBomb: 'Use bomb',
                             keybindingWaiting: 'Press a key...',
                             keybindingReset: 'Restore default keys',
                             keybindingDuplicate: 'Multiple directions share the same key. This may make movement harder.',
@@ -318,7 +321,7 @@
                             entry: '{rank}. {name} - Level {level} ({time})'
                         },
                         instructions: {
-                            text: '<strong>How to play Astray:</strong><br><br>Use the arrow keys or WASD to move the ball and locate the red exit plate.<br><br>Use the Settings menu to remap your movement keys.<br><br>Devices with motion sensors let you tilt to move the ball.<br><br>Touch devices display small on-screen arrows near the bottom for easy steering.<br><br>Press the B key to open your inventory, trigger boosters, or visit the shop.'
+                            text: '<strong>How to play Astray:</strong><br><br>Use the arrow keys or WASD to move the ball and locate the red exit plate.<br><br>Use the Settings menu to remap the movement and bomb controls.<br><br>Devices with motion sensors let you tilt to move the ball.<br><br>Touch devices display small on-screen arrows near the bottom for easy steering.<br><br>Press the B key to open your inventory, trigger boosters, or visit the shop.<br><br>Press 1 (default) or your assigned bomb key to deploy a bomb.'
                         },
                         help: 'Hold down the "I" key for instructions.',
                         victory: {
@@ -514,7 +517,8 @@
                     up: 'w',
                     down: 's',
                     left: 'a',
-                    right: 'd'
+                    right: 'd',
+                    bomb: '1'
                 }
             };
 
@@ -931,6 +935,10 @@
                     customAxisBinding.clear();
                 }
                 customAxisBinding = null;
+                if (bombKeyBinding && typeof bombKeyBinding.clear === 'function') {
+                    bombKeyBinding.clear();
+                }
+                bombKeyBinding = null;
                 var bindings = (gameSettings && gameSettings.keyBindings) ? sanitizeKeyBindings(gameSettings.keyBindings) : cloneKeyBindings(defaultSettings.keyBindings);
                 if (!gameSettings) {
                     gameSettings = {};
@@ -938,6 +946,14 @@
                 gameSettings.keyBindings = cloneKeyBindings(bindings);
                 if (KeyboardJS && KeyboardJS.bind && typeof KeyboardJS.bind.axis === 'function') {
                     customAxisBinding = KeyboardJS.bind.axis(bindings.left, bindings.right, bindings.down, bindings.up, onMoveKey);
+                }
+                if (KeyboardJS && KeyboardJS.bind && typeof KeyboardJS.bind.key === 'function' && bindings.bomb) {
+                    bombKeyBinding = KeyboardJS.bind.key(bindings.bomb, function() {
+                        if (awaitingKeyBindingDirection) {
+                            return;
+                        }
+                        useInventoryBomb();
+                    });
                 }
             }
 
@@ -1150,6 +1166,7 @@
                 jQuery('#settings-key-down-label').text(t('settings.keybindingDown'));
                 jQuery('#settings-key-left-label').text(t('settings.keybindingLeft'));
                 jQuery('#settings-key-right-label').text(t('settings.keybindingRight'));
+                jQuery('#settings-key-bomb-label').text(t('settings.keybindingBomb'));
                 jQuery('#settings-reset-keybindings').text(t('settings.keybindingReset'));
 
                 jQuery('#scoreboard-title').text(t('scoreboard.title'));
@@ -4489,6 +4506,10 @@
                     <div class='keybinding-row'>
                         <span class='keybinding-label' id='settings-key-right-label'></span>
                         <button type='button' class='keybinding-button' data-direction='right'></button>
+                    </div>
+                    <div class='keybinding-row'>
+                        <span class='keybinding-label' id='settings-key-bomb-label'></span>
+                        <button type='button' class='keybinding-button' data-direction='bomb'></button>
                     </div>
                 </div>
                 <div id='settings-keybinding-message' class='settings-note'></div>
