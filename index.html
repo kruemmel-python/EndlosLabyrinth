@@ -2,7 +2,8 @@
 
     <head>
         <meta charset="utf-8">
-    
+        <title>Gemma’s Labyrinth - The Endless Path</title>
+
         <script src='Box2dWeb.min.js'></script>
         <script src="Three.js"></script>
         <script src="keyboard.js"></script>
@@ -87,7 +88,7 @@
                 translations = {
                     de: {
                         menu: {
-                            title: 'Astray',
+                            title: 'Gemma’s Labyrinth - The Endless Path',
                             playerSelectLabel: 'Spieler auswählen',
                             deletePlayer: 'Spieler löschen',
                             createPlayerHeading: 'Neuen Spieler erstellen',
@@ -109,6 +110,7 @@
                             messageNameEmpty: 'Name darf nicht leer sein.',
                             deleteConfirm: 'Möchtest du den Spieler "{name}" wirklich löschen?',
                             currentNone: 'Kein Spieler ausgewählt',
+                            developerInfo: 'Entwickler: Ralf Krümmel @2025',
                             currentWithLevel: 'Aktueller Spieler: {name} (Level {level}, Gesamtzeit {time}, Münzen {coins})',
                             menuButton: 'Menü',
                             saveGameButton: 'Spiel speichern',
@@ -157,7 +159,7 @@
                             entry: '{rank}. {name} - Level {level} ({time})'
                         },
                         instructions: {
-                            text: '<strong>So spielst du Astray:</strong><br><br>Nutze die Pfeiltasten oder WASD, um die Kugel zu steuern und die rote Ausgangsplatte zu finden.<br><br>Über das Einstellungsmenü kannst du die Tastenbelegung für Bewegung und Bomben anpassen.<br><br>Auf Geräten mit Bewegungssensor kannst du dein Gerät neigen, um die Kugel zu bewegen.<br><br>Auf Touch-Geräten findest du am unteren Bildschirmrand zusätzliche Pfeile zur Steuerung.<br><br>Drücke die Taste B, um dein Inventar zu öffnen, Booster zu aktivieren oder den Shop zu besuchen.<br><br>Drücke die Taste 1 (Standard) oder deine zugewiesene Bombentaste, um eine Bombe zu zünden.'
+                            text: '<strong>So spielst du Gemma’s Labyrinth - The Endless Path:</strong><br><br>Nutze die Pfeiltasten oder WASD, um die Kugel zu steuern und die rote Ausgangsplatte zu finden.<br><br>Über das Einstellungsmenü kannst du die Tastenbelegung für Bewegung und Bomben anpassen.<br><br>Auf Geräten mit Bewegungssensor kannst du dein Gerät neigen, um die Kugel zu bewegen.<br><br>Auf Touch-Geräten findest du am unteren Bildschirmrand zusätzliche Pfeile zur Steuerung.<br><br>Drücke die Taste B, um dein Inventar zu öffnen, Booster zu aktivieren oder den Shop zu besuchen.<br><br>Drücke die Taste 1 (Standard) oder deine zugewiesene Bombentaste, um eine Bombe zu zünden.'
                         },
                         help: 'Halte die Taste "I" für Anweisungen gedrückt.',
                         victory: {
@@ -251,7 +253,7 @@
                     },
                     en: {
                         menu: {
-                            title: 'Astray',
+                            title: 'Gemma’s Labyrinth - The Endless Path',
                             playerSelectLabel: 'Select player',
                             deletePlayer: 'Delete player',
                             createPlayerHeading: 'Create new player',
@@ -273,6 +275,7 @@
                             messageNameEmpty: 'Name must not be empty.',
                             deleteConfirm: 'Do you really want to delete the player "{name}"?',
                             currentNone: 'No player selected',
+                            developerInfo: 'Developer: Ralf Krümmel @2025',
                             currentWithLevel: 'Current player: {name} (Level {level}, total time {time}, coins {coins})',
                             menuButton: 'Menu',
                             saveGameButton: 'Save game',
@@ -321,7 +324,7 @@
                             entry: '{rank}. {name} - Level {level} ({time})'
                         },
                         instructions: {
-                            text: '<strong>How to play Astray:</strong><br><br>Use the arrow keys or WASD to move the ball and locate the red exit plate.<br><br>Use the Settings menu to remap the movement and bomb controls.<br><br>Devices with motion sensors let you tilt to move the ball.<br><br>Touch devices display small on-screen arrows near the bottom for easy steering.<br><br>Press the B key to open your inventory, trigger boosters, or visit the shop.<br><br>Press 1 (default) or your assigned bomb key to deploy a bomb.'
+                            text: '<strong>How to play Gemma’s Labyrinth - The Endless Path:</strong><br><br>Use the arrow keys or WASD to move the ball and locate the red exit plate.<br><br>Use the Settings menu to remap the movement and bomb controls.<br><br>Devices with motion sensors let you tilt to move the ball.<br><br>Touch devices display small on-screen arrows near the bottom for easy steering.<br><br>Press the B key to open your inventory, trigger boosters, or visit the shop.<br><br>Press 1 (default) or your assigned bomb key to deploy a bomb.'
                         },
                         help: 'Hold down the "I" key for instructions.',
                         victory: {
@@ -2474,17 +2477,20 @@
                 }
                 var $info = jQuery('#current-player-info');
                 if ($info.length) {
+                    var infoHtml = '';
                     if (hasPlayer) {
                         ensurePlayerInventory(currentPlayer);
-                        $info.text(t('menu.currentWithLevel', {
+                        infoHtml += '<div class="player-status">' + t('menu.currentWithLevel', {
                             name: currentPlayer.name,
                             level: currentPlayer.highestLevel || 0,
                             time: formatDuration(currentPlayer.totalTimeMs || 0),
                             coins: currentPlayer.coins || 0
-                        }));
+                        }) + '</div>';
                     } else {
-                        $info.text(t('menu.currentNone'));
+                        infoHtml += '<div class="player-status">' + t('menu.currentNone') + '</div>';
                     }
+                    infoHtml += '<div class="developer-credit">' + t('menu.developerInfo') + '</div>';
+                    $info.html(infoHtml);
                 }
                 var $openInventoryButton = jQuery('#open-inventory');
                 if ($openInventoryButton.length) {
@@ -4298,6 +4304,16 @@
             #current-player-info {
                 margin-top: 8px;
                 font-size: 14px;
+            }
+
+            #current-player-info .player-status {
+                font-weight: 600;
+            }
+
+            #current-player-info .developer-credit {
+                margin-top: 4px;
+                font-size: 12px;
+                color: rgba(255,255,255,0.7);
             }
 
             #resume-game {
