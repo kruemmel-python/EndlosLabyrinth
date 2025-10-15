@@ -1,0 +1,4167 @@
+(function(global) {
+  global.initializeLabyrinthGame = global.initializeLabyrinthGame || function() {
+    if (global.__labyrinthInitialized) {
+      return;
+    }
+    global.__labyrinthInitialized = true;
+                var camera         = undefined, 
+                    scene          = undefined, 
+                    renderer       = undefined, 
+                    light          = undefined,
+                    mouseX         = undefined, 
+                    mouseY         = undefined,
+                    maze           = undefined, 
+                    mazeMesh       = undefined,
+                    mazeDimension  = 11,
+                    planeMesh      = undefined,
+                    ballMesh       = undefined,
+                    ballRadius     = 0.25,
+                    keyAxis        = [0, 0],
+                    touchAxis      = [0, 0],
+                    touchPointerAxes = {},
+                    tiltAxis       = [0, 0],
+                    tiltTargetAxis = [0, 0],
+                    tiltControlEnabled = false,
+                    tiltPermissionState = 'unknown',
+                    tiltControlSupported = (typeof window !== 'undefined' && typeof window.DeviceOrientationEvent !== 'undefined'),
+                    tiltSmoothingFactor = 0.2,
+                    tiltMaxAngle = 35,
+                    tiltDeadZone = 3,
+                    keyBindingDirections = ['up', 'down', 'left', 'right', 'bomb'],
+                    touchControlSlots = ['up', 'down', 'left', 'right'],
+                    arrowAxisBinding = null,
+                    customAxisBinding = null,
+                    bombKeyBinding = null,
+                    settingsKeyBindingDraft = null,
+                    settingsTouchBindingDraft = null,
+                    settingsTouchSizeDraft = null,
+                    awaitingKeyBindingDirection = null,
+                    awaitingKeyBindingButton = null,
+                    keybindingMessageOverride = null,
+                    keybindingMessageTimeout = null,
+                    ironTexture    = undefined,
+                    planeTexture   = undefined,
+                    brickTexture   = undefined,
+                    gameState      = undefined,
+                    levelIndex     = 1,
+                    isPreparingLevel = false,
+                    lastMazeName   = '',
+                    availableMazeAlgorithms = [
+                        { key: 'depth-first', labelKey: 'level.depthFirstName' },
+                        { key: 'prim', labelKey: 'level.primName' },
+                        { key: 'kruskal', labelKey: 'level.kruskalName' },
+                        { key: 'eller', labelKey: 'level.ellerName' }
+                    ],
+                    victoryTimeout = null,
+                    pendingVictoryPromise = null,
+                    pendingVictoryMessage = null,
+                    displayVictoryRequested = false,
+                    touchSizeRange = { min: 0.6, max: 1.6, step: 0.05 },
+
+                    ballTexturePaths = [
+                        '/balls/ball.png',
+                        '/balls/ball1.png',
+                        '/balls/ball2.png',
+                        '/balls/ball3.png'
+                    ],
+                    wallTexturePaths = [
+                        '/walls/brick.png',
+                        '/walls/brick1.png',
+                        '/walls/brick2.png',
+                        '/walls/brick3.png',
+                        '/walls/brick4.png',
+                        '/walls/brick5.png'
+                    ],
+                    floorTexturePaths = [
+                        '/ground/concrete.png',
+                        '/ground/concrete1.png',
+                        '/ground/concrete2.png',
+                        '/ground/concrete3.png',
+                        '/ground/concrete4.png',
+                        '/ground/concrete5.png'
+                    ],
+                    textureCache = {},
+                    translations = {
+                        de: {
+                            menu: {
+                                title: 'Gemma’s Labyrinth - The Endless Path',
+                                playerSelectLabel: 'Spieler auswählen',
+                                deletePlayer: 'Spieler löschen',
+                                createPlayerHeading: 'Neuen Spieler erstellen',
+                                playerPlaceholder: 'Spielername eingeben...',
+                                createPlayerButton: 'Spieler erstellen',
+                                topPlayers: 'Top Spieler',
+                                startButton: 'Spiel starten',
+                                resumeButton: 'Zurück ins Spiel',
+                                settingsButton: 'Einstellungen',
+                                scoreboardButton: 'Rangliste anzeigen',
+                                inventoryButton: 'Inventar öffnen',
+                                shopButton: 'Shop öffnen',
+                                noPlayersOption: 'Keine Spieler vorhanden',
+                                messageCreateFirst: 'Lege zuerst einen Spieler an, um zu starten.',
+                                messageSelectPlayer: 'Bitte wähle einen Spieler aus.',
+                                messagePlayerCreated: 'Neuer Spieler angelegt.',
+                                messageNameTooShort: 'Der Name muss mindestens 3 Zeichen lang sein.',
+                                messageNameExists: 'Dieser Spielername existiert bereits.',
+                                messageNameEmpty: 'Name darf nicht leer sein.',
+                                deleteConfirm: 'Möchtest du den Spieler "{name}" wirklich löschen?',
+                                currentNone: 'Kein Spieler ausgewählt',
+                                developerInfo: 'Entwickler: Ralf Krümmel @2025',
+                                currentWithLevel: 'Aktueller Spieler: {name} (Level {level}, Gesamtzeit {time}, Münzen {coins})',
+                                menuButton: 'Menü',
+                                saveGameButton: 'Spiel speichern',
+                                loadGameButton: 'Spiel laden',
+                                messageSaved: 'Spielstand gespeichert.',
+                                messageSaveUnavailable: 'Zum Speichern muss das Spiel laufen.',
+                                messageLoaded: 'Spielstand geladen.',
+                                messageNoSave: 'Kein Spielstand zum Laden vorhanden.'
+                            },
+                            settings: {
+                                title: 'Einstellungen',
+                                victoryLlm: 'KI-Glückwunschtexte aktivieren',
+                                tiltControl: 'Bewegungssteuerung aktivieren',
+                                language: 'Sprache',
+                                save: 'Speichern',
+                                cancel: 'Abbrechen',
+                                tiltEnabled: 'Bewegungssteuerung ist aktiv. Neige dein Gerät, um die Kugel zu steuern.',
+                                tiltDisabled: 'Bewegungssteuerung ist deaktiviert.',
+                                tiltUnavailable: 'Bewegungssteuerung wird auf diesem Gerät nicht unterstützt.',
+                                tiltNeedsPermission: 'Tippe, um die Bewegungssteuerung zu aktivieren (Erlaubnis erforderlich).',
+                                keybindingHeading: 'Tastenbelegung',
+                                keybindingInstruction: 'Tippe auf eine Richtung oder Aktion und drücke anschließend die gewünschte Taste.',
+                                keybindingUp: 'Nach oben',
+                                keybindingDown: 'Nach unten',
+                                keybindingLeft: 'Nach links',
+                                keybindingRight: 'Nach rechts',
+                                keybindingBomb: 'Bombe einsetzen',
+                                keybindingWaiting: 'Taste drücken...',
+                                keybindingReset: 'Standardtasten wiederherstellen',
+                                keybindingDuplicate: 'Mehrere Richtungen nutzen dieselbe Taste. Dies kann die Steuerung erschweren.',
+                                keybindingUnsupported: 'Diese Taste wird nicht unterstützt. Bitte versuche es erneut.',
+                                keybindingCancelled: 'Tastenzuordnung abgebrochen.',
+                                touchHeading: 'Touch-Steuerung',
+                                touchInstruction: 'Wähle für jede Bildschirmtaste die gewünschte Richtung aus.',
+                                touchUp: 'Obere Pfeiltaste',
+                                touchDown: 'Untere Pfeiltaste',
+                                touchLeft: 'Linke Pfeiltaste',
+                                touchRight: 'Rechte Pfeiltaste',
+                                touchReset: 'Touch-Pfeile zurücksetzen',
+                                touchSizeLabel: 'Größe der Touch-Pfeile',
+                                touchSizeHint: 'Passe an, wie groß die Pfeile auf dem Bildschirm angezeigt werden.',
+                                touchSizeValue: '{percent} %',
+                                touchAria: {
+                                    up: 'Nach oben bewegen',
+                                    down: 'Nach unten bewegen',
+                                    left: 'Nach links bewegen',
+                                    right: 'Nach rechts bewegen'
+                                }
+                            },
+                            language: {
+                                de: 'Deutsch',
+                                en: 'Englisch'
+                            },
+                            scoreboard: {
+                                title: 'Rangliste',
+                                rank: 'Platz',
+                                player: 'Spieler',
+                                level: 'Höchstes Level',
+                                time: 'Gesamtzeit',
+                                empty: 'Noch keine Spieler vorhanden.',
+                                close: 'Schließen',
+                                entry: '{rank}. {name} - Level {level} ({time})'
+                            },
+                            instructions: {
+                                text: '<strong>So spielst du Gemma’s Labyrinth - The Endless Path:</strong><br><br>Nutze die Pfeiltasten oder WASD, um die Kugel zu steuern und die rote Ausgangsplatte zu finden.<br><br>Über das Einstellungsmenü kannst du die Tastenbelegung für Bewegung und Bomben anpassen.<br><br>Auf Geräten mit Bewegungssensor kannst du dein Gerät neigen, um die Kugel zu bewegen.<br><br>Auf Touch-Geräten findest du am unteren Bildschirmrand zusätzliche Pfeile zur Steuerung.<br><br>Drücke die Taste B, um dein Inventar zu öffnen, Booster zu aktivieren oder den Shop zu besuchen.<br><br>Drücke die Taste 1 (Standard) oder deine zugewiesene Bombentaste, um eine Bombe zu zünden.'
+                            },
+                            help: 'Halte die Taste "I" für Anweisungen gedrückt.',
+                            victory: {
+                                default: 'Glückwunsch! Du hast Level {level} erfolgreich gemeistert.',
+                                itemHint: 'Extras im nächsten Level: {summary}'
+                            },
+                            level: {
+                                loading: 'Level {level} wird geladen...',
+                                prefix: 'Level',
+                                standardName: 'Standard-Labyrinth',
+                                depthFirstName: 'Tiefensuche-Labyrinth',
+                                primName: 'Prim-Labyrinth',
+                                kruskalName: 'Kruskal-Labyrinth',
+                                ellerName: 'Eller-Labyrinth'
+                            },
+                            toplist: {
+                                empty: 'Keine Einträge vorhanden.',
+                                entry: '{rank}. {name} - Level {level} ({time})'
+                            },
+                            items: {
+                                coin: {
+                                    singular: 'Münze',
+                                    plural: 'Münzen'
+                                },
+                                summary: {
+                                    coins: 'Im nächsten Level findest du {coinCount} {coinWord}.',
+                                    boosters: 'Booster: {boosterList}.',
+                                    none: 'Im nächsten Level warten keine besonderen Items.'
+                                }
+                            },
+                            boosters: {
+                                speed: { name: 'Tempo-Booster' },
+                                grip: { name: 'Gleit-Booster' },
+                                coinrush: { name: 'Münz-Multiplikator' },
+                                vision: { name: 'Licht-Booster' }
+                            },
+                            inventory: {
+                                title: 'Inventar',
+                                coinsLabel: 'Münzen',
+                                bombsHeading: 'Bomben',
+                                bombCount: 'Bomben: {count}',
+                                useBomb: 'Bombe einsetzen',
+                                bombUnavailable: 'Nur im Spiel verwendbar.',
+                                boostersHeading: 'Booster',
+                                boosterCount: '{name}: {count}',
+                                noBoosters: 'Keine Booster im Inventar.',
+                                useBooster: 'Aktivieren',
+                                boosterUnavailable: 'Nur im Spiel verwendbar.',
+                                bombUsed: 'Bombe gezündet!',
+                                bombNoWalls: 'Keine Mauern in Reichweite.',
+                                boosterUsed: 'Booster aktiviert: {name}',
+                                openShop: 'Zum Shop',
+                                close: 'Schließen'
+                            },
+                            shop: {
+                                title: 'Shop',
+                                description: 'Tausche deine Münzen gegen hilfreiche Gegenstände.',
+                                balance: 'Guthaben: {coins}',
+                                cost: 'Kosten: {cost}',
+                                buyButton: 'Kaufen',
+                                close: 'Schließen',
+                                back: 'Zurück zum Inventar',
+                                notEnoughCoins: 'Nicht genügend Münzen.',
+                                purchaseSuccess: '{item} gekauft!',
+                                items: {
+                                    bomb: {
+                                        name: 'Bombe',
+                                        description: 'Sprengt angrenzende Mauern frei, um neue Wege zu öffnen.'
+                                    },
+                                    speed: {
+                                        name: 'Tempo-Booster',
+                                        description: 'Erhöht kurzfristig die Beschleunigung der Kugel.'
+                                    },
+                                    grip: {
+                                        name: 'Gleit-Booster',
+                                        description: 'Reduziert das Rutschen und verbessert die Kontrolle.'
+                                    },
+                                    coinrush: {
+                                        name: 'Münz-Multiplikator',
+                                        description: 'Verdoppelt vorübergehend den Wert eingesammelter Münzen.'
+                                    },
+                                    vision: {
+                                        name: 'Licht-Booster',
+                                        description: 'Erhellt die Umgebung für bessere Übersicht.'
+                                    }
+                                }
+                            },
+                            hud: {
+                                coins: 'Münzen: {count}'
+                            }
+                        },
+                        en: {
+                            menu: {
+                                title: 'Gemma’s Labyrinth - The Endless Path',
+                                playerSelectLabel: 'Select player',
+                                deletePlayer: 'Delete player',
+                                createPlayerHeading: 'Create new player',
+                                playerPlaceholder: 'Enter player name...',
+                                createPlayerButton: 'Create player',
+                                topPlayers: 'Top players',
+                                startButton: 'Start game',
+                                resumeButton: 'Return to game',
+                                settingsButton: 'Settings',
+                                scoreboardButton: 'Show leaderboard',
+                                inventoryButton: 'Open inventory',
+                                shopButton: 'Open shop',
+                                noPlayersOption: 'No players available',
+                                messageCreateFirst: 'Create a player first to start.',
+                                messageSelectPlayer: 'Please select a player.',
+                                messagePlayerCreated: 'New player created.',
+                                messageNameTooShort: 'The name must be at least 3 characters long.',
+                                messageNameExists: 'This player name already exists.',
+                                messageNameEmpty: 'Name must not be empty.',
+                                deleteConfirm: 'Do you really want to delete the player "{name}"?',
+                                currentNone: 'No player selected',
+                                developerInfo: 'Developer: Ralf Krümmel @2025',
+                                currentWithLevel: 'Current player: {name} (Level {level}, total time {time}, coins {coins})',
+                                menuButton: 'Menu',
+                                saveGameButton: 'Save game',
+                                loadGameButton: 'Load game',
+                                messageSaved: 'Game saved.',
+                                messageSaveUnavailable: 'You need an active game to save.',
+                                messageLoaded: 'Game loaded.',
+                                messageNoSave: 'No saved game found.'
+                            },
+                            settings: {
+                                title: 'Settings',
+                                victoryLlm: 'Enable AI victory messages',
+                                tiltControl: 'Enable motion controls',
+                                language: 'Language',
+                                save: 'Save',
+                                cancel: 'Cancel',
+                                tiltEnabled: 'Motion controls are enabled. Tilt your device to move the ball.',
+                                tiltDisabled: 'Motion controls are off.',
+                                tiltUnavailable: 'Motion controls are not supported on this device.',
+                                tiltNeedsPermission: 'Tap to enable motion controls (permission required).',
+                                keybindingHeading: 'Key bindings',
+                                keybindingInstruction: 'Tap a direction or action and then press the desired key.',
+                                keybindingUp: 'Up',
+                                keybindingDown: 'Down',
+                                keybindingLeft: 'Left',
+                                keybindingRight: 'Right',
+                                keybindingBomb: 'Use bomb',
+                                keybindingWaiting: 'Press a key...',
+                                keybindingReset: 'Restore default keys',
+                                keybindingDuplicate: 'Multiple directions share the same key. This may make movement harder.',
+                                keybindingUnsupported: 'That key is not supported. Please try again.',
+                                keybindingCancelled: 'Key assignment cancelled.',
+                                touchHeading: 'Touch controls',
+                                touchInstruction: 'Choose which movement each on-screen arrow should trigger.',
+                                touchUp: 'Top arrow',
+                                touchDown: 'Bottom arrow',
+                                touchLeft: 'Left arrow',
+                                touchRight: 'Right arrow',
+                                touchReset: 'Reset touch arrows',
+                                touchSizeLabel: 'Touch arrow size',
+                                touchSizeHint: 'Adjust how large the on-screen arrows should appear.',
+                                touchSizeValue: '{percent} %',
+                                touchAria: {
+                                    up: 'Move up',
+                                    down: 'Move down',
+                                    left: 'Move left',
+                                    right: 'Move right'
+                                }
+                            },
+                            language: {
+                                de: 'German',
+                                en: 'English'
+                            },
+                            scoreboard: {
+                                title: 'Leaderboard',
+                                rank: 'Rank',
+                                player: 'Player',
+                                level: 'Highest level',
+                                time: 'Total time',
+                                empty: 'No players yet.',
+                                close: 'Close',
+                                entry: '{rank}. {name} - Level {level} ({time})'
+                            },
+                            instructions: {
+                                text: '<strong>How to play Gemma’s Labyrinth - The Endless Path:</strong><br><br>Use the arrow keys or WASD to move the ball and locate the red exit plate.<br><br>Use the Settings menu to remap the movement and bomb controls.<br><br>Devices with motion sensors let you tilt to move the ball.<br><br>Touch devices display small on-screen arrows near the bottom for easy steering.<br><br>Press the B key to open your inventory, trigger boosters, or visit the shop.<br><br>Press 1 (default) or your assigned bomb key to deploy a bomb.'
+                            },
+                            help: 'Hold down the "I" key for instructions.',
+                            victory: {
+                                default: 'Congratulations! You cleared level {level}!',
+                                itemHint: 'Upcoming level perks: {summary}'
+                            },
+                            level: {
+                                loading: 'Loading level {level}...',
+                                prefix: 'Level',
+                                standardName: 'Standard maze',
+                                depthFirstName: 'Depth-first maze',
+                                primName: 'Prim maze',
+                                kruskalName: 'Kruskal maze',
+                                ellerName: 'Eller maze'
+                            },
+                            toplist: {
+                                empty: 'No entries yet.',
+                                entry: '{rank}. {name} - Level {level} ({time})'
+                            },
+                            items: {
+                                coin: {
+                                    singular: 'coin',
+                                    plural: 'coins'
+                                },
+                                summary: {
+                                    coins: 'The next level contains {coinCount} {coinWord}.',
+                                    boosters: 'Boosters: {boosterList}.',
+                                    none: 'No special items await in the next level.'
+                                }
+                            },
+                            boosters: {
+                                speed: { name: 'Speed boost' },
+                                grip: { name: 'Glide boost' },
+                                coinrush: { name: 'Coin multiplier' },
+                                vision: { name: 'Light boost' }
+                            },
+                            inventory: {
+                                title: 'Inventory',
+                                coinsLabel: 'Coins',
+                                bombsHeading: 'Bombs',
+                                bombCount: 'Bombs: {count}',
+                                useBomb: 'Use bomb',
+                                bombUnavailable: 'Only available in-game.',
+                                boostersHeading: 'Boosters',
+                                boosterCount: '{name}: {count}',
+                                noBoosters: 'No boosters in your inventory.',
+                                useBooster: 'Activate',
+                                boosterUnavailable: 'Only available in-game.',
+                                bombUsed: 'Bomb deployed!',
+                                bombNoWalls: 'No walls in range.',
+                                boosterUsed: 'Booster activated: {name}',
+                                openShop: 'Go to shop',
+                                close: 'Close'
+                            },
+                            shop: {
+                                title: 'Shop',
+                                description: 'Trade your coins for helpful items.',
+                                balance: 'Balance: {coins}',
+                                cost: 'Cost: {cost}',
+                                buyButton: 'Buy',
+                                close: 'Close',
+                                back: 'Back to inventory',
+                                notEnoughCoins: 'Not enough coins.',
+                                purchaseSuccess: 'Purchased {item}!',
+                                items: {
+                                    bomb: {
+                                        name: 'Bomb',
+                                        description: 'Blasts nearby walls to open new paths.'
+                                    },
+                                    speed: {
+                                        name: 'Speed boost',
+                                        description: 'Temporarily increases the marble\'s acceleration.'
+                                    },
+                                    grip: {
+                                        name: 'Glide boost',
+                                        description: 'Reduces sliding and improves control.'
+                                    },
+                                    coinrush: {
+                                        name: 'Coin multiplier',
+                                        description: 'Doubles the value of collected coins for a short time.'
+                                    },
+                                    vision: {
+                                        name: 'Light boost',
+                                        description: 'Brightens the maze for better visibility.'
+                                    }
+                                }
+                            },
+                            hud: {
+                                coins: 'Coins: {count}'
+                            }
+                        }
+                    },
+                    currentLanguage = 'de',
+                    currentExitTarget = {x: null, y: null},
+                    currentExitApproachCell = null,
+                    boosterDefinitions = {
+                        speed: {
+                            id: 'speed',
+                            durationMs: 12000,
+                            apply: function() { currentImpulseMultiplier = 1.6; },
+                            reset: function() { currentImpulseMultiplier = 1.0; }
+                        },
+                        grip: {
+                            id: 'grip',
+                            durationMs: 12000,
+                            apply: function() { currentFrictionFactor = 0.985; },
+                            reset: function() { currentFrictionFactor = baseFrictionFactor; }
+                        },
+                        coinrush: {
+                            id: 'coinrush',
+                            durationMs: 15000,
+                            apply: function() { currentCoinMultiplier = 2; },
+                            reset: function() { currentCoinMultiplier = 1; }
+                        },
+                        vision: {
+                            id: 'vision',
+                            durationMs: 10000,
+                            apply: function() { visionBoostActive = true; if (light) { light.intensity = Math.min(defaultLightIntensity * 1.4, 1.6); } },
+                            reset: function() { visionBoostActive = false; if (light) { light.intensity = defaultLightIntensity; } }
+                        }
+                    },
+                    boosterOrder = ['speed', 'grip', 'coinrush', 'vision'],
+                    activeItems = [],
+                    currentLevelConfig = null,
+                    nextLevelConfig = null,
+                    currentRunStats = null,
+                    currentLevelStartTime = null,
+                    currentImpulseMultiplier = 1,
+                    currentFrictionFactor = 0.95,
+                    currentCoinMultiplier = 1,
+                    baseImpulseStrength = 0.25,
+                    baseFrictionFactor = 0.95,
+                    boosterTimeouts = {},
+                    defaultLightIntensity = 1,
+                    visionBoostActive = false,
+                    itemResources = {
+                        coinGeometry: null,
+                        coinMaterial: null,
+                        boosterGeometry: null,
+                        boosterMaterials: {},
+                        exitGeometry: null,
+                        exitMaterial: null
+                    },
+                    exitMesh = null,
+                    wallBodies = {},
+                    inventoryPreviousState = null,
+                    shopPreviousState = null,
+                    inventoryMessageTimeout = null,
+                    shopMessageTimeout = null,
+                    shopCatalog = [
+                        { id: 'bomb', type: 'bomb', cost: 30 },
+                        { id: 'speed', type: 'booster', boosterId: 'speed', cost: 25 },
+                        { id: 'grip', type: 'booster', boosterId: 'grip', cost: 25 },
+                        { id: 'coinrush', type: 'booster', boosterId: 'coinrush', cost: 35 },
+                        { id: 'vision', type: 'booster', boosterId: 'vision', cost: 20 }
+                    ],
+
+                // Box2D shortcuts
+                    b2World        = Box2D.Dynamics.b2World,
+                    b2FixtureDef   = Box2D.Dynamics.b2FixtureDef,
+                    b2BodyDef      = Box2D.Dynamics.b2BodyDef,
+                    b2Body		   = Box2D.Dynamics.b2Body,
+                    b2CircleShape  = Box2D.Collision.Shapes.b2CircleShape,
+                    b2PolygonShape = Box2D.Collision.Shapes.b2PolygonShape,
+                    b2Settings     = Box2D.Common.b2Settings,
+                    b2Vec2         = Box2D.Common.Math.b2Vec2,
+
+                // Box2D world variables 
+                    wWorld         = undefined,
+                    wBall          = undefined;
+
+
+                var victoryLlmDefaults = {
+                    enabled: true,
+                    endpoint: 'http://localhost:1234/v1/chat/completions',
+                    model: 'victory-narrator',
+                    temperature: 0.7,
+                    maxTokens: 120,
+                    requestTimeoutMs: 6000
+                };
+
+                var victoryDisplayDurationMs = 10000;
+
+                var STORAGE_KEY_PLAYERS = 'astrayPlayers',
+                    STORAGE_KEY_SETTINGS = 'astraySettings',
+                    STORAGE_KEY_CURRENT_PLAYER = 'astrayCurrentPlayer';
+
+                var defaultSettings = {
+                    victoryLlmEnabled: true,
+                    language: 'de',
+                    tiltControlEnabled: false,
+                    keyBindings: {
+                        up: 'w',
+                        down: 's',
+                        left: 'a',
+                        right: 'd',
+                        bomb: '1'
+                    },
+                    touchBindings: {
+                        up: 'up',
+                        down: 'down',
+                        left: 'left',
+                        right: 'right'
+                    },
+                    touchSize: 1
+                };
+
+                var touchDirectionVectors = {
+                    up: [0, 1],
+                    down: [0, -1],
+                    left: [-1, 0],
+                    right: [1, 0]
+                };
+
+                var touchDirectionIcons = {
+                    up: '▲',
+                    down: '▼',
+                    left: '◀',
+                    right: '▶'
+                };
+
+                var allowedKeyBindingMap = (function() {
+                    var base = {
+                        up: true,
+                        down: true,
+                        left: true,
+                        right: true,
+                        space: true,
+                        enter: true,
+                        shift: true,
+                        ctrl: true,
+                        alt: true,
+                        meta: true,
+                        tab: true,
+                        home: true,
+                        end: true,
+                        pageup: true,
+                        pagedown: true,
+                        insert: true,
+                        delete: true,
+                        capslock: true
+                    };
+                    for (var i = 0; i <= 9; i++) {
+                        base[i.toString()] = true;
+                        base['num' + i] = true;
+                    }
+                    for (var code = 65; code <= 90; code++) {
+                        base[String.fromCharCode(code).toLowerCase()] = true;
+                    }
+                    for (var f = 1; f <= 12; f++) {
+                        base['f' + f] = true;
+                    }
+                    return base;
+                })();
+
+                var players = [],
+                    currentPlayer = null,
+                    hasStartedGame = false,
+                    previousGameState = null,
+                    gameSettings = {},
+                    scoreboardNeedsRender = true;
+
+                var victoryLlmConfig = {};
+                for (var victoryKey in victoryLlmDefaults) {
+                    if (victoryLlmDefaults.hasOwnProperty(victoryKey)) {
+                        victoryLlmConfig[victoryKey] = victoryLlmDefaults[victoryKey];
+                    }
+                }
+                if (window.astrayVictoryConfig) {
+                    for (var victoryUserKey in window.astrayVictoryConfig) {
+                        if (window.astrayVictoryConfig.hasOwnProperty(victoryUserKey)) {
+                            victoryLlmConfig[victoryUserKey] = window.astrayVictoryConfig[victoryUserKey];
+                        }
+                    }
+                }
+
+
+                function updateLevelLabel(state) {
+                    if (!window.jQuery) {
+                        return;
+                    }
+                    var label = t('level.prefix') + ' ' + levelIndex;
+                    if (state === 'loading') {
+                        label = t('level.loading', {level: levelIndex});
+                    } else if (lastMazeName) {
+                        label += ' - ' + lastMazeName;
+                    }
+                    jQuery('#level').text(label);
+                }
+
+
+                function resolveTranslation(lang, key) {
+                    var data = translations[lang] || translations.de;
+                    var parts = key.split('.');
+                    for (var i = 0; i < parts.length; i++) {
+                        if (data === undefined || data === null) {
+                            break;
+                        }
+                        data = data[parts[i]];
+                    }
+                    if (typeof data === 'undefined' && lang !== 'de') {
+                        return resolveTranslation('de', key);
+                    }
+                    return data;
+                }
+
+
+                function formatTranslation(value, params) {
+                    if (!params) {
+                        return value;
+                    }
+                    return value.replace(/\{(\w+)\}/g, function(match, token) {
+                        return Object.prototype.hasOwnProperty.call(params, token) ? params[token] : match;
+                    });
+                }
+
+
+                function formatDuration(ms) {
+                    if (!ms || ms < 0) {
+                        return '0:00';
+                    }
+                    var totalSeconds = Math.floor(ms / 1000);
+                    var hours = Math.floor(totalSeconds / 3600);
+                    var minutes = Math.floor((totalSeconds % 3600) / 60);
+                    var seconds = totalSeconds % 60;
+                    if (hours > 0) {
+                        return hours + ':' + String(minutes).padStart(2, '0') + ':' + String(seconds).padStart(2, '0');
+                    }
+                    return minutes + ':' + String(seconds).padStart(2, '0');
+                }
+
+
+                function deepClone(obj) {
+                    if (!obj) {
+                        return null;
+                    }
+                    try {
+                        return JSON.parse(JSON.stringify(obj));
+                    } catch (err) {
+                        return null;
+                    }
+                }
+
+
+                function canonicalKeyName(raw) {
+                    if (raw === undefined || raw === null) {
+                        return '';
+                    }
+                    var key = raw.toString().trim().toLowerCase();
+                    if (!key) {
+                        return '';
+                    }
+                    var aliasMap = {
+                        arrowup: 'up',
+                        arrowdown: 'down',
+                        arrowleft: 'left',
+                        arrowright: 'right',
+                        spacebar: 'space',
+                        ' ': 'space',
+                        space: 'space',
+                        control: 'ctrl',
+                        option: 'alt',
+                        altgraph: 'alt',
+                        command: 'meta',
+                        windows: 'meta',
+                        win: 'meta',
+                        os: 'meta',
+                        return: 'enter',
+                        escape: 'escape',
+                        esc: 'escape'
+                    };
+                    if (aliasMap[key]) {
+                        return aliasMap[key];
+                    }
+                    if (key.indexOf('key') === 0 && key.length === 4) {
+                        return key.substring(3);
+                    }
+                    if (key.indexOf('digit') === 0 && key.length === 6) {
+                        return key.substring(5);
+                    }
+                    if (key.indexOf('numpad') === 0 && key.length === 7) {
+                        return 'num' + key.substring(6);
+                    }
+                    if (key.indexOf('arrow') === 0 && key.length > 5) {
+                        return key.substring(5);
+                    }
+                    return key;
+                }
+
+
+                function normalizeKeyBindingValue(value) {
+                    var key = canonicalKeyName(value);
+                    if (!key) {
+                        return '';
+                    }
+                    if (allowedKeyBindingMap[key]) {
+                        return key;
+                    }
+                    return '';
+                }
+
+
+                function normalizeKeyFromEvent(event) {
+                    if (!event) {
+                        return '';
+                    }
+                    var key = normalizeKeyBindingValue(event.key);
+                    if (key) {
+                        return key;
+                    }
+                    key = normalizeKeyBindingValue(event.code);
+                    if (key) {
+                        return key;
+                    }
+                    if (typeof event.which === 'number') {
+                        var fallback = normalizeKeyBindingValue(String.fromCharCode(event.which));
+                        if (fallback) {
+                            return fallback;
+                        }
+                    }
+                    return '';
+                }
+
+
+                function sanitizeKeyBindings(bindings) {
+                    var source = (bindings && typeof bindings === 'object') ? bindings : {};
+                    var sanitized = {};
+                    keyBindingDirections.forEach(function(direction) {
+                        var normalized = normalizeKeyBindingValue(source[direction]);
+                        if (!normalized) {
+                            normalized = defaultSettings.keyBindings[direction];
+                        }
+                        sanitized[direction] = normalized;
+                    });
+                    return sanitized;
+                }
+
+
+                function cloneKeyBindings(bindings) {
+                    var sanitized = sanitizeKeyBindings(bindings);
+                    var clone = {};
+                    keyBindingDirections.forEach(function(direction) {
+                        clone[direction] = sanitized[direction];
+                    });
+                    return clone;
+                }
+
+
+                function sanitizeTouchBindings(bindings) {
+                    var source = (bindings && typeof bindings === 'object') ? bindings : {};
+                    var sanitized = {};
+                    touchControlSlots.forEach(function(slot) {
+                        var value = source[slot];
+                        if (!value || !touchDirectionVectors[value]) {
+                            value = defaultSettings.touchBindings[slot];
+                        }
+                        sanitized[slot] = value;
+                    });
+                    return sanitized;
+                }
+
+
+                function cloneTouchBindings(bindings) {
+                    var sanitized = sanitizeTouchBindings(bindings);
+                    var clone = {};
+                    touchControlSlots.forEach(function(slot) {
+                        clone[slot] = sanitized[slot];
+                    });
+                    return clone;
+                }
+
+
+                function resolveTouchDirectionVector(direction) {
+                    var base = touchDirectionVectors[direction];
+                    if (!base) {
+                        return [0, 0];
+                    }
+                    return [base[0], base[1]];
+                }
+
+
+                function sanitizeTouchSize(value) {
+                    var numeric = parseFloat(value);
+                    if (isNaN(numeric)) {
+                        numeric = defaultSettings.touchSize;
+                    }
+                    if (numeric < touchSizeRange.min) {
+                        numeric = touchSizeRange.min;
+                    }
+                    if (numeric > touchSizeRange.max) {
+                        numeric = touchSizeRange.max;
+                    }
+                    return Math.round(numeric * 100) / 100;
+                }
+
+
+                function applyTouchBindingsToDom(bindings) {
+                    var active = sanitizeTouchBindings(bindings);
+                    touchControlSlots.forEach(function(slot) {
+                        var direction = active[slot];
+                        var vector = resolveTouchDirectionVector(direction);
+                        var button = document.querySelector('#touch-controls .touch-' + slot);
+                        if (!button) {
+                            return;
+                        }
+                        button.setAttribute('data-direction', direction);
+                        button.setAttribute('data-axis-x', vector[0]);
+                        button.setAttribute('data-axis-y', vector[1]);
+                        button.textContent = touchDirectionIcons[direction] || '•';
+                        button.setAttribute('aria-label', t('settings.touchAria.' + direction));
+                    });
+                }
+
+
+                function applyTouchSizeToDom(size) {
+                    var container = document.getElementById('touch-controls');
+                    if (!container) {
+                        return;
+                    }
+                    var sanitized = sanitizeTouchSize(size);
+                    container.style.setProperty('--touch-control-scale', sanitized.toString());
+                }
+
+
+                function updateSettingsTouchBindingUi() {
+                    if (!window.jQuery) {
+                        return;
+                    }
+                    var active = settingsTouchBindingDraft || (gameSettings && gameSettings.touchBindings) || defaultSettings.touchBindings;
+                    active = sanitizeTouchBindings(active);
+                    touchControlSlots.forEach(function(slot) {
+                        var select = jQuery(".touch-binding-select[data-slot='" + slot + "']");
+                        if (!select.length) {
+                            return;
+                        }
+                        select.val(active[slot]);
+                    });
+                    updateSettingsTouchSizeUi();
+                }
+
+
+                function getActiveTouchSize() {
+                    if (settingsTouchSizeDraft !== null && typeof settingsTouchSizeDraft !== 'undefined') {
+                        return sanitizeTouchSize(settingsTouchSizeDraft);
+                    }
+                    if (gameSettings && typeof gameSettings.touchSize !== 'undefined') {
+                        return sanitizeTouchSize(gameSettings.touchSize);
+                    }
+                    return sanitizeTouchSize(defaultSettings.touchSize);
+                }
+
+
+                function updateSettingsTouchSizeUi() {
+                    if (!window.jQuery) {
+                        return;
+                    }
+                    var activeSize = getActiveTouchSize();
+                    var $slider = jQuery('#settings-touch-size');
+                    var $value = jQuery('#settings-touch-size-value');
+                    if ($slider.length) {
+                        $slider.attr('min', touchSizeRange.min);
+                        $slider.attr('max', touchSizeRange.max);
+                        $slider.attr('step', touchSizeRange.step);
+                        $slider.val(activeSize);
+                        $slider.attr('aria-valuenow', activeSize);
+                    }
+                    if ($value.length) {
+                        var percent = Math.round(activeSize * 100);
+                        var label = t('settings.touchSizeValue', { percent: percent });
+                        $value.text(label);
+                        if ($slider.length) {
+                            $slider.attr('aria-valuetext', label);
+                        }
+                    }
+                    applyTouchSizeToDom(activeSize);
+                }
+
+
+                function formatKeyBindingDisplay(key) {
+                    if (!key) {
+                        return '—';
+                    }
+                    var displayMap = {
+                        up: '↑',
+                        down: '↓',
+                        left: '←',
+                        right: '→',
+                        space: 'Space',
+                        enter: 'Enter',
+                        shift: 'Shift',
+                        ctrl: 'Ctrl',
+                        alt: 'Alt',
+                        meta: 'Meta',
+                        tab: 'Tab',
+                        home: 'Home',
+                        end: 'End',
+                        pageup: 'Page Up',
+                        pagedown: 'Page Down',
+                        insert: 'Insert',
+                        delete: 'Delete',
+                        capslock: 'Caps Lock'
+                    };
+                    if (displayMap[key]) {
+                        return displayMap[key];
+                    }
+                    if (/^f\d{1,2}$/i.test(key)) {
+                        return key.toUpperCase();
+                    }
+                    if (/^num\d$/.test(key)) {
+                        return key.toUpperCase();
+                    }
+                    if (key.length === 1) {
+                        return key.toUpperCase();
+                    }
+                    return key.replace(/^(\w)/, function(match, p1) {
+                        return p1 ? p1.toUpperCase() : match;
+                    });
+                }
+
+
+                function hasDuplicateKeyBindings(bindings) {
+                    if (!bindings) {
+                        return false;
+                    }
+                    var seen = {};
+                    var duplicate = false;
+                    keyBindingDirections.forEach(function(direction) {
+                        var key = bindings[direction];
+                        if (!key) {
+                            return;
+                        }
+                        if (seen[key]) {
+                            duplicate = true;
+                        } else {
+                            seen[key] = true;
+                        }
+                    });
+                    return duplicate;
+                }
+
+
+                function updateSettingsKeyBindingMessage() {
+                    if (!window.jQuery) {
+                        return;
+                    }
+                    var messageEl = jQuery('#settings-keybinding-message');
+                    if (!messageEl.length) {
+                        return;
+                    }
+                    if (keybindingMessageOverride) {
+                        messageEl.text(t(keybindingMessageOverride));
+                        return;
+                    }
+                    if (settingsKeyBindingDraft && hasDuplicateKeyBindings(settingsKeyBindingDraft)) {
+                        messageEl.text(t('settings.keybindingDuplicate'));
+                    } else {
+                        messageEl.text('');
+                    }
+                }
+
+
+                function clearKeybindingMessageOverride() {
+                    keybindingMessageOverride = null;
+                    if (keybindingMessageTimeout) {
+                        clearTimeout(keybindingMessageTimeout);
+                        keybindingMessageTimeout = null;
+                    }
+                }
+
+
+                function showTemporaryKeybindingMessage(messageKey) {
+                    if (!messageKey) {
+                        return;
+                    }
+                    keybindingMessageOverride = messageKey;
+                    if (keybindingMessageTimeout) {
+                        clearTimeout(keybindingMessageTimeout);
+                    }
+                    keybindingMessageTimeout = setTimeout(function() {
+                        keybindingMessageOverride = null;
+                        keybindingMessageTimeout = null;
+                        updateSettingsKeyBindingMessage();
+                    }, 2600);
+                    updateSettingsKeyBindingMessage();
+                }
+
+
+                function updateSettingsKeyBindingUi() {
+                    if (!window.jQuery) {
+                        return;
+                    }
+                    var activeBindings = settingsKeyBindingDraft || (gameSettings && gameSettings.keyBindings) || defaultSettings.keyBindings;
+                    activeBindings = sanitizeKeyBindings(activeBindings);
+                    keyBindingDirections.forEach(function(direction) {
+                        var button = jQuery(".keybinding-button[data-direction='" + direction + "']");
+                        if (!button.length) {
+                            return;
+                        }
+                        if (awaitingKeyBindingDirection === direction) {
+                            button.addClass('waiting');
+                            button.text(t('settings.keybindingWaiting'));
+                        } else {
+                            button.removeClass('waiting');
+                            var key = activeBindings[direction];
+                            button.text(formatKeyBindingDisplay(key));
+                        }
+                    });
+                    if (settingsKeyBindingDraft) {
+                        updateSettingsKeyBindingMessage();
+                    } else {
+                        if (!keybindingMessageOverride) {
+                            jQuery('#settings-keybinding-message').text('');
+                        }
+                    }
+                }
+
+
+                function beginKeybindingCapture(direction, button) {
+                    if (!direction) {
+                        return;
+                    }
+                    awaitingKeyBindingDirection = direction;
+                    awaitingKeyBindingButton = button || null;
+                    clearKeybindingMessageOverride();
+                    updateSettingsKeyBindingUi();
+                }
+
+
+                function finishKeybindingCapture(direction, key) {
+                    if (!direction || !key) {
+                        return;
+                    }
+                    if (!settingsKeyBindingDraft) {
+                        settingsKeyBindingDraft = cloneKeyBindings(defaultSettings.keyBindings);
+                    }
+                    settingsKeyBindingDraft[direction] = key;
+                    awaitingKeyBindingDirection = null;
+                    awaitingKeyBindingButton = null;
+                    clearKeybindingMessageOverride();
+                    updateSettingsKeyBindingUi();
+                }
+
+
+                function cancelKeybindingCapture(options) {
+                    options = options || {};
+                    if (!awaitingKeyBindingDirection) {
+                        return;
+                    }
+                    awaitingKeyBindingDirection = null;
+                    awaitingKeyBindingButton = null;
+                    if (options.showCancelled) {
+                        showTemporaryKeybindingMessage('settings.keybindingCancelled');
+                    } else {
+                        clearKeybindingMessageOverride();
+                    }
+                    updateSettingsKeyBindingUi();
+                }
+
+
+                function applyCustomKeyBindings() {
+                    if (customAxisBinding && typeof customAxisBinding.clear === 'function') {
+                        customAxisBinding.clear();
+                    }
+                    customAxisBinding = null;
+                    if (bombKeyBinding && typeof bombKeyBinding.clear === 'function') {
+                        bombKeyBinding.clear();
+                    }
+                    bombKeyBinding = null;
+                    var bindings = (gameSettings && gameSettings.keyBindings) ? sanitizeKeyBindings(gameSettings.keyBindings) : cloneKeyBindings(defaultSettings.keyBindings);
+                    if (!gameSettings) {
+                        gameSettings = {};
+                    }
+                    gameSettings.keyBindings = cloneKeyBindings(bindings);
+                    if (KeyboardJS && KeyboardJS.bind && typeof KeyboardJS.bind.axis === 'function') {
+                        customAxisBinding = KeyboardJS.bind.axis(bindings.left, bindings.right, bindings.down, bindings.up, onMoveKey);
+                    }
+                    if (KeyboardJS && KeyboardJS.bind && typeof KeyboardJS.bind.key === 'function' && bindings.bomb) {
+                        bombKeyBinding = KeyboardJS.bind.key(bindings.bomb, function() {
+                            if (awaitingKeyBindingDirection) {
+                                return;
+                            }
+                            useInventoryBomb();
+                        });
+                    }
+                }
+
+
+                function onSettingsKeyCapture(event) {
+                    if (!awaitingKeyBindingDirection) {
+                        return;
+                    }
+                    if (event && typeof event.preventDefault === 'function') {
+                        event.preventDefault();
+                        event.stopPropagation();
+                    }
+                    var isEscapeKey = event && (event.key === 'Escape' || event.key === 'Esc');
+                    var key = normalizeKeyFromEvent(event);
+                    if (isEscapeKey || key === 'escape') {
+                        cancelKeybindingCapture({ showCancelled: true });
+                        return;
+                    }
+                    if (!key) {
+                        showTemporaryKeybindingMessage('settings.keybindingUnsupported');
+                        return;
+                    }
+                    finishKeybindingCapture(awaitingKeyBindingDirection, key);
+                }
+
+
+                function ensurePlayerInventory(player) {
+                    if (!player) {
+                        return;
+                    }
+                    if (typeof player.coins !== 'number' || isNaN(player.coins)) {
+                        player.coins = 0;
+                    }
+                    if (!player.inventory || typeof player.inventory !== 'object') {
+                        player.inventory = {};
+                    }
+                    if (typeof player.inventory.bombs !== 'number' || isNaN(player.inventory.bombs)) {
+                        player.inventory.bombs = 0;
+                    }
+                    if (!player.inventory.boosters || typeof player.inventory.boosters !== 'object') {
+                        player.inventory.boosters = {};
+                    }
+                    boosterOrder.forEach(function(boosterId) {
+                        var value = player.inventory.boosters[boosterId];
+                        if (typeof value !== 'number' || isNaN(value)) {
+                            player.inventory.boosters[boosterId] = 0;
+                        }
+                    });
+                }
+
+
+                function getCoinWord(count, lang) {
+                    var language = lang || currentLanguage;
+                    var itemsLang = translations[language] && translations[language].items;
+                    if (!itemsLang || !itemsLang.coin) {
+                        return count === 1 ? 'coin' : 'coins';
+                    }
+                    return count === 1 ? itemsLang.coin.singular : itemsLang.coin.plural;
+                }
+
+
+                function formatCoinAmount(count, lang) {
+                    return (count || 0) + ' ' + getCoinWord(count || 0, lang);
+                }
+
+
+                function addCoinsToPlayer(amount) {
+                    if (!currentPlayer) {
+                        return;
+                    }
+                    ensurePlayerInventory(currentPlayer);
+                    var numericAmount = parseInt(amount, 10);
+                    if (isNaN(numericAmount) || !isFinite(numericAmount)) {
+                        return;
+                    }
+                    currentPlayer.coins = Math.max(0, (currentPlayer.coins || 0) + numericAmount);
+                    savePlayers();
+                    updateCoinCounter();
+                    updateInventoryMenu();
+                    updateShopMenu();
+                    updateStartMenuState();
+                }
+
+
+                function updateCoinCounter() {
+                    if (!window.jQuery) {
+                        return;
+                    }
+                    var $counter = jQuery('#coin-counter');
+                    if (!$counter.length) {
+                        return;
+                    }
+                    if (!currentPlayer) {
+                        $counter.hide();
+                        return;
+                    }
+                    ensurePlayerInventory(currentPlayer);
+                    var coins = currentPlayer.coins || 0;
+                    $counter.text(t('hud.coins', {count: coins}));
+                    $counter.show();
+                }
+
+
+                function showInventoryMessage(text) {
+                    if (!window.jQuery) {
+                        return;
+                    }
+                    var $message = jQuery('#inventory-message');
+                    if (!$message.length) {
+                        return;
+                    }
+                    $message.stop(true, true);
+                    if (inventoryMessageTimeout) {
+                        clearTimeout(inventoryMessageTimeout);
+                        inventoryMessageTimeout = null;
+                    }
+                    if (!text) {
+                        $message.fadeOut(150);
+                        return;
+                    }
+                    $message.text(text).fadeIn(120);
+                    inventoryMessageTimeout = setTimeout(function() {
+                        $message.fadeOut(200);
+                        inventoryMessageTimeout = null;
+                    }, 4000);
+                }
+
+
+                function showShopMessage(text) {
+                    if (!window.jQuery) {
+                        return;
+                    }
+                    var $message = jQuery('#shop-message');
+                    if (!$message.length) {
+                        return;
+                    }
+                    $message.stop(true, true);
+                    if (shopMessageTimeout) {
+                        clearTimeout(shopMessageTimeout);
+                        shopMessageTimeout = null;
+                    }
+                    if (!text) {
+                        $message.fadeOut(150);
+                        return;
+                    }
+                    $message.text(text).fadeIn(120);
+                    shopMessageTimeout = setTimeout(function() {
+                        $message.fadeOut(200);
+                        shopMessageTimeout = null;
+                    }, 4000);
+                }
+
+
+                function showMenuMessage(text) {
+                    if (window.jQuery) {
+                        jQuery('#menu-message').text(text || '');
+                    }
+                }
+
+
+                function t(key, params) {
+                    var raw = resolveTranslation(currentLanguage, key);
+                    if (typeof raw === 'function') {
+                        return raw(params || {});
+                    }
+                    if (typeof raw === 'undefined') {
+                        raw = resolveTranslation('de', key);
+                    }
+                    if (typeof raw === 'string') {
+                        return formatTranslation(raw, params);
+                    }
+                    return raw;
+                }
+
+
+                function applyLanguageToDom() {
+                    if (!window.jQuery) {
+                        return;
+                    }
+                    jQuery('#menu-title').text(t('menu.title'));
+                    jQuery('#player-select-label').text(t('menu.playerSelectLabel'));
+                    jQuery('#delete-player').text(t('menu.deletePlayer'));
+                    jQuery('#create-player-heading').text(t('menu.createPlayerHeading'));
+                    jQuery('#player-name-input').attr('placeholder', t('menu.playerPlaceholder'));
+                    jQuery('#create-player').text(t('menu.createPlayerButton'));
+                    jQuery('#top-players-heading').text(t('menu.topPlayers'));
+                    jQuery('#start-game').text(t('menu.startButton'));
+                    jQuery('#resume-game').text(t('menu.resumeButton'));
+                    jQuery('#save-game').text(t('menu.saveGameButton'));
+                    jQuery('#load-game').text(t('menu.loadGameButton'));
+                    jQuery('#open-settings').text(t('menu.settingsButton'));
+                    jQuery('#open-scoreboard').text(t('menu.scoreboardButton'));
+                    jQuery('#open-inventory').text(t('menu.inventoryButton'));
+                    jQuery('#open-shop').text(t('menu.shopButton'));
+                    jQuery('#menu-button').text(t('menu.menuButton'));
+                    jQuery('#inventory-button').text(t('menu.inventoryButton'));
+                    jQuery('#shop-button').text(t('menu.shopButton'));
+
+                    jQuery('#settings-title').text(t('settings.title'));
+                    jQuery('#settings-victory-text').text(t('settings.victoryLlm'));
+                    jQuery('#settings-tilt-label').text(t('settings.tiltControl'));
+                    jQuery('#settings-language-label').text(t('settings.language'));
+                    jQuery('#settings-save').text(t('settings.save'));
+                    jQuery('#settings-cancel').text(t('settings.cancel'));
+                    jQuery('#settings-language option[value="de"]').text(t('language.de'));
+                    jQuery('#settings-language option[value="en"]').text(t('language.en'));
+                    jQuery('#settings-controls-heading').text(t('settings.keybindingHeading'));
+                    jQuery('#settings-controls-description').text(t('settings.keybindingInstruction'));
+                    jQuery('#settings-key-up-label').text(t('settings.keybindingUp'));
+                    jQuery('#settings-key-down-label').text(t('settings.keybindingDown'));
+                    jQuery('#settings-key-left-label').text(t('settings.keybindingLeft'));
+                    jQuery('#settings-key-right-label').text(t('settings.keybindingRight'));
+                    jQuery('#settings-key-bomb-label').text(t('settings.keybindingBomb'));
+                    jQuery('#settings-reset-keybindings').text(t('settings.keybindingReset'));
+                    jQuery('#settings-touch-heading').text(t('settings.touchHeading'));
+                    jQuery('#settings-touch-description').text(t('settings.touchInstruction'));
+                    jQuery('#settings-touch-up-label').text(t('settings.touchUp'));
+                    jQuery('#settings-touch-down-label').text(t('settings.touchDown'));
+                    jQuery('#settings-touch-left-label').text(t('settings.touchLeft'));
+                    jQuery('#settings-touch-right-label').text(t('settings.touchRight'));
+                    jQuery('#settings-reset-touchbindings').text(t('settings.touchReset'));
+                    jQuery('#settings-touch-size-label').text(t('settings.touchSizeLabel'));
+                    jQuery('#settings-touch-size-hint').text(t('settings.touchSizeHint'));
+                    var touchOptionLabels = {
+                        up: t('settings.keybindingUp'),
+                        down: t('settings.keybindingDown'),
+                        left: t('settings.keybindingLeft'),
+                        right: t('settings.keybindingRight')
+                    };
+                    touchControlSlots.forEach(function(slot) {
+                        var select = jQuery(".touch-binding-select[data-slot='" + slot + "']");
+                        if (!select.length) {
+                            return;
+                        }
+                        Object.keys(touchOptionLabels).forEach(function(direction) {
+                            select.find("option[value='" + direction + "']").text(touchOptionLabels[direction]);
+                        });
+                    });
+
+                    jQuery('#scoreboard-title').text(t('scoreboard.title'));
+                    jQuery('#scoreboard-th-rank').text(t('scoreboard.rank'));
+                    jQuery('#scoreboard-th-player').text(t('scoreboard.player'));
+                    jQuery('#scoreboard-th-level').text(t('scoreboard.level'));
+                    jQuery('#scoreboard-th-time').text(t('scoreboard.time'));
+                    jQuery('#scoreboard-close').text(t('scoreboard.close'));
+
+                    jQuery('#instructions').html(t('instructions.text'));
+                    jQuery('#help').text(t('help'));
+                    if (jQuery.fn && typeof jQuery.fn.center === 'function') {
+                        jQuery('#instructions').center();
+                    }
+                    updateTiltUi();
+                    updateSettingsKeyBindingUi();
+                    updateSettingsTouchBindingUi();
+                    applyTouchBindingsToDom(gameSettings && gameSettings.touchBindings ? gameSettings.touchBindings : defaultSettings.touchBindings);
+                    updateInventoryMenu();
+                    updateShopMenu();
+                    updateCoinCounter();
+                }
+
+
+                function setLanguage(lang, options) {
+                    options = options || {};
+                    if (!translations[lang]) {
+                        lang = 'de';
+                    }
+                    currentLanguage = lang;
+                    applyLanguageToDom();
+                    scoreboardNeedsRender = true;
+                    if (!options.skipPlayerRefresh) {
+                        renderPlayerSelect();
+                        renderScoreboard();
+                    }
+                    updateStartMenuState();
+                    updateLevelLabel(gameState === 'loading' ? 'loading' : 'ready');
+                    if (!options.skipSettingsUpdate) {
+                        gameSettings.language = lang;
+                    }
+                    if (!options.skipSave) {
+                        saveSettings();
+                    }
+                }
+
+
+                function canUseBomb() {
+                    if (!currentPlayer) {
+                        return false;
+                    }
+                    ensurePlayerInventory(currentPlayer);
+                    if (!hasStartedGame || !wWorld || !ballMesh || !maze) {
+                        return false;
+                    }
+                    if (gameState !== 'play') {
+                        return false;
+                    }
+                    return (currentPlayer.inventory.bombs || 0) > 0;
+                }
+
+
+                function canUseBooster(boosterId) {
+                    if (!currentPlayer || !boosterId) {
+                        return false;
+                    }
+                    ensurePlayerInventory(currentPlayer);
+                    if (!hasStartedGame || !wWorld || !ballMesh || !maze) {
+                        return false;
+                    }
+                    if (gameState !== 'play') {
+                        return false;
+                    }
+                    var boosters = currentPlayer.inventory.boosters || {};
+                    return (boosters[boosterId] || 0) > 0;
+                }
+
+
+                function removeWallAt(x, y) {
+                    if (!maze || typeof x !== 'number' || typeof y !== 'number') {
+                        return false;
+                    }
+                    var dimension = maze.dimension || maze.length;
+                    if (x < 0 || y < 0 || x >= dimension || y >= dimension) {
+                        return false;
+                    }
+                    if (!maze[x] || !maze[x][y]) {
+                        return false;
+                    }
+                    maze[x][y] = false;
+                    var key = x + ',' + y;
+                    if (wallBodies && wallBodies[key] && wWorld) {
+                        try {
+                            wWorld.DestroyBody(wallBodies[key]);
+                        } catch (err) {
+                            console.warn('Konnte Mauersegment nicht entfernen.', err);
+                        }
+                        delete wallBodies[key];
+                    }
+                    return true;
+                }
+
+
+                function rebuildMazeMesh() {
+                    if (!scene || !maze) {
+                        return;
+                    }
+                    if (mazeMesh) {
+                        scene.remove(mazeMesh);
+                    }
+                    mazeMesh = generate_maze_mesh(maze);
+                    scene.add(mazeMesh);
+                }
+
+
+                function detonateBombAtPlayer() {
+                    if (!ballMesh || !maze) {
+                        return false;
+                    }
+                    var centerX = Math.floor(ballMesh.position.x + 0.5);
+                    var centerY = Math.floor(ballMesh.position.y + 0.5);
+                    var removed = 0;
+                    for (var dx = -1; dx <= 1; dx++) {
+                        for (var dy = -1; dy <= 1; dy++) {
+                            if (dx === 0 && dy === 0) {
+                                continue;
+                            }
+                            var tx = centerX + dx;
+                            var ty = centerY + dy;
+                            if (removeWallAt(tx, ty)) {
+                                removed++;
+                            }
+                        }
+                    }
+                    if (removed > 0) {
+                        rebuildMazeMesh();
+                    }
+                    return removed > 0;
+                }
+
+
+                function useInventoryBomb() {
+                    if (!canUseBomb()) {
+                        showInventoryMessage(t('inventory.bombUnavailable'));
+                        return;
+                    }
+                    ensurePlayerInventory(currentPlayer);
+                    var success = detonateBombAtPlayer();
+                    if (success) {
+                        currentPlayer.inventory.bombs = Math.max(0, (currentPlayer.inventory.bombs || 0) - 1);
+                        savePlayers();
+                        updateInventoryMenu();
+                        showInventoryMessage(t('inventory.bombUsed'));
+                    } else {
+                        showInventoryMessage(t('inventory.bombNoWalls'));
+                    }
+                }
+
+
+                function useInventoryBooster(boosterId) {
+                    if (!canUseBooster(boosterId)) {
+                        showInventoryMessage(t('inventory.boosterUnavailable'));
+                        return;
+                    }
+                    ensurePlayerInventory(currentPlayer);
+                    var boosters = currentPlayer.inventory.boosters || {};
+                    boosters[boosterId] = Math.max(0, (boosters[boosterId] || 0) - 1);
+                    activateBooster(boosterId);
+                    savePlayers();
+                    updateInventoryMenu();
+                    showInventoryMessage(t('inventory.boosterUsed', { name: getBoosterName(boosterId, currentLanguage) }));
+                }
+
+
+                function updateInventoryMenu() {
+                    if (!window.jQuery) {
+                        return;
+                    }
+                    var $menu = jQuery('#inventory-menu');
+                    if (!$menu.length) {
+                        return;
+                    }
+                    var hasPlayer = !!currentPlayer;
+                    var coins = 0;
+                    var bombs = 0;
+                    if (hasPlayer) {
+                        ensurePlayerInventory(currentPlayer);
+                        coins = currentPlayer.coins || 0;
+                        bombs = currentPlayer.inventory.bombs || 0;
+                    }
+                    jQuery('#inventory-title').text(t('inventory.title'));
+                    jQuery('#inventory-coins-label').text(t('inventory.coinsLabel'));
+                    jQuery('#inventory-coins-value').text(coins);
+                    jQuery('#inventory-bombs-heading').text(t('inventory.bombsHeading'));
+                    jQuery('#inventory-bomb-count').text(t('inventory.bombCount', {count: bombs}));
+                    jQuery('#inventory-boosters-heading').text(t('inventory.boostersHeading'));
+                    var $bombButton = jQuery('#inventory-use-bomb');
+                    if ($bombButton.length) {
+                        $bombButton.text(t('inventory.useBomb'));
+                        var bombUsable = canUseBomb();
+                        $bombButton.prop('disabled', !bombUsable);
+                        $bombButton.attr('title', bombUsable ? '' : t('inventory.bombUnavailable'));
+                    }
+                    var $list = jQuery('#inventory-booster-list');
+                    var $empty = jQuery('#inventory-no-boosters');
+                    var boostersAvailable = false;
+                    if ($list.length) {
+                        $list.empty();
+                        if (hasPlayer) {
+                            boosterOrder.forEach(function(boosterId) {
+                                var count = (currentPlayer.inventory.boosters && currentPlayer.inventory.boosters[boosterId]) || 0;
+                                var name = getBoosterName(boosterId, currentLanguage);
+                                var $item = jQuery('<li class="inventory-booster"></li>');
+                                var label = t('inventory.boosterCount', {name: name, count: count});
+                                $item.append('<span class="inventory-booster-label">' + label + '</span>');
+                                var $button = jQuery('<button type="button" class="inventory-use-booster" data-booster-id="' + boosterId + '"></button>');
+                                $button.text(t('inventory.useBooster'));
+                                var boosterUsable = canUseBooster(boosterId);
+                                $button.prop('disabled', !boosterUsable);
+                                $button.attr('title', boosterUsable ? '' : t('inventory.boosterUnavailable'));
+                                $item.append($button);
+                                $list.append($item);
+                                if (count > 0) {
+                                    boostersAvailable = true;
+                                }
+                            });
+                        }
+                    }
+                    if ($empty.length) {
+                        $empty.text(t('inventory.noBoosters'));
+                        $empty.toggle(!boostersAvailable);
+                    }
+                    var $openShop = jQuery('#inventory-open-shop');
+                    if ($openShop.length) {
+                        $openShop.text(t('inventory.openShop'));
+                        $openShop.prop('disabled', !hasPlayer);
+                    }
+                    var $close = jQuery('#inventory-close');
+                    if ($close.length) {
+                        $close.text(t('inventory.close'));
+                    }
+                    updateCoinCounter();
+                }
+
+
+                function updateShopMenu() {
+                    if (!window.jQuery) {
+                        return;
+                    }
+                    var $menu = jQuery('#shop-menu');
+                    if (!$menu.length) {
+                        return;
+                    }
+                    var hasPlayer = !!currentPlayer;
+                    var coins = 0;
+                    if (hasPlayer) {
+                        ensurePlayerInventory(currentPlayer);
+                        coins = currentPlayer.coins || 0;
+                    }
+                    jQuery('#shop-title').text(t('shop.title'));
+                    jQuery('#shop-description').text(t('shop.description'));
+                    jQuery('#shop-balance').text(t('shop.balance', {coins: formatCoinAmount(coins, currentLanguage)}));
+                    var $close = jQuery('#shop-close');
+                    if ($close.length) {
+                        $close.text(t('shop.close'));
+                    }
+                    var $back = jQuery('#shop-back');
+                    if ($back.length) {
+                        $back.text(t('shop.back'));
+                    }
+                    var $list = jQuery('#shop-items');
+                    if ($list.length) {
+                        $list.empty();
+                        shopCatalog.forEach(function(item) {
+                            var name = t('shop.items.' + item.id + '.name');
+                            var description = t('shop.items.' + item.id + '.description');
+                            var costText = t('shop.cost', {cost: formatCoinAmount(item.cost, currentLanguage)});
+                            var $entry = jQuery('<li class="shop-item"></li>');
+                            $entry.append('<div class="shop-item-header">' + name + '</div>');
+                            $entry.append('<div class="shop-item-description">' + description + '</div>');
+                            $entry.append('<div class="shop-item-cost">' + costText + '</div>');
+                            var $button = jQuery('<button type="button" class="shop-buy" data-item-id="' + item.id + '"></button>');
+                            var affordable = hasPlayer && coins >= item.cost;
+                            $button.text(t('shop.buyButton'));
+                            $button.prop('disabled', !affordable);
+                            $button.attr('title', affordable ? '' : t('shop.notEnoughCoins'));
+                            $entry.append($button);
+                            $list.append($entry);
+                        });
+                    }
+                    showShopMessage('');
+                    updateCoinCounter();
+                }
+
+
+                function openInventoryMenu(options) {
+                    options = options || {};
+                    if (!window.jQuery) {
+                        return;
+                    }
+                    if (!currentPlayer) {
+                        return;
+                    }
+                    ensurePlayerInventory(currentPlayer);
+                    var $menu = jQuery('#inventory-menu');
+                    if (!$menu.length) {
+                        return;
+                    }
+                    if (!options.skipStateChange) {
+                        if (jQuery('#start-menu:visible').length === 0 && gameState !== 'menu') {
+                            inventoryPreviousState = gameState;
+                            gameState = 'menu';
+                        } else if (!inventoryPreviousState) {
+                            inventoryPreviousState = null;
+                        }
+                    }
+                    updateInventoryMenu();
+                    $menu.fadeIn(150);
+                    showInventoryMessage('');
+                }
+
+
+                function closeInventoryMenu(options) {
+                    options = options || {};
+                    if (!window.jQuery) {
+                        return;
+                    }
+                    var $menu = jQuery('#inventory-menu');
+                    if (!$menu.length || !$menu.is(':visible')) {
+                        return;
+                    }
+                    $menu.fadeOut(150);
+                    showInventoryMessage('');
+                    if (!options.skipRestore && inventoryPreviousState && jQuery('#start-menu:visible').length === 0) {
+                        gameState = inventoryPreviousState;
+                    }
+                    inventoryPreviousState = null;
+                }
+
+
+                function toggleInventoryMenu() {
+                    if (window.jQuery && jQuery('#shop-menu:visible').length) {
+                        closeShopMenu();
+                        return;
+                    }
+                    if (window.jQuery && jQuery('#inventory-menu:visible').length) {
+                        closeInventoryMenu();
+                    } else {
+                        openInventoryMenu();
+                    }
+                }
+
+
+                function openShopMenu(options) {
+                    options = options || {};
+                    if (!window.jQuery) {
+                        return;
+                    }
+                    if (!currentPlayer) {
+                        return;
+                    }
+                    ensurePlayerInventory(currentPlayer);
+                    var $menu = jQuery('#shop-menu');
+                    if (!$menu.length) {
+                        return;
+                    }
+                    var resumeState = null;
+                    if (!options.skipInventoryClose && window.jQuery && jQuery('#inventory-menu:visible').length) {
+                        resumeState = inventoryPreviousState;
+                        closeInventoryMenu({ skipRestore: true });
+                    }
+                    var desiredPrevious = null;
+                    if (!options.skipStateChange) {
+                        if (jQuery('#start-menu:visible').length === 0 && gameState !== 'menu') {
+                            desiredPrevious = gameState;
+                            gameState = 'menu';
+                        } else if (resumeState) {
+                            desiredPrevious = resumeState;
+                        }
+                    } else if (resumeState) {
+                        desiredPrevious = resumeState;
+                    }
+                    shopPreviousState = desiredPrevious;
+                    updateShopMenu();
+                    $menu.fadeIn(150);
+                    showShopMessage('');
+                }
+
+
+                function closeShopMenu(options) {
+                    options = options || {};
+                    if (!window.jQuery) {
+                        return;
+                    }
+                    var $menu = jQuery('#shop-menu');
+                    if (!$menu.length || !$menu.is(':visible')) {
+                        return;
+                    }
+                    $menu.fadeOut(150);
+                    showShopMessage('');
+                    if (!options.skipRestore && shopPreviousState && jQuery('#start-menu:visible').length === 0) {
+                        gameState = shopPreviousState;
+                    }
+                    shopPreviousState = null;
+                }
+
+
+                function purchaseShopItem(itemId) {
+                    if (!currentPlayer) {
+                        showShopMessage(t('shop.notEnoughCoins'));
+                        return;
+                    }
+                    var item = null;
+                    for (var i = 0; i < shopCatalog.length; i++) {
+                        if (shopCatalog[i].id === itemId) {
+                            item = shopCatalog[i];
+                            break;
+                        }
+                    }
+                    if (!item) {
+                        return;
+                    }
+                    ensurePlayerInventory(currentPlayer);
+                    if ((currentPlayer.coins || 0) < item.cost) {
+                        showShopMessage(t('shop.notEnoughCoins'));
+                        return;
+                    }
+                    currentPlayer.coins = Math.max(0, (currentPlayer.coins || 0) - item.cost);
+                    if (item.type === 'bomb') {
+                        currentPlayer.inventory.bombs = (currentPlayer.inventory.bombs || 0) + 1;
+                    } else if (item.type === 'booster' && item.boosterId) {
+                        if (!currentPlayer.inventory.boosters) {
+                            currentPlayer.inventory.boosters = {};
+                        }
+                        currentPlayer.inventory.boosters[item.boosterId] = (currentPlayer.inventory.boosters[item.boosterId] || 0) + 1;
+                    }
+                    savePlayers();
+                    updateInventoryMenu();
+                    updateShopMenu();
+                    updateCoinCounter();
+                    showShopMessage(t('shop.purchaseSuccess', { item: t('shop.items.' + item.id + '.name') }));
+                    updateStartMenuState();
+                }
+
+
+                function sanitizeModelContent(content) {
+                    if (typeof content !== 'string') {
+                        return '';
+                    }
+                    return content.replace(/```(?:json)?/gi, '```').replace(/```/g, '');
+                }
+
+
+                function pickRandomPath(paths) {
+                    if (!paths || paths.length === 0) {
+                        return null;
+                    }
+                    var index = Math.floor(Math.random() * paths.length);
+                    return paths[Math.max(0, Math.min(paths.length - 1, index))];
+                }
+
+
+                function getCachedTexture(path) {
+                    if (!path) {
+                        return null;
+                    }
+                    if (!textureCache[path]) {
+                        textureCache[path] = THREE.ImageUtils.loadTexture(path);
+                    }
+                    return textureCache[path];
+                }
+
+
+                function loadTextureFromPath(path, fallbackPath) {
+                    var selectedPath = path || fallbackPath;
+                    var texture = getCachedTexture(selectedPath);
+                    if (!texture && fallbackPath && fallbackPath !== selectedPath) {
+                        texture = getCachedTexture(fallbackPath);
+                    }
+                    return texture;
+                }
+
+
+                function randomizeLevelTextures() {
+                    var ballPath = pickRandomPath(ballTexturePaths) || ballTexturePaths[0];
+                    var wallPath = pickRandomPath(wallTexturePaths) || wallTexturePaths[0];
+                    var floorPath = pickRandomPath(floorTexturePaths) || floorTexturePaths[0];
+
+                    ironTexture = loadTextureFromPath(ballPath, ballTexturePaths[0]);
+                    brickTexture = loadTextureFromPath(wallPath, wallTexturePaths[0]);
+                    planeTexture = loadTextureFromPath(floorPath, floorTexturePaths[0]);
+                }
+
+
+                function shuffleArray(array) {
+                    for (var i = array.length - 1; i > 0; i--) {
+                        var j = Math.floor(Math.random() * (i + 1));
+                        var temp = array[i];
+                        array[i] = array[j];
+                        array[j] = temp;
+                    }
+                    return array;
+                }
+
+
+                function getBoosterName(id, lang) {
+                    var langData = translations[lang] && translations[lang].boosters;
+                    if (langData && langData[id] && langData[id].name) {
+                        return langData[id].name;
+                    }
+                    return id;
+                }
+
+
+                function buildItemSummary(config, lang) {
+                    if (!config) {
+                        return '';
+                    }
+                    var itemsLang = translations[lang] && translations[lang].items;
+                    if (!itemsLang) {
+                        return '';
+                    }
+                    var parts = [];
+                    if (config.coinCount > 0) {
+                        var coinWord = config.coinCount === 1 ? itemsLang.coin.singular : itemsLang.coin.plural;
+                        parts.push(formatTranslation(itemsLang.summary.coins, {
+                            coinCount: config.coinCount,
+                            coinWord: coinWord
+                        }));
+                    }
+                    if (config.boosters && config.boosters.length > 0) {
+                        var boosterNames = config.boosters.map(function(id) {
+                            return getBoosterName(id, lang);
+                        });
+                        parts.push(formatTranslation(itemsLang.summary.boosters, {
+                            boosterList: boosterNames.join(', ')
+                        }));
+                    }
+                    if (parts.length === 0) {
+                        return itemsLang.summary.none;
+                    }
+                    return parts.join(' ');
+                }
+
+
+                function getItemSummaryText(config, lang) {
+                    if (!config) {
+                        return '';
+                    }
+                    lang = lang || currentLanguage;
+                    if (config.summaries && config.summaries[lang]) {
+                        return config.summaries[lang];
+                    }
+                    return buildItemSummary(config, lang);
+                }
+
+
+                function generateItemsForLevel(level) {
+                    var coinCount = Math.max(3, 4 + Math.floor(level / 2) + Math.floor(Math.random() * 3));
+                    var boosterPool = shuffleArray(boosterOrder.slice(0));
+                    var boosterCount = Math.min(boosterPool.length, 1 + Math.floor(Math.random() * boosterPool.length));
+                    var boostersForLevel = boosterPool.slice(0, boosterCount);
+                    var config = {
+                        level: level,
+                        coinCount: coinCount,
+                        boosters: boostersForLevel
+                    };
+                    config.summaries = {
+                        de: buildItemSummary(config, 'de'),
+                        en: buildItemSummary(config, 'en')
+                    };
+                    return config;
+                }
+
+
+                function clearActiveItems() {
+                    if (!activeItems || activeItems.length === 0) {
+                        return;
+                    }
+                    for (var i = 0; i < activeItems.length; i++) {
+                        if (activeItems[i].mesh && scene) {
+                            scene.remove(activeItems[i].mesh);
+                        }
+                    }
+                    activeItems = [];
+                }
+
+
+                function collectWalkableCells(field) {
+                    var cells = [];
+                    var dimension = field.dimension || field.length;
+                    for (var x = 1; x < dimension - 1; x++) {
+                        for (var y = 1; y < dimension - 1; y++) {
+                            if (field[x][y] === false) {
+                                cells.push({x: x, y: y});
+                            }
+                        }
+                    }
+                    return cells;
+                }
+
+
+                function refreshExitIndicator() {
+                    if (!scene) {
+                        return;
+                    }
+                    if (exitMesh && exitMesh.parent) {
+                        exitMesh.parent.remove(exitMesh);
+                    }
+                    exitMesh = null;
+                    if (typeof currentExitTarget.x !== 'number' || typeof currentExitTarget.y !== 'number') {
+                        return;
+                    }
+                    if (!itemResources.exitGeometry) {
+                        if (typeof THREE.BoxGeometry === 'function') {
+                            itemResources.exitGeometry = new THREE.BoxGeometry(0.9, 0.9, 0.08, 1, 1, 1);
+                        } else {
+                            itemResources.exitGeometry = new THREE.CubeGeometry(0.9, 0.9, 0.08, 1, 1, 1);
+                        }
+                    }
+                    if (!itemResources.exitMaterial) {
+                        itemResources.exitMaterial = new THREE.MeshPhongMaterial({color: 0xff3030, emissive: 0x660000});
+                    }
+                    exitMesh = new THREE.Mesh(itemResources.exitGeometry, itemResources.exitMaterial);
+                    exitMesh.position.set(currentExitTarget.x, currentExitTarget.y, 0.04);
+                    scene.add(exitMesh);
+                }
+
+
+                function spawnItemsForCurrentLevel(field) {
+                    clearActiveItems();
+                    if (!currentLevelConfig || !scene || !field) {
+                        return;
+                    }
+                    if (!itemResources.coinGeometry) {
+                        itemResources.coinGeometry = new THREE.CubeGeometry(0.35, 0.35, 0.1, 1, 1, 1);
+                    }
+                    if (!itemResources.coinMaterial) {
+                        itemResources.coinMaterial = new THREE.MeshPhongMaterial({color: 0xffd700});
+                    }
+                    if (!itemResources.boosterGeometry) {
+                        itemResources.boosterGeometry = new THREE.CubeGeometry(0.35, 0.35, 0.35, 1, 1, 1);
+                    }
+                    var dimension = field.dimension || field.length;
+                    var cells = collectWalkableCells(field).filter(function(cell) {
+                        if ((cell.x === 1 && cell.y === 1)) {
+                            return false;
+                        }
+                        if (currentExitApproachCell && cell.x === currentExitApproachCell.x && cell.y === currentExitApproachCell.y) {
+                            return false;
+                        }
+                        if (cell.x <= 0 || cell.y <= 0 || cell.x >= dimension - 1 || cell.y >= dimension - 1) {
+                            return false;
+                        }
+                        return true;
+                    });
+                    function takeCell() {
+                        if (cells.length === 0) {
+                            return null;
+                        }
+                        var index = Math.floor(Math.random() * cells.length);
+                        return cells.splice(index, 1)[0];
+                    }
+                    // Coins
+                    for (var i = 0; i < currentLevelConfig.coinCount; i++) {
+                        var coinCell = takeCell();
+                        if (!coinCell) {
+                            break;
+                        }
+                        var coinMesh = new THREE.Mesh(itemResources.coinGeometry, itemResources.coinMaterial);
+                        coinMesh.position.set(coinCell.x, coinCell.y, 0.3);
+                        scene.add(coinMesh);
+                        activeItems.push({
+                            kind: 'coin',
+                            mesh: coinMesh,
+                            value: 1,
+                            cell: coinCell
+                        });
+                    }
+                    // Boosters
+                    for (var b = 0; b < currentLevelConfig.boosters.length; b++) {
+                        var boosterId = currentLevelConfig.boosters[b];
+                        var boosterCell = takeCell();
+                        if (!boosterCell) {
+                            break;
+                        }
+                        if (!itemResources.boosterMaterials[boosterId]) {
+                            var color;
+                            switch (boosterId) {
+                                case 'speed':
+                                    color = 0xff4444;
+                                    break;
+                                case 'grip':
+                                    color = 0x44ff88;
+                                    break;
+                                case 'coinrush':
+                                    color = 0xffaa00;
+                                    break;
+                                case 'vision':
+                                    color = 0x4488ff;
+                                    break;
+                                default:
+                                    color = 0xffffff;
+                            }
+                            itemResources.boosterMaterials[boosterId] = new THREE.MeshPhongMaterial({color: color, emissive: 0x222222});
+                        }
+                        var boosterMesh = new THREE.Mesh(itemResources.boosterGeometry, itemResources.boosterMaterials[boosterId]);
+                        boosterMesh.position.set(boosterCell.x, boosterCell.y, 0.4);
+                        scene.add(boosterMesh);
+                        activeItems.push({
+                            kind: 'booster',
+                            boosterId: boosterId,
+                            mesh: boosterMesh,
+                            cell: boosterCell
+                        });
+                    }
+                }
+
+
+                function collectItemByIndex(index) {
+                    var item = activeItems[index];
+                    if (!item) {
+                        return;
+                    }
+                    if (item.mesh && scene) {
+                        scene.remove(item.mesh);
+                    }
+                    if (item.kind === 'coin') {
+                        var coinValue = Math.max(1, Math.round(item.value * currentCoinMultiplier));
+                        if (currentRunStats) {
+                            currentRunStats.coins = (currentRunStats.coins || 0) + coinValue;
+                        }
+                        addCoinsToPlayer(coinValue);
+                    } else if (item.kind === 'booster' && item.boosterId) {
+                        activateBooster(item.boosterId);
+                        if (currentRunStats) {
+                            if (!currentRunStats.boosters) {
+                                currentRunStats.boosters = [];
+                            }
+                            currentRunStats.boosters.push(item.boosterId);
+                        }
+                    }
+                    activeItems.splice(index, 1);
+                }
+
+
+                function activateBooster(boosterId) {
+                    var def = boosterDefinitions[boosterId];
+                    if (!def) {
+                        return;
+                    }
+                    if (boosterTimeouts[boosterId]) {
+                        clearTimeout(boosterTimeouts[boosterId]);
+                    }
+                    if (def.apply) {
+                        def.apply();
+                    }
+                    boosterTimeouts[boosterId] = setTimeout(function() {
+                        if (def.reset) {
+                            def.reset();
+                        }
+                        boosterTimeouts[boosterId] = null;
+                    }, def.durationMs || 10000);
+                }
+
+
+                function resetBoosterEffects() {
+                    currentImpulseMultiplier = 1;
+                    currentFrictionFactor = baseFrictionFactor;
+                    currentCoinMultiplier = 1;
+                    Object.keys(boosterTimeouts).forEach(function(key) {
+                        if (boosterTimeouts[key]) {
+                            clearTimeout(boosterTimeouts[key]);
+                        }
+                    });
+                    boosterTimeouts = {};
+                    if (light) {
+                        light.intensity = defaultLightIntensity;
+                    }
+                    visionBoostActive = false;
+                }
+
+
+                function defaultVictoryMessage(level, upcomingConfig) {
+                    var base = t('victory.default', {level: level});
+                    var summaryText = getItemSummaryText(upcomingConfig, currentLanguage);
+                    if (summaryText) {
+                        base += ' ' + formatTranslation(t('victory.itemHint'), {summary: summaryText});
+                    }
+                    return base;
+                }
+
+
+                function showVictoryMessage(message) {
+                    if (!window.jQuery) {
+                        return;
+                    }
+                    var $victory = jQuery('#victory');
+                    if ($victory.length === 0) {
+                        return;
+                    }
+                    $victory.stop(true, true).text(message).fadeIn(200);
+                    if (victoryTimeout) {
+                        clearTimeout(victoryTimeout);
+                    }
+                    victoryTimeout = setTimeout(function() {
+                        $victory.fadeOut(400);
+                    }, victoryDisplayDurationMs);
+                }
+
+
+                function getVictoryPrompts(level, upcomingConfig) {
+                    var summaryText = getItemSummaryText(upcomingConfig, currentLanguage);
+                    var summaryHint = summaryText ? formatTranslation(t('victory.itemHint'), {summary: summaryText}) : '';
+                    if (currentLanguage === 'en') {
+                        var userTextEn = 'The player just completed level ' + level + '. Write an encouraging congratulations in at most two sentences in English. Mention the successful completion and motivate the next challenge.';
+                        if (summaryHint) {
+                            userTextEn += '\n\n' + summaryHint;
+                        }
+                        return {
+                            system: 'You are the narrator of a marble maze game. You produce short, friendly victory messages in English.',
+                            user: userTextEn
+                        };
+                    }
+                    var userTextDe = 'Der Spieler hat gerade Level ' + level + ' abgeschlossen. Formuliere einen motivierenden Glückwunsch in höchstens zwei Sätzen auf Deutsch. Erwähne den Erfolg des Levels und mache Lust auf die nächste Herausforderung.';
+                    if (summaryHint) {
+                        userTextDe += '\n\n' + summaryHint;
+                    }
+                    return {
+                        system: 'Du bist der Erzähler eines Geschicklichkeitsspiels. Du gibst kurze, freundliche Glückwunschbotschaften in deutscher Sprache aus.',
+                        user: userTextDe
+                    };
+                }
+
+
+                function fetchVictoryMessage(level, upcomingConfig) {
+                    var summaryText = getItemSummaryText(upcomingConfig, currentLanguage);
+                    if (!victoryLlmConfig.enabled || typeof fetch !== 'function') {
+                        return Promise.resolve(defaultVictoryMessage(level, upcomingConfig));
+                    }
+                    var controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
+                    var timeoutId = null;
+                    if (controller && victoryLlmConfig.requestTimeoutMs > 0) {
+                        timeoutId = setTimeout(function() {
+                            controller.abort();
+                        }, victoryLlmConfig.requestTimeoutMs);
+                    }
+                    var prompts = getVictoryPrompts(level, upcomingConfig);
+                    var systemPrompt = prompts.system;
+                    var userPrompt = prompts.user;
+                    var payload;
+                    if (victoryLlmConfig.endpoint.indexOf('/chat/') !== -1) {
+                        payload = {
+                            model: victoryLlmConfig.model,
+                            messages: [
+                                {role: 'system', content: systemPrompt},
+                                {role: 'user', content: userPrompt}
+                            ],
+                            temperature: victoryLlmConfig.temperature,
+                            max_tokens: victoryLlmConfig.maxTokens
+                        };
+                    } else {
+                        payload = {
+                            model: victoryLlmConfig.model,
+                            prompt: systemPrompt + '\n\nSpieler:\n' + userPrompt,
+                            temperature: victoryLlmConfig.temperature,
+                            max_tokens: victoryLlmConfig.maxTokens
+                        };
+                    }
+                    var fetchOptions = {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Accept': 'application/json'
+                        },
+                        body: JSON.stringify(payload)
+                    };
+                    if (controller) {
+                        fetchOptions.signal = controller.signal;
+                    }
+                    return fetch(victoryLlmConfig.endpoint, fetchOptions)
+                        .then(function(response) {
+                            if (timeoutId) {
+                                clearTimeout(timeoutId);
+                            }
+                            if (!response.ok) {
+                                throw new Error((currentLanguage === 'en' ? 'Victory LLM HTTP status ' : 'Victory LLM HTTP-Status ') + response.status);
+                            }
+                            return response.json();
+                        })
+                        .then(function(data) {
+                            var content = '';
+                            if (data && data.choices && data.choices.length > 0) {
+                                if (data.choices[0].message && data.choices[0].message.content) {
+                                    content = data.choices[0].message.content;
+                                } else if (typeof data.choices[0].text === 'string') {
+                                    content = data.choices[0].text;
+                                }
+                            }
+                            if (!content) {
+                                throw new Error(currentLanguage === 'en' ? 'No response from the victory model.' : 'Keine Antwort vom Victory LLM erhalten.');
+                            }
+                            var sanitized = sanitizeModelContent(content).trim();
+                            if (!sanitized) {
+                                throw new Error(currentLanguage === 'en' ? 'Victory model reply was empty.' : 'Victory LLM Antwort war leer.');
+                            }
+                            if (summaryText) {
+                                sanitized += '\n' + formatTranslation(t('victory.itemHint'), {summary: summaryText});
+                            }
+                            return sanitized;
+                        })
+                        .catch(function(err) {
+                            console.warn(currentLanguage === 'en' ? 'Victory LLM failed:' : 'Victory LLM fehlgeschlagen:', err);
+                            return defaultVictoryMessage(level, upcomingConfig);
+                        });
+                }
+
+
+                function onLevelCompleted(completedLevel, upcomingConfig) {
+                    var levelDurationMs = null;
+                    if (currentLevelStartTime) {
+                        levelDurationMs = Math.max(0, Date.now() - currentLevelStartTime);
+                        currentLevelStartTime = null;
+                    }
+                    if (currentRunStats) {
+                        currentRunStats.lastLevelDurationMs = levelDurationMs || 0;
+                        currentRunStats.totalTimeMs = (currentRunStats.totalTimeMs || 0) + (levelDurationMs || 0);
+                    }
+                    updatePlayerProgress(completedLevel, levelDurationMs || 0);
+                    pendingVictoryMessage = null;
+                    displayVictoryRequested = false;
+                    pendingVictoryPromise = fetchVictoryMessage(completedLevel, upcomingConfig)
+                        .then(function(message) {
+                            pendingVictoryMessage = message;
+                            if (displayVictoryRequested) {
+                                displayVictoryRequested = false;
+                                showVictoryMessage(message);
+                                pendingVictoryMessage = null;
+                                pendingVictoryPromise = null;
+                            }
+                            return message;
+                        })
+                        .catch(function(message) {
+                            var fallback = typeof message === 'string' ? message : defaultVictoryMessage(completedLevel, upcomingConfig);
+                            pendingVictoryMessage = fallback;
+                            if (displayVictoryRequested) {
+                                displayVictoryRequested = false;
+                                showVictoryMessage(fallback);
+                                pendingVictoryMessage = null;
+                                pendingVictoryPromise = null;
+                            }
+                            return fallback;
+                        });
+                    return pendingVictoryPromise;
+                }
+
+
+                function displayPendingVictory() {
+                    if (!pendingVictoryPromise) {
+                        return;
+                    }
+                    displayVictoryRequested = true;
+                    if (pendingVictoryMessage) {
+                        displayVictoryRequested = false;
+                        showVictoryMessage(pendingVictoryMessage);
+                        pendingVictoryMessage = null;
+                        pendingVictoryPromise = null;
+                    }
+                }
+
+
+                function loadPersistentState() {
+                    players = [];
+                    try {
+                        if (window.localStorage) {
+                            var rawPlayers = localStorage.getItem(STORAGE_KEY_PLAYERS);
+                            if (rawPlayers) {
+                                var parsedPlayers = JSON.parse(rawPlayers);
+                                if (Array.isArray(parsedPlayers)) {
+                                    players = parsedPlayers.map(function(player) {
+                                        var name = '';
+                                        var highest = 0;
+                                        var totalTime = 0;
+                                        if (player && player.name) {
+                                            name = player.name.toString().trim();
+                                        }
+                                        if (player && typeof player.highestLevel !== 'undefined') {
+                                            var hl = parseInt(player.highestLevel, 10);
+                                            if (!isNaN(hl) && hl > 0) {
+                                                highest = hl;
+                                            }
+                                        }
+                                        if (player && typeof player.totalTimeMs !== 'undefined') {
+                                            var tt = parseInt(player.totalTimeMs, 10);
+                                            if (!isNaN(tt) && tt >= 0) {
+                                                totalTime = tt;
+                                            }
+                                        }
+                                        var coins = 0;
+                                        if (player && typeof player.coins !== 'undefined') {
+                                            var coinValue = parseInt(player.coins, 10);
+                                            if (!isNaN(coinValue) && isFinite(coinValue) && coinValue > 0) {
+                                                coins = coinValue;
+                                            }
+                                        }
+                                        var bombs = 0;
+                                        var boosterCounts = {};
+                                        boosterOrder.forEach(function(boosterId) {
+                                            boosterCounts[boosterId] = 0;
+                                        });
+                                        if (player && player.inventory) {
+                                            if (typeof player.inventory.bombs !== 'undefined') {
+                                                var bombValue = parseInt(player.inventory.bombs, 10);
+                                                if (!isNaN(bombValue) && isFinite(bombValue) && bombValue > 0) {
+                                                    bombs = bombValue;
+                                                }
+                                            }
+                                            if (player.inventory.boosters && typeof player.inventory.boosters === 'object') {
+                                                boosterOrder.forEach(function(boosterId) {
+                                                    var boosterValue = parseInt(player.inventory.boosters[boosterId], 10);
+                                                    if (!isNaN(boosterValue) && isFinite(boosterValue) && boosterValue > 0) {
+                                                        boosterCounts[boosterId] = boosterValue;
+                                                    }
+                                                });
+                                            }
+                                        }
+                                        return {
+                                            name: name.substring(0, 40),
+                                            highestLevel: highest,
+                                            totalTimeMs: totalTime,
+                                            saveData: player && player.saveData ? deepClone(player.saveData) : null,
+                                            coins: coins,
+                                            inventory: {
+                                                bombs: bombs,
+                                                boosters: boosterCounts
+                                            }
+                                        };
+                                    }).filter(function(player) {
+                                        return player.name.length > 0;
+                                    });
+                                }
+                            }
+                        }
+                    } catch (err) {
+                        console.warn('Spieler konnten nicht geladen werden.', err);
+                        players = [];
+                    }
+                    if (!Array.isArray(players)) {
+                        players = [];
+                    }
+                    players.forEach(function(player) {
+                        ensurePlayerInventory(player);
+                    });
+                    try {
+                        if (window.localStorage) {
+                            var rawSettings = localStorage.getItem(STORAGE_KEY_SETTINGS);
+                            if (rawSettings) {
+                                var parsedSettings = JSON.parse(rawSettings);
+                                if (parsedSettings && typeof parsedSettings === 'object') {
+                                    gameSettings = {};
+                                    for (var key in defaultSettings) {
+                                        if (defaultSettings.hasOwnProperty(key)) {
+                                            if (typeof parsedSettings[key] !== 'undefined') {
+                                                gameSettings[key] = parsedSettings[key];
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    } catch (errSettings) {
+                        console.warn('Einstellungen konnten nicht geladen werden.', errSettings);
+                    }
+                    for (var defKey in defaultSettings) {
+                        if (defaultSettings.hasOwnProperty(defKey) && typeof gameSettings[defKey] === 'undefined') {
+                            gameSettings[defKey] = defaultSettings[defKey];
+                        }
+                    }
+                    applySettings();
+                    var storedName = null;
+                    try {
+                        if (window.localStorage) {
+                            storedName = localStorage.getItem(STORAGE_KEY_CURRENT_PLAYER);
+                        }
+                    } catch (errCurrent) {
+                        console.warn('Aktueller Spieler konnte nicht geladen werden.', errCurrent);
+                    }
+                    if (storedName) {
+                        setCurrentPlayerByName(storedName);
+                    }
+                    if (!currentPlayer && players.length > 0) {
+                        currentPlayer = players[0];
+                    }
+                }
+
+
+                function savePlayers() {
+                    try {
+                        if (window.localStorage) {
+                            localStorage.setItem(STORAGE_KEY_PLAYERS, JSON.stringify(players));
+                        }
+                    } catch (err) {
+                        console.warn('Spieler konnten nicht gespeichert werden.', err);
+                    }
+                    scoreboardNeedsRender = true;
+                }
+
+
+                function saveSettings() {
+                    try {
+                        if (window.localStorage) {
+                            localStorage.setItem(STORAGE_KEY_SETTINGS, JSON.stringify(gameSettings));
+                        }
+                    } catch (err) {
+                        console.warn('Einstellungen konnten nicht gespeichert werden.', err);
+                    }
+                }
+
+
+                function persistCurrentPlayerName() {
+                    try {
+                        if (window.localStorage) {
+                            if (currentPlayer) {
+                                localStorage.setItem(STORAGE_KEY_CURRENT_PLAYER, currentPlayer.name);
+                            } else {
+                                localStorage.removeItem(STORAGE_KEY_CURRENT_PLAYER);
+                            }
+                        }
+                    } catch (err) {
+                        console.warn('Aktueller Spieler konnte nicht gespeichert werden.', err);
+                    }
+                }
+
+
+                function setCurrentPlayerByName(name) {
+                    currentPlayer = null;
+                    if (name) {
+                        for (var i = 0; i < players.length; i++) {
+                            if (players[i].name === name) {
+                                currentPlayer = players[i];
+                                ensurePlayerInventory(currentPlayer);
+                                break;
+                            }
+                        }
+                    }
+                    persistCurrentPlayerName();
+                    renderPlayerSelect();
+                    renderScoreboard();
+                    updateStartMenuState();
+                    updateCoinCounter();
+                    updateInventoryMenu();
+                    updateShopMenu();
+                }
+
+
+                function applySettings() {
+                    if (!gameSettings) {
+                        gameSettings = {};
+                    }
+                    for (var key in defaultSettings) {
+                        if (defaultSettings.hasOwnProperty(key) && typeof gameSettings[key] === 'undefined') {
+                            gameSettings[key] = defaultSettings[key];
+                        }
+                    }
+                    gameSettings.keyBindings = cloneKeyBindings(gameSettings.keyBindings || defaultSettings.keyBindings);
+                    gameSettings.touchBindings = cloneTouchBindings(gameSettings.touchBindings || defaultSettings.touchBindings);
+                    gameSettings.touchSize = sanitizeTouchSize(gameSettings.touchSize);
+                    applyCustomKeyBindings();
+                    applyTouchBindingsToDom(gameSettings.touchBindings);
+                    applyTouchSizeToDom(gameSettings.touchSize);
+                    updateSettingsTouchBindingUi();
+                    updateSettingsTouchSizeUi();
+                    victoryLlmConfig.enabled = !!gameSettings.victoryLlmEnabled;
+                    if (gameSettings.tiltControlEnabled) {
+                        enableTiltControl({ silent: true }, function(success) {
+                            if (!success && gameSettings && gameSettings.tiltControlEnabled) {
+                                gameSettings.tiltControlEnabled = false;
+                                saveSettings();
+                            }
+                            updateTiltUi();
+                        });
+                    } else {
+                        disableTiltControl({ skipPreference: true, skipSave: true });
+                        updateTiltUi();
+                    }
+                }
+
+
+                function renderPlayerSelect() {
+                    var $select = jQuery('#player-select');
+                    if (!$select.length) {
+                        return;
+                    }
+                    $select.empty();
+                    if (players.length === 0) {
+                        $select.append('<option value="">' + t('menu.noPlayersOption') + '</option>');
+                        $select.prop('disabled', true);
+                    } else {
+                        $select.prop('disabled', false);
+                        players.forEach(function(player) {
+                            var option = jQuery('<option></option>')
+                                .attr('value', player.name)
+                                .text(player.name);
+                            if (currentPlayer && player.name === currentPlayer.name) {
+                                option.prop('selected', true);
+                            }
+                            $select.append(option);
+                        });
+                    }
+                }
+
+
+                function renderScoreboard() {
+                    if (!scoreboardNeedsRender) {
+                        // Still update UI in case new elements were added.
+                    }
+                    scoreboardNeedsRender = false;
+                    var sortedPlayers = players.slice().sort(function(a, b) {
+                        var levelA = a.highestLevel || 0;
+                        var levelB = b.highestLevel || 0;
+                        if (levelA !== levelB) {
+                            return levelB - levelA;
+                        }
+                        var timeA = typeof a.totalTimeMs === 'number' ? a.totalTimeMs : 0;
+                        var timeB = typeof b.totalTimeMs === 'number' ? b.totalTimeMs : 0;
+                        if (timeA !== timeB) {
+                            return timeA - timeB;
+                        }
+                        var locale = currentLanguage === 'de' ? 'de' : 'en';
+                        try {
+                            return a.name.localeCompare(b.name, locale, {sensitivity: 'base'});
+                        } catch (e) {
+                            return a.name.localeCompare(b.name);
+                        }
+                    });
+                    var $body = jQuery('#scoreboard-body');
+                    if ($body.length) {
+                        $body.empty();
+                        if (sortedPlayers.length === 0) {
+                            $body.append('<tr><td colspan="4">' + t('scoreboard.empty') + '</td></tr>');
+                        } else {
+                            sortedPlayers.forEach(function(player, index) {
+                                var tr = jQuery('<tr></tr>');
+                                if (currentPlayer && currentPlayer.name === player.name) {
+                                    tr.addClass('active-player');
+                                }
+                                var timeText = formatDuration(player.totalTimeMs || 0);
+                                tr.append('<td>' + (index + 1) + '</td>');
+                                tr.append('<td>' + player.name + '</td>');
+                                tr.append('<td>' + (player.highestLevel || 0) + '</td>');
+                                tr.append('<td>' + timeText + '</td>');
+                                $body.append(tr);
+                            });
+                        }
+                    }
+                    var $toplist = jQuery('#start-menu-toplist');
+                    if ($toplist.length) {
+                        $toplist.empty();
+                        if (sortedPlayers.length === 0) {
+                            $toplist.append('<li>' + t('toplist.empty') + '</li>');
+                        } else {
+                            sortedPlayers.slice(0, 5).forEach(function(player, idx) {
+                                $toplist.append('<li>' + t('toplist.entry', {
+                                    rank: idx + 1,
+                                    name: player.name,
+                                    level: player.highestLevel || 0,
+                                    time: formatDuration(player.totalTimeMs || 0)
+                                }) + '</li>');
+                            });
+                        }
+                    }
+                }
+
+
+                function updateStartMenuState() {
+                    var $startButton = jQuery('#start-game');
+                    var $resumeButton = jQuery('#resume-game');
+                    var $deleteButton = jQuery('#delete-player');
+                    var $saveButton = jQuery('#save-game');
+                    var $loadButton = jQuery('#load-game');
+                    var $select = jQuery('#player-select');
+                    var $message = jQuery('#menu-message');
+                    var hasPlayer = !!currentPlayer;
+                    if ($startButton.length) {
+                        $startButton.prop('disabled', !hasPlayer);
+                    }
+                    if ($resumeButton.length) {
+                        $resumeButton.toggle(hasStartedGame);
+                    }
+                    if ($deleteButton.length) {
+                        $deleteButton.prop('disabled', !hasPlayer);
+                    }
+                    if ($saveButton.length) {
+                        var canSave = hasPlayer && hasStartedGame && !!currentLevelConfig;
+                        $saveButton.prop('disabled', !canSave);
+                    }
+                    if ($loadButton.length) {
+                        var hasSave = hasPlayer && currentPlayer && currentPlayer.saveData;
+                        $loadButton.prop('disabled', !hasSave);
+                    }
+                    if ($select.length) {
+                        $select.prop('disabled', players.length === 0);
+                    }
+                    if ($message.length) {
+                        if (!hasPlayer) {
+                            $message.text(players.length === 0 ? t('menu.messageCreateFirst') : t('menu.messageSelectPlayer'));
+                        } else {
+                            var currentText = $message.text();
+                            if (currentText === t('menu.messageCreateFirst') || currentText === t('menu.messageSelectPlayer')) {
+                                $message.text('');
+                            }
+                        }
+                    }
+                    var $info = jQuery('#current-player-info');
+                    if ($info.length) {
+                        var infoHtml = '';
+                        if (hasPlayer) {
+                            ensurePlayerInventory(currentPlayer);
+                            infoHtml += '<div class="player-status">' + t('menu.currentWithLevel', {
+                                name: currentPlayer.name,
+                                level: currentPlayer.highestLevel || 0,
+                                time: formatDuration(currentPlayer.totalTimeMs || 0),
+                                coins: currentPlayer.coins || 0
+                            }) + '</div>';
+                        } else {
+                            infoHtml += '<div class="player-status">' + t('menu.currentNone') + '</div>';
+                        }
+                        infoHtml += '<div class="developer-credit">' + t('menu.developerInfo') + '</div>';
+                        $info.html(infoHtml);
+                    }
+                    var $openInventoryButton = jQuery('#open-inventory');
+                    if ($openInventoryButton.length) {
+                        $openInventoryButton.prop('disabled', !hasPlayer);
+                    }
+                    var $openShopButton = jQuery('#open-shop');
+                    if ($openShopButton.length) {
+                        $openShopButton.prop('disabled', !hasPlayer);
+                    }
+                    var startMenuVisible = window.jQuery ? jQuery('#start-menu:visible').length > 0 : false;
+                    var showHudButtons = hasPlayer && hasStartedGame && !startMenuVisible;
+                    var $hudInventory = jQuery('#inventory-button');
+                    if ($hudInventory.length) {
+                        $hudInventory.text(t('menu.inventoryButton'));
+                        if (showHudButtons) {
+                            $hudInventory.show();
+                        } else {
+                            $hudInventory.hide();
+                        }
+                    }
+                    var $hudShop = jQuery('#shop-button');
+                    if ($hudShop.length) {
+                        $hudShop.text(t('menu.shopButton'));
+                        if (showHudButtons) {
+                            $hudShop.show();
+                        } else {
+                            $hudShop.hide();
+                        }
+                    }
+                    updateCoinCounter();
+                }
+
+
+                function requiresTiltPermission() {
+                    return typeof window !== 'undefined' &&
+                        typeof window.DeviceOrientationEvent !== 'undefined' &&
+                        typeof window.DeviceOrientationEvent.requestPermission === 'function';
+                }
+
+
+                function getDeviceOrientationAngle() {
+                    if (typeof window === 'undefined') {
+                        return 0;
+                    }
+                    if (typeof window.orientation === 'number') {
+                        return window.orientation;
+                    }
+                    if (window.screen && window.screen.orientation) {
+                        if (typeof window.screen.orientation.angle === 'number') {
+                            return window.screen.orientation.angle;
+                        }
+                        var orientationType = window.screen.orientation.type;
+                        if (typeof orientationType === 'string') {
+                            if (orientationType.indexOf('landscape-primary') === 0) {
+                                return 90;
+                            }
+                            if (orientationType.indexOf('landscape-secondary') === 0) {
+                                return -90;
+                            }
+                            if (orientationType.indexOf('portrait-secondary') === 0) {
+                                return 180;
+                            }
+                            if (orientationType.indexOf('portrait-primary') === 0) {
+                                return 0;
+                            }
+                        }
+                    }
+                    if (window.matchMedia) {
+                        var landscapeQuery = window.matchMedia('(orientation: landscape)');
+                        if (landscapeQuery && landscapeQuery.matches) {
+                            return window.innerWidth > window.innerHeight ? 90 : 0;
+                        }
+                    }
+                    return 0;
+                }
+
+
+                function normalizeTiltInput(angle) {
+                    if (typeof angle !== 'number' || isNaN(angle)) {
+                        return 0;
+                    }
+                    if (angle > 180 || angle < -180) {
+                        angle = ((angle + 180) % 360 + 360) % 360 - 180;
+                    }
+                    var maxAngle = Math.max(tiltMaxAngle, tiltDeadZone + 0.01);
+                    var clamped = Math.max(-maxAngle, Math.min(maxAngle, angle));
+                    if (Math.abs(clamped) <= tiltDeadZone) {
+                        return 0;
+                    }
+                    var range = maxAngle - tiltDeadZone;
+                    if (range <= 0) {
+                        return 0;
+                    }
+                    var sign = clamped < 0 ? -1 : 1;
+                    var adjusted = (Math.abs(clamped) - tiltDeadZone) / range;
+                    if (!isFinite(adjusted)) {
+                        adjusted = 0;
+                    }
+                    adjusted = Math.max(0, Math.min(1, adjusted));
+                    return adjusted * sign;
+                }
+
+
+                function handleDeviceOrientation(event) {
+                    if (!tiltControlEnabled) {
+                        return;
+                    }
+                    var gamma = (event && typeof event.gamma === 'number') ? event.gamma : 0;
+                    var beta = (event && typeof event.beta === 'number') ? event.beta : 0;
+                    var angle = getDeviceOrientationAngle();
+                    var targetX;
+                    var targetY;
+                    switch (angle) {
+                        case 90:
+                        case -270:
+                            targetX = normalizeTiltInput(beta);
+                            targetY = normalizeTiltInput(-gamma);
+                            break;
+                        case -90:
+                        case 270:
+                            targetX = normalizeTiltInput(-beta);
+                            targetY = normalizeTiltInput(gamma);
+                            break;
+                        case 180:
+                        case -180:
+                            targetX = normalizeTiltInput(-gamma);
+                            targetY = normalizeTiltInput(-beta);
+                            break;
+                        default:
+                            targetX = normalizeTiltInput(gamma);
+                            targetY = normalizeTiltInput(beta);
+                            break;
+                    }
+                    tiltTargetAxis[0] = targetX;
+                    tiltTargetAxis[1] = targetY;
+                }
+
+
+                function enableTiltControl(options, callback) {
+                    options = options || {};
+                    var onResult = (typeof callback === 'function') ? callback : function() {};
+                    if (!tiltControlSupported) {
+                        tiltControlEnabled = false;
+                        tiltPermissionState = 'unavailable';
+                        updateTiltUi();
+                        onResult(false);
+                        return;
+                    }
+                    if (tiltControlEnabled) {
+                        if (gameSettings && !gameSettings.tiltControlEnabled) {
+                            gameSettings.tiltControlEnabled = true;
+                            saveSettings();
+                        }
+                        tiltPermissionState = 'granted';
+                        updateTiltUi();
+                        onResult(true);
+                        return;
+                    }
+
+                    function finishEnable() {
+                        if (typeof window !== 'undefined' && typeof window.addEventListener === 'function') {
+                            window.addEventListener('deviceorientation', handleDeviceOrientation, true);
+                        }
+                        tiltControlEnabled = true;
+                        tiltPermissionState = 'granted';
+                        tiltAxis[0] = 0;
+                        tiltAxis[1] = 0;
+                        tiltTargetAxis[0] = 0;
+                        tiltTargetAxis[1] = 0;
+                        if (gameSettings && !gameSettings.tiltControlEnabled) {
+                            gameSettings.tiltControlEnabled = true;
+                            saveSettings();
+                        }
+                        updateTiltUi();
+                        onResult(true);
+                    }
+
+                    if (requiresTiltPermission()) {
+                        if (tiltPermissionState === 'denied') {
+                            updateTiltUi();
+                            onResult(false);
+                            return;
+                        }
+                        if (options.silent && tiltPermissionState !== 'granted') {
+                            updateTiltUi();
+                            onResult(false);
+                            return;
+                        }
+                        try {
+                            var permissionPromise = window.DeviceOrientationEvent.requestPermission();
+                            if (permissionPromise && typeof permissionPromise.then === 'function') {
+                                permissionPromise.then(function(state) {
+                                    tiltPermissionState = state;
+                                    if (state === 'granted') {
+                                        finishEnable();
+                                    } else {
+                                        disableTiltControl({ skipPreference: true, skipUiUpdate: true, skipSave: true });
+                                        if (state === 'denied') {
+                                            tiltPermissionState = 'denied';
+                                        }
+                                        updateTiltUi();
+                                        onResult(false);
+                                    }
+                                }).catch(function(err) {
+                                    console.warn('Motion control permission request failed.', err);
+                                    tiltPermissionState = 'denied';
+                                    disableTiltControl({ skipPreference: true, skipUiUpdate: true, skipSave: true });
+                                    updateTiltUi();
+                                    onResult(false);
+                                });
+                            } else if (permissionPromise === 'granted') {
+                                finishEnable();
+                            } else {
+                                if (typeof permissionPromise === 'string') {
+                                    tiltPermissionState = permissionPromise;
+                                }
+                                disableTiltControl({ skipPreference: true, skipUiUpdate: true, skipSave: true });
+                                updateTiltUi();
+                                onResult(false);
+                            }
+                        } catch (err) {
+                            console.warn('Motion control permission request threw an error.', err);
+                            tiltPermissionState = 'denied';
+                            disableTiltControl({ skipPreference: true, skipUiUpdate: true, skipSave: true });
+                            updateTiltUi();
+                            onResult(false);
+                        }
+                    } else {
+                        finishEnable();
+                    }
+                }
+
+
+                function disableTiltControl(options) {
+                    options = options || {};
+                    if (tiltControlEnabled && typeof window !== 'undefined' && typeof window.removeEventListener === 'function') {
+                        window.removeEventListener('deviceorientation', handleDeviceOrientation, true);
+                    }
+                    tiltControlEnabled = false;
+                    tiltAxis[0] = 0;
+                    tiltAxis[1] = 0;
+                    tiltTargetAxis[0] = 0;
+                    tiltTargetAxis[1] = 0;
+                    if (!options.skipPreference && gameSettings && gameSettings.tiltControlEnabled) {
+                        gameSettings.tiltControlEnabled = false;
+                        if (!options.skipSave) {
+                            saveSettings();
+                        }
+                    }
+                    if (!options.skipUiUpdate) {
+                        updateTiltUi();
+                    }
+                }
+
+
+                function updateTiltUi() {
+                    if (!window.jQuery) {
+                        return;
+                    }
+                    var $checkbox = jQuery('#settings-tilt-control');
+                    var $note = jQuery('#settings-tilt-note');
+                    if (!$checkbox.length) {
+                        return;
+                    }
+                    if (!tiltControlSupported) {
+                        $checkbox.prop('checked', false);
+                        $checkbox.prop('disabled', true);
+                        if ($note.length) {
+                            $note.text(t('settings.tiltUnavailable'));
+                        }
+                        return;
+                    }
+                    $checkbox.prop('disabled', false);
+                    $checkbox.prop('checked', !!(gameSettings && gameSettings.tiltControlEnabled));
+                    if ($note.length) {
+                        var noteKey;
+                        if (tiltControlEnabled || (gameSettings && gameSettings.tiltControlEnabled && tiltPermissionState === 'granted')) {
+                            noteKey = 'settings.tiltEnabled';
+                        } else if (requiresTiltPermission() && tiltPermissionState !== 'granted') {
+                            noteKey = 'settings.tiltNeedsPermission';
+                        } else if (gameSettings && gameSettings.tiltControlEnabled) {
+                            noteKey = 'settings.tiltEnabled';
+                        } else {
+                            noteKey = 'settings.tiltDisabled';
+                        }
+                        $note.text(t(noteKey));
+                    }
+                }
+
+
+                function createPlayer(name) {
+                    if (!name) {
+                        return { ok: false, message: t('menu.messageNameEmpty') };
+                    }
+                    var trimmed = name.toString().trim();
+                    if (trimmed.length < 3) {
+                        return { ok: false, message: t('menu.messageNameTooShort') };
+                    }
+                    var upper = trimmed.toUpperCase();
+                    for (var i = 0; i < players.length; i++) {
+                        if (players[i].name.toUpperCase() === upper) {
+                            return { ok: false, message: t('menu.messageNameExists') };
+                        }
+                    }
+                    var newPlayer = {
+                        name: trimmed.substring(0, 40),
+                        highestLevel: 0,
+                        totalTimeMs: 0,
+                        saveData: null,
+                        coins: 0,
+                        inventory: {
+                            bombs: 0,
+                            boosters: {}
+                        }
+                    };
+                    ensurePlayerInventory(newPlayer);
+                    players.push(newPlayer);
+                    currentPlayer = newPlayer;
+                    hasStartedGame = false;
+                    savePlayers();
+                    persistCurrentPlayerName();
+                    renderPlayerSelect();
+                    renderScoreboard();
+                    updateStartMenuState();
+                    updateInventoryMenu();
+                    updateShopMenu();
+                    return { ok: true, message: t('menu.messagePlayerCreated') };
+                }
+
+
+                function deleteCurrentPlayer() {
+                    if (!currentPlayer) {
+                        return;
+                    }
+                    if (!window.confirm(t('menu.deleteConfirm', {name: currentPlayer.name}))) {
+                        return;
+                    }
+                    var nameToDelete = currentPlayer.name;
+                    players = players.filter(function(player) {
+                        return player.name !== nameToDelete;
+                    });
+                    currentPlayer = players.length > 0 ? players[0] : null;
+                    if (currentPlayer) {
+                        ensurePlayerInventory(currentPlayer);
+                    }
+                    hasStartedGame = false;
+                    savePlayers();
+                    persistCurrentPlayerName();
+                    renderPlayerSelect();
+                    renderScoreboard();
+                    updateStartMenuState();
+                    updateCoinCounter();
+                    updateInventoryMenu();
+                    updateShopMenu();
+                    showStartMenu(false);
+                    gameState = 'menu';
+                    resetGameStateForPlayer();
+                }
+
+
+                function saveCurrentPlayerState() {
+                    if (!currentPlayer) {
+                        showMenuMessage(t('menu.messageSelectPlayer'));
+                        return;
+                    }
+                    if (!hasStartedGame || !currentLevelConfig) {
+                        showMenuMessage(t('menu.messageSaveUnavailable'));
+                        return;
+                    }
+                    var state = {
+                        mazeDimension: mazeDimension,
+                        levelIndex: levelIndex,
+                        currentLevelConfig: deepClone(currentLevelConfig),
+                        totalTimeMs: currentPlayer.totalTimeMs || 0
+                    };
+                    currentPlayer.saveData = state;
+                    savePlayers();
+                    showMenuMessage(t('menu.messageSaved'));
+                    updateStartMenuState();
+                }
+
+
+                function loadCurrentPlayerState() {
+                    if (!currentPlayer) {
+                        showMenuMessage(t('menu.messageSelectPlayer'));
+                        return;
+                    }
+                    if (!currentPlayer.saveData) {
+                        showMenuMessage(t('menu.messageNoSave'));
+                        return;
+                    }
+                    var state = currentPlayer.saveData;
+                    showMenuMessage(t('menu.messageLoaded'));
+                    clearActiveItems();
+                    resetBoosterEffects();
+                    mazeDimension = Math.max(11, state.mazeDimension || 11);
+                    levelIndex = state.levelIndex || Math.max(1, Math.floor((mazeDimension - 1)/2 - 4));
+                    nextLevelConfig = deepClone(state.currentLevelConfig) || generateItemsForLevel(levelIndex);
+                    currentLevelConfig = null;
+                    currentRunStats = {coins: 0, boosters: [], totalTimeMs: 0, lastLevelDurationMs: 0};
+                    currentLevelStartTime = null;
+                    if (typeof state.totalTimeMs === 'number') {
+                        currentPlayer.totalTimeMs = state.totalTimeMs;
+                    }
+                    scoreboardNeedsRender = true;
+                    savePlayers();
+                    renderScoreboard();
+                    updateStartMenuState();
+                    updateCoinCounter();
+                    updateInventoryMenu();
+                    updateShopMenu();
+                    hasStartedGame = true;
+                    previousGameState = null;
+                    hideStartMenu({restore: false});
+                    gameState = 'initialize';
+                }
+
+
+                function resetGameStateForPlayer() {
+                    mazeDimension = 11;
+                    levelIndex = 1;
+                    keyAxis = [0, 0];
+                    clearAllTouchPointers();
+                    lastMazeName = t('level.standardName');
+                    pendingVictoryMessage = null;
+                    pendingVictoryPromise = null;
+                    displayVictoryRequested = false;
+                    if (victoryTimeout) {
+                        clearTimeout(victoryTimeout);
+                        victoryTimeout = null;
+                    }
+                    if (window.jQuery) {
+                        jQuery('#victory').hide();
+                    }
+                    clearActiveItems();
+                    resetBoosterEffects();
+                    currentLevelConfig = null;
+                    nextLevelConfig = generateItemsForLevel(levelIndex);
+                    currentRunStats = {coins: 0, boosters: [], totalTimeMs: 0, lastLevelDurationMs: 0};
+                    currentLevelStartTime = null;
+                    wWorld = undefined;
+                    wBall = undefined;
+                    maze = undefined;
+                    mazeMesh = undefined;
+                    scene = undefined;
+                    planeMesh = undefined;
+                    light = undefined;
+                    ballMesh = undefined;
+                    wallBodies = {};
+                    inventoryPreviousState = null;
+                    shopPreviousState = null;
+                }
+
+
+                function startGameForCurrentPlayer() {
+                    if (!currentPlayer) {
+                        updateStartMenuState();
+                        return;
+                    }
+                    hasStartedGame = true;
+                    previousGameState = null;
+                    hideStartMenu({ restore: false });
+                    resetGameStateForPlayer();
+                    if (window.jQuery) {
+                        jQuery('#menu-message').text('');
+                    }
+                    gameState = 'initialize';
+                    updateStartMenuState();
+                }
+
+
+                function showStartMenu(fromPause) {
+                    updateStartMenuState();
+                    if (fromPause) {
+                        previousGameState = gameState;
+                    } else {
+                        previousGameState = null;
+                    }
+                    gameState = 'menu';
+                    jQuery('#menu-button').hide();
+                    jQuery('#start-menu').fadeIn(150);
+                }
+
+
+                function hideStartMenu(options) {
+                    options = options || {};
+                    jQuery('#start-menu').fadeOut(150);
+                    if (options.restore && previousGameState && previousGameState !== 'menu') {
+                        gameState = previousGameState;
+                    }
+                    if (!options.keepPrevious) {
+                        previousGameState = null;
+                    }
+                    if (hasStartedGame) {
+                        jQuery('#menu-button').fadeIn(150);
+                    } else {
+                        jQuery('#menu-button').hide();
+                    }
+                    updateStartMenuState();
+                }
+
+
+                function openSettingsMenu() {
+                    jQuery('#settings-victory-llm').prop('checked', !!gameSettings.victoryLlmEnabled);
+                    jQuery('#settings-language').val(gameSettings.language || defaultSettings.language);
+                    settingsKeyBindingDraft = cloneKeyBindings(gameSettings.keyBindings || defaultSettings.keyBindings);
+                    settingsTouchBindingDraft = cloneTouchBindings(gameSettings.touchBindings || defaultSettings.touchBindings);
+                    settingsTouchSizeDraft = sanitizeTouchSize(typeof gameSettings.touchSize !== 'undefined' ? gameSettings.touchSize : defaultSettings.touchSize);
+                    clearKeybindingMessageOverride();
+                    awaitingKeyBindingDirection = null;
+                    awaitingKeyBindingButton = null;
+                    updateSettingsKeyBindingUi();
+                    updateSettingsTouchBindingUi();
+                    updateTiltUi();
+                    jQuery('#settings-menu').fadeIn(150);
+                }
+
+
+                function closeSettingsMenu(saveChanges) {
+                    if (saveChanges) {
+                        gameSettings.victoryLlmEnabled = jQuery('#settings-victory-llm').is(':checked');
+                        gameSettings.language = jQuery('#settings-language').val() || defaultSettings.language;
+                        gameSettings.keyBindings = cloneKeyBindings(settingsKeyBindingDraft || gameSettings.keyBindings || defaultSettings.keyBindings);
+                        gameSettings.touchBindings = cloneTouchBindings(settingsTouchBindingDraft || gameSettings.touchBindings || defaultSettings.touchBindings);
+                        gameSettings.touchSize = sanitizeTouchSize(settingsTouchSizeDraft !== null && typeof settingsTouchSizeDraft !== 'undefined' ? settingsTouchSizeDraft : gameSettings.touchSize || defaultSettings.touchSize);
+                        applySettings();
+                        setLanguage(gameSettings.language, {skipSave: true});
+                        saveSettings();
+                    } else {
+                        applyTouchSizeToDom(gameSettings.touchSize || defaultSettings.touchSize);
+                    }
+                    cancelKeybindingCapture();
+                    settingsKeyBindingDraft = null;
+                    settingsTouchBindingDraft = null;
+                    settingsTouchSizeDraft = null;
+                    jQuery('#settings-menu').fadeOut(150);
+                }
+
+
+                function openScoreboardMenu() {
+                    renderScoreboard();
+                    jQuery('#scoreboard-menu').fadeIn(150);
+                }
+
+
+                function closeScoreboardMenu() {
+                    jQuery('#scoreboard-menu').fadeOut(150);
+                }
+
+
+                function updatePlayerProgress(level, durationMs) {
+                    if (!currentPlayer) {
+                        return;
+                    }
+                    var numericLevel = parseInt(level, 10);
+                    if (!isNaN(numericLevel) && numericLevel > 0) {
+                        if (!currentPlayer.highestLevel || currentPlayer.highestLevel < numericLevel) {
+                            currentPlayer.highestLevel = numericLevel;
+                        }
+                    }
+                    if (typeof durationMs === 'number' && durationMs >= 0) {
+                        currentPlayer.totalTimeMs = (currentPlayer.totalTimeMs || 0) + durationMs;
+                    }
+                    savePlayers();
+                    renderScoreboard();
+                    updateStartMenuState();
+                }
+
+
+                function ensureMazeOpenings(field) {
+                    var dimension = field.dimension || field.length;
+                    field.dimension = dimension;
+                    for (var x = 0; x < dimension; x++) {
+                        if (!field[x]) {
+                            field[x] = new Array(dimension);
+                        }
+                        for (var y = 0; y < dimension; y++) {
+                            if (typeof field[x][y] === 'undefined') {
+                                field[x][y] = true;
+                            }
+                        }
+                    }
+                    if (dimension > 2) {
+                        field[1][1] = false;
+                    }
+                    return field;
+                }
+
+
+                function configureExit(field) {
+                    var dimension = field.dimension || field.length;
+                    currentExitApproachCell = null;
+                    currentExitTarget.x = null;
+                    currentExitTarget.y = null;
+                    if (!field || !dimension) {
+                        return;
+                    }
+                    var candidates = collectWalkableCells(field).filter(function(cell) {
+                        if (!cell) {
+                            return false;
+                        }
+                        if (cell.x === 1 && cell.y === 1) {
+                            return false;
+                        }
+                        if (cell.x <= 0 || cell.y <= 0 || cell.x >= dimension - 1 || cell.y >= dimension - 1) {
+                            return false;
+                        }
+                        return true;
+                    });
+                    if (candidates.length === 0) {
+                        currentExitTarget.x = 1;
+                        currentExitTarget.y = 1;
+                        currentExitApproachCell = {x: 1, y: 1};
+                        field[1][1] = false;
+                        return;
+                    }
+                    var chosen = candidates[Math.floor(Math.random() * candidates.length)];
+                    if (chosen && field[chosen.x] && field[chosen.x][chosen.y]) {
+                        field[chosen.x][chosen.y] = false;
+                    }
+                    currentExitApproachCell = {x: chosen.x, y: chosen.y};
+                    currentExitTarget.x = chosen.x;
+                    currentExitTarget.y = chosen.y;
+                }
+
+
+                function startLevelWithField(field, options) {
+                    options = options || {};
+                    randomizeLevelTextures();
+                    lastMazeName = options.name || t('level.standardName');
+                    maze = ensureMazeOpenings(field);
+                    configureExit(maze);
+                    keyAxis = [0, 0];
+                    createPhysicsWorld();
+                    createRenderWorld();
+                    camera.position.set(1, 1, 5);
+                    light.position.set(1, 1, 1.3);
+                    light.intensity = 0;
+                    spawnItemsForCurrentLevel(maze);
+                    currentLevelStartTime = Date.now();
+                    updateLevelLabel('ready');
+                    gameState = 'fade in';
+                    displayPendingVictory();
+                }
+
+
+                function prepareLevel() {
+                    if (isPreparingLevel) {
+                        return;
+                    }
+                    isPreparingLevel = true;
+                    if (victoryTimeout) {
+                        clearTimeout(victoryTimeout);
+                        victoryTimeout = null;
+                    }
+                    if (window.jQuery) {
+                        jQuery('#victory').hide();
+                    }
+                    levelIndex = Math.max(1, Math.floor((mazeDimension - 1) / 2 - 4));
+                    updateLevelLabel('loading');
+                    var dimension = mazeDimension;
+                    var algorithmInfo = getMazeAlgorithmForLevel(levelIndex);
+                    var mazeLabelKey = (algorithmInfo && algorithmInfo.labelKey) || 'level.standardName';
+                    if (!nextLevelConfig) {
+                        nextLevelConfig = generateItemsForLevel(levelIndex);
+                    }
+                    currentLevelConfig = nextLevelConfig;
+                    nextLevelConfig = null;
+                    if (currentRunStats) {
+                        currentRunStats.coins = 0;
+                        currentRunStats.boosters = [];
+                        currentRunStats.lastLevelDurationMs = 0;
+                    } else {
+                        currentRunStats = {coins: 0, boosters: [], totalTimeMs: 0, lastLevelDurationMs: 0};
+                    }
+                    if (typeof MazeGenerator !== 'undefined' && MazeGenerator.build) {
+                        var mazeResult = MazeGenerator.build({
+                            algorithm: algorithmInfo.key,
+                            dimension: dimension
+                        });
+                        startLevelWithField(mazeResult.field, { name: t(mazeLabelKey) });
+                    } else {
+                        startLevelWithField(generateSquareMaze(dimension), { name: t(mazeLabelKey) });
+                    }
+                    isPreparingLevel = false;
+                }
+
+
+                function getMazeAlgorithmForLevel(level) {
+                    if (!availableMazeAlgorithms || availableMazeAlgorithms.length === 0) {
+                        return { key: 'depth-first', labelKey: 'level.standardName' };
+                    }
+                    var index = 0;
+                    if (typeof level === 'number' && level > 0) {
+                        index = (level - 1) % availableMazeAlgorithms.length;
+                    }
+                    return availableMazeAlgorithms[index];
+                }
+
+
+                function createPhysicsWorld() {
+                    // Create the world object.
+                    wWorld = new b2World(new b2Vec2(0, 0), true);
+
+                    // Create the ball.
+                    var bodyDef = new b2BodyDef();
+                    bodyDef.type = b2Body.b2_dynamicBody;
+                    bodyDef.position.Set(1, 1);
+                    wBall = wWorld.CreateBody(bodyDef);
+                    var fixDef = new b2FixtureDef();
+                    fixDef.density = 1.0;
+                    fixDef.friction = 0.0;
+                    fixDef.restitution = 0.25;
+                    fixDef.shape = new b2CircleShape(ballRadius);
+                    wBall.CreateFixture(fixDef);
+
+                    // Create the maze.
+                    bodyDef.type = b2Body.b2_staticBody;
+                    fixDef.shape = new b2PolygonShape();
+                    fixDef.shape.SetAsBox(0.5, 0.5);
+                    wallBodies = {};
+                    for (var i = 0; i < maze.dimension; i++) {
+                        for (var j = 0; j < maze.dimension; j++) {
+                            if (maze[i][j]) {
+                                bodyDef.position.x = i;
+                                bodyDef.position.y = j;
+                                var wallBody = wWorld.CreateBody(bodyDef);
+                                wallBody.CreateFixture(fixDef);
+                                wallBodies[i + ',' + j] = wallBody;
+                            }
+                        }
+                    }
+                }
+
+
+                function generate_maze_mesh(field) {
+                    var dummy = new THREE.Geometry();
+                    for (var i = 0; i < field.dimension; i++) {
+                        for (var j = 0; j < field.dimension; j++) {
+                            if (field[i][j]) {
+                                var geometry = new THREE.CubeGeometry(1,1,1,1,1,1);
+                                var mesh_ij = new THREE.Mesh(geometry);
+                                mesh_ij.position.x = i;
+                                mesh_ij.position.y = j;
+                                mesh_ij.position.z = 0.5;
+                                THREE.GeometryUtils.merge(dummy, mesh_ij);
+                            }
+                        }
+                    }
+                    if (brickTexture) {
+                        brickTexture.wrapS = brickTexture.wrapT = THREE.RepeatWrapping;
+                        brickTexture.needsUpdate = true;
+                    }
+                    var wallMaterialOptions = brickTexture ? {map: brickTexture} : {color: 0x8a6f4d};
+                    var material = new THREE.MeshPhongMaterial(wallMaterialOptions);
+                    var mesh = new THREE.Mesh(dummy, material)
+                    return mesh;
+                }
+
+
+                function createRenderWorld() {
+
+                    // Create the scene object.
+                    scene = new THREE.Scene();
+
+                    // Add the light.
+                    light= new THREE.PointLight(0xffffff, 1);
+                    light.position.set(1, 1, 1.3);
+                    scene.add(light);
+
+                    // Add the ball.
+                    g = new THREE.SphereGeometry(ballRadius, 32, 16);
+                    if (ironTexture) {
+                        ironTexture.needsUpdate = true;
+                    }
+                    var ballMaterialOptions = ironTexture ? {map: ironTexture} : {color: 0xffffff};
+                    m = new THREE.MeshPhongMaterial(ballMaterialOptions);
+                    ballMesh = new THREE.Mesh(g, m);
+                    ballMesh.position.set(1, 1, ballRadius);
+                    scene.add(ballMesh);
+
+                    // Add the camera.
+                    var aspect = window.innerWidth/window.innerHeight;
+                    camera = new THREE.PerspectiveCamera(60, aspect, 1, 1000);
+                    camera.up.set(0, 0, 1);
+                    camera.position.set(1, 1, 5);
+                    scene.add(camera);
+
+                    // Add the maze.
+                    mazeMesh = generate_maze_mesh(maze);
+                    scene.add(mazeMesh);
+
+                    // Add the ground.
+                    g = new THREE.PlaneGeometry(mazeDimension*10, mazeDimension*10, mazeDimension, mazeDimension);
+                    var planeMaterial;
+                    if (planeTexture) {
+                        planeTexture.wrapS = planeTexture.wrapT = THREE.RepeatWrapping;
+                        planeTexture.repeat.set(mazeDimension*5, mazeDimension*5);
+                        planeTexture.needsUpdate = true;
+                        planeMaterial = new THREE.MeshPhongMaterial({map: planeTexture});
+                    } else {
+                        planeMaterial = new THREE.MeshPhongMaterial({color: 0x333333});
+                    }
+                    m = planeMaterial;
+                    planeMesh = new THREE.Mesh(g, m);
+                    planeMesh.position.set((mazeDimension-1)/2, (mazeDimension-1)/2, 0);
+                    planeMesh.rotation.set(Math.PI/2, 0, 0);
+                    scene.add(planeMesh);
+
+                    refreshExitIndicator();
+
+                }
+
+
+                function updatePhysicsWorld() {
+
+                    // Apply "friction".
+                    var lv = wBall.GetLinearVelocity();
+                    lv.Multiply(currentFrictionFactor);
+                    wBall.SetLinearVelocity(lv);
+
+                    // Apply user-directed force.
+                    var impulseStrength = baseImpulseStrength * currentImpulseMultiplier;
+                    var axisX = keyAxis[0] + touchAxis[0];
+                    var axisY = keyAxis[1] + touchAxis[1];
+                    if (tiltControlEnabled) {
+                        tiltAxis[0] += (tiltTargetAxis[0] - tiltAxis[0]) * tiltSmoothingFactor;
+                        tiltAxis[1] += (tiltTargetAxis[1] - tiltAxis[1]) * tiltSmoothingFactor;
+                        if (Math.abs(tiltAxis[0]) < 0.02) {
+                            tiltAxis[0] = 0;
+                        }
+                        if (Math.abs(tiltAxis[1]) < 0.02) {
+                            tiltAxis[1] = 0;
+                        }
+                        axisX += tiltAxis[0];
+                        axisY += tiltAxis[1];
+                    }
+                    if (axisX > 1) { axisX = 1; }
+                    if (axisX < -1) { axisX = -1; }
+                    if (axisY > 1) { axisY = 1; }
+                    if (axisY < -1) { axisY = -1; }
+                    var f = new b2Vec2(axisX * wBall.GetMass() * impulseStrength, axisY * wBall.GetMass() * impulseStrength);
+                    wBall.ApplyImpulse(f, wBall.GetPosition());
+                    keyAxis = [0,0];
+
+                    // Take a time step.
+                    wWorld.Step(1/60, 8, 3);
+                }
+
+
+                function updateRenderWorld() {
+
+                    // Update ball position.
+                    var stepX = wBall.GetPosition().x - ballMesh.position.x;
+                    var stepY = wBall.GetPosition().y - ballMesh.position.y;
+                    ballMesh.position.x += stepX;
+                    ballMesh.position.y += stepY;
+
+                    // Update ball rotation.
+                    var tempMat = new THREE.Matrix4();
+                    tempMat.makeRotationAxis(new THREE.Vector3(0,1,0), stepX/ballRadius);
+                    tempMat.multiplySelf(ballMesh.matrix);
+                    ballMesh.matrix = tempMat;
+                    tempMat = new THREE.Matrix4();
+                    tempMat.makeRotationAxis(new THREE.Vector3(1,0,0), -stepY/ballRadius);
+                    tempMat.multiplySelf(ballMesh.matrix);
+                    ballMesh.matrix = tempMat;
+                    ballMesh.rotation.getRotationFromMatrix(ballMesh.matrix);
+
+                    // Update camera and light positions.
+                    camera.position.x += (ballMesh.position.x - camera.position.x) * 0.1;
+                    camera.position.y += (ballMesh.position.y - camera.position.y) * 0.1;
+                    camera.position.z += (5 - camera.position.z) * 0.1;
+                    if (light) {
+                        light.position.x = camera.position.x;
+                        light.position.y = camera.position.y;
+                        light.position.z = camera.position.z - 3.7;
+                    }
+                    if (activeItems.length > 0) {
+                        for (var ai = activeItems.length - 1; ai >= 0; ai--) {
+                            var item = activeItems[ai];
+                            if (!item || !item.mesh) {
+                                continue;
+                            }
+                            if (item.kind === 'coin') {
+                                item.mesh.rotation.y += 0.12;
+                            } else {
+                                item.mesh.rotation.y += 0.08;
+                                item.mesh.rotation.x += 0.04;
+                            }
+                            var dx = ballMesh.position.x - item.mesh.position.x;
+                            var dy = ballMesh.position.y - item.mesh.position.y;
+                            if ((dx * dx + dy * dy) <= 0.25) {
+                                collectItemByIndex(ai);
+                            }
+                        }
+                    }
+                }
+
+
+                function gameLoop() {
+
+                    switch(gameState) {
+
+                        case 'menu':
+                            if (scene && camera && renderer) {
+                                renderer.render(scene, camera);
+                            }
+                            break;
+
+                        case 'initialize':
+                            prepareLevel();
+                            break;
+
+                        case 'loading':
+                            if (scene && camera && renderer) {
+                                renderer.render(scene, camera);
+                            }
+                            break;
+
+                        case 'fade in':
+                            light.intensity += 0.1 * (1.0 - light.intensity);
+                            renderer.render(scene, camera);
+                            if (Math.abs(light.intensity - 1.0) < 0.05) {
+                                light.intensity = 1.0;
+                                gameState = 'play'
+                            }
+                            break;
+
+                        case 'play':
+                            updatePhysicsWorld();
+                            updateRenderWorld();
+                            renderer.render(scene, camera);
+
+                            // Check for victory.
+                            var mazeX = Math.floor(ballMesh.position.x + 0.5);
+                            var mazeY = Math.floor(ballMesh.position.y + 0.5);
+                            var exitX = typeof currentExitTarget.x === 'number' ? currentExitTarget.x : mazeDimension;
+                            var exitY = typeof currentExitTarget.y === 'number' ? currentExitTarget.y : (mazeDimension - 2);
+                            if (mazeX === exitX && mazeY === exitY) { 
+                                var completedLevel = levelIndex;
+                                var upcomingLevelIndex = levelIndex + 1;
+                                nextLevelConfig = generateItemsForLevel(upcomingLevelIndex);
+                                var upcomingConfig = nextLevelConfig;
+                                onLevelCompleted(completedLevel, upcomingConfig);
+                                clearActiveItems();
+                                resetBoosterEffects();
+                                mazeDimension += 2;
+                                gameState = 'fade out';
+                            }
+                            break;
+
+                        case 'fade out':
+                            updatePhysicsWorld();
+                            updateRenderWorld();
+                            light.intensity += 0.1 * (0.0 - light.intensity);
+                            renderer.render(scene, camera);
+                            if (Math.abs(light.intensity - 0.0) < 0.1) {
+                                light.intensity = 0.0;
+                                renderer.render(scene, camera);
+                                gameState = 'initialize'
+                            }
+                            break;
+
+                    }
+
+                    requestAnimationFrame(gameLoop);
+
+                }
+
+
+                function onResize() {
+                    renderer.setSize(window.innerWidth, window.innerHeight);
+                    camera.aspect = window.innerWidth/window.innerHeight;
+                    camera.updateProjectionMatrix();
+                }
+
+
+                function onMoveKey(axis) {
+                    keyAxis = axis.slice(0);
+                }
+
+
+                function parseTouchControlAxis(element) {
+                    if (!element || typeof element.getAttribute !== 'function') {
+                        return [0, 0];
+                    }
+                    var direction = element.getAttribute('data-direction');
+                    if (direction && touchDirectionVectors[direction]) {
+                        var vector = resolveTouchDirectionVector(direction);
+                        return [vector[0], vector[1]];
+                    }
+                    var axisX = parseFloat(element.getAttribute('data-axis-x'));
+                    var axisY = parseFloat(element.getAttribute('data-axis-y'));
+                    if (isNaN(axisX)) { axisX = 0; }
+                    if (isNaN(axisY)) { axisY = 0; }
+                    return [axisX, axisY];
+                }
+
+
+                function recomputeTouchAxis() {
+                    var axisX = 0;
+                    var axisY = 0;
+                    for (var pointerId in touchPointerAxes) {
+                        if (!Object.prototype.hasOwnProperty.call(touchPointerAxes, pointerId)) {
+                            continue;
+                        }
+                        axisX += touchPointerAxes[pointerId][0];
+                        axisY += touchPointerAxes[pointerId][1];
+                    }
+                    if (axisX > 1) { axisX = 1; }
+                    if (axisX < -1) { axisX = -1; }
+                    if (axisY > 1) { axisY = 1; }
+                    if (axisY < -1) { axisY = -1; }
+                    touchAxis[0] = axisX;
+                    touchAxis[1] = axisY;
+                }
+
+
+                function registerTouchPointer(id, axis) {
+                    if (!id) {
+                        return;
+                    }
+                    touchPointerAxes[id] = axis.slice ? axis.slice(0) : [axis[0], axis[1]];
+                    recomputeTouchAxis();
+                }
+
+
+                function unregisterTouchPointer(id) {
+                    if (!id || !Object.prototype.hasOwnProperty.call(touchPointerAxes, id)) {
+                        return;
+                    }
+                    delete touchPointerAxes[id];
+                    recomputeTouchAxis();
+                }
+
+
+                function clearAllTouchPointers() {
+                    touchPointerAxes = {};
+                    touchAxis[0] = 0;
+                    touchAxis[1] = 0;
+                }
+
+
+                function setupTouchControls() {
+                    clearAllTouchPointers();
+                    applyTouchBindingsToDom((gameSettings && gameSettings.touchBindings) || defaultSettings.touchBindings);
+                    var container = document.getElementById('touch-controls');
+                    if (!container) {
+                        return;
+                    }
+                    var buttons = container.querySelectorAll('.touch-control-button');
+                    if (!buttons || buttons.length === 0) {
+                        return;
+                    }
+
+                    var usePointerEvents = typeof window !== 'undefined' && !!window.PointerEvent;
+
+                    if (usePointerEvents) {
+                        var pointerStart = function(event) {
+                            if (event && typeof event.preventDefault === 'function') {
+                                event.preventDefault();
+                            }
+                            var axis = parseTouchControlAxis(event.currentTarget);
+                            var pointerId = (event && event.pointerId != null) ? ('p' + event.pointerId) : 'mouse';
+                            registerTouchPointer(pointerId, axis);
+                        };
+
+                        var pointerEnd = function(event) {
+                            if (event && typeof event.preventDefault === 'function') {
+                                event.preventDefault();
+                            }
+                            var pointerId = (event && event.pointerId != null) ? ('p' + event.pointerId) : 'mouse';
+                            unregisterTouchPointer(pointerId);
+                        };
+
+                        for (var i = 0; i < buttons.length; i++) {
+                            var button = buttons[i];
+                            button.addEventListener('pointerdown', pointerStart, false);
+                            button.addEventListener('pointerup', pointerEnd, false);
+                            button.addEventListener('pointercancel', pointerEnd, false);
+                            button.addEventListener('pointerleave', pointerEnd, false);
+                            button.addEventListener('pointerout', pointerEnd, false);
+                            button.addEventListener('contextmenu', function(event) {
+                                if (event && typeof event.preventDefault === 'function') {
+                                    event.preventDefault();
+                                }
+                            }, false);
+                        }
+                    } else {
+                        var touchStart = function(event) {
+                            if (event && typeof event.preventDefault === 'function') {
+                                event.preventDefault();
+                            }
+                            var axis = parseTouchControlAxis(event.currentTarget);
+                            var touches = (event && event.changedTouches) ? event.changedTouches : [];
+                            if (!touches || touches.length === 0) {
+                                registerTouchPointer('touch', axis);
+                                return;
+                            }
+                            for (var ti = 0; ti < touches.length; ti++) {
+                                var touchId = 't' + touches[ti].identifier;
+                                registerTouchPointer(touchId, axis);
+                            }
+                        };
+
+                        var touchEnd = function(event) {
+                            if (event && typeof event.preventDefault === 'function') {
+                                event.preventDefault();
+                            }
+                            var touches = (event && event.changedTouches) ? event.changedTouches : [];
+                            if (!touches || touches.length === 0) {
+                                unregisterTouchPointer('touch');
+                                return;
+                            }
+                            for (var ti = 0; ti < touches.length; ti++) {
+                                var touchId = 't' + touches[ti].identifier;
+                                unregisterTouchPointer(touchId);
+                            }
+                        };
+
+                        var mouseStart = function(event) {
+                            if (event && typeof event.preventDefault === 'function') {
+                                event.preventDefault();
+                            }
+                            var axis = parseTouchControlAxis(event.currentTarget);
+                            registerTouchPointer('mouse', axis);
+                        };
+
+                        var mouseEnd = function(event) {
+                            if (event && typeof event.preventDefault === 'function') {
+                                event.preventDefault();
+                            }
+                            unregisterTouchPointer('mouse');
+                        };
+
+                        for (var j = 0; j < buttons.length; j++) {
+                            var touchButton = buttons[j];
+                            touchButton.addEventListener('touchstart', touchStart, false);
+                            touchButton.addEventListener('touchend', touchEnd, false);
+                            touchButton.addEventListener('touchcancel', touchEnd, false);
+                            touchButton.addEventListener('mousedown', mouseStart, false);
+                            touchButton.addEventListener('mouseup', mouseEnd, false);
+                            touchButton.addEventListener('mouseleave', mouseEnd, false);
+                            touchButton.addEventListener('contextmenu', function(event) {
+                                if (event && typeof event.preventDefault === 'function') {
+                                    event.preventDefault();
+                                }
+                            }, false);
+                        }
+                    }
+
+                    if (typeof window !== 'undefined' && typeof window.addEventListener === 'function') {
+                        window.addEventListener('blur', clearAllTouchPointers);
+                    }
+                }
+
+
+                jQuery.fn.centerv = function () {
+                    wh = window.innerHeight;
+                    h = this.outerHeight();
+                    this.css("position", "absolute");
+                    this.css("top", Math.max(0, (wh - h)/2) + "px");
+                    return this;
+                }            
+
+
+                jQuery.fn.centerh = function () {
+                    ww = window.innerWidth;
+                    w = this.outerWidth();
+                    this.css("position", "absolute");
+                    this.css("left", Math.max(0, (ww - w)/2) + "px");
+                    return this;
+                }            
+
+
+                jQuery.fn.center = function () {
+                    this.centerv();
+                    this.centerh();
+                    return this;
+                }            
+
+
+                $(document).ready(function() {
+
+                    // Prepare the instructions.
+                    $('#instructions').center();
+                    $('#instructions').hide();
+                    KeyboardJS.bind.key('i', function(){$('#instructions').show()}, 
+                                             function(){$('#instructions').hide()});
+
+                    // Create the renderer.
+                    renderer = new THREE.WebGLRenderer({antialias: true});
+                    renderer.setSize(window.innerWidth, window.innerHeight);
+                    document.body.appendChild(renderer.domElement);
+
+                    // Prepare victory message container.
+                    $('#victory').hide();
+
+                    // Bind keyboard and resize events.
+                    arrowAxisBinding = KeyboardJS.bind.axis('left', 'right', 'down', 'up', onMoveKey);
+                    applyCustomKeyBindings();
+                    if (document && document.addEventListener) {
+                        document.addEventListener('keydown', onSettingsKeyCapture, true);
+                    }
+                    KeyboardJS.bind.key('b', function() {
+                        toggleInventoryMenu();
+                    });
+                    $(window).resize(onResize);
+                    setupTouchControls();
+
+                    loadPersistentState();
+                    setLanguage(gameSettings.language || defaultSettings.language, {
+                        skipSave: true,
+                        skipPlayerRefresh: true
+                    });
+                    renderPlayerSelect();
+                    renderScoreboard();
+                    updateStartMenuState();
+                    showStartMenu(false);
+
+                    $('#create-player').on('click', function() {
+                        var name = $('#player-name-input').val();
+                        var result = createPlayer(name);
+                        if (result.ok) {
+                            $('#player-name-input').val('');
+                        }
+                        if (result.message) {
+                            $('#menu-message').text(result.message);
+                        }
+                    });
+
+                    $('#player-name-input').on('keypress', function(event) {
+                        if (event.which === 13) {
+                            event.preventDefault();
+                            $('#create-player').click();
+                        }
+                    });
+
+                    $('#player-select').on('change', function() {
+                        var selected = $(this).val();
+                        setCurrentPlayerByName(selected);
+                    });
+
+                    $('#delete-player').on('click', function() {
+                        deleteCurrentPlayer();
+                    });
+
+                    $('#start-game').on('click', function() {
+                        startGameForCurrentPlayer();
+                    });
+
+                    $('#resume-game').on('click', function() {
+                        hideStartMenu({restore: true});
+                    });
+
+                    $('#save-game').on('click', function() {
+                        saveCurrentPlayerState();
+                    });
+
+                    $('#load-game').on('click', function() {
+                        loadCurrentPlayerState();
+                    });
+
+                    $('#open-settings').on('click', function() {
+                        openSettingsMenu();
+                    });
+
+                    $('#settings-save').on('click', function() {
+                        closeSettingsMenu(true);
+                    });
+
+                    $('#settings-cancel').on('click', function() {
+                        closeSettingsMenu(false);
+                    });
+
+                    $('#settings-tilt-control').on('change', function() {
+                        var $checkbox = $(this);
+                        if ($checkbox.is(':checked')) {
+                            enableTiltControl({}, function(success) {
+                                if (!success) {
+                                    $checkbox.prop('checked', false);
+                                    updateTiltUi();
+                                }
+                            });
+                        } else {
+                            disableTiltControl();
+                        }
+                    });
+
+                    $('#open-scoreboard').on('click', function() {
+                        openScoreboardMenu();
+                    });
+
+                    $('#scoreboard-close').on('click', function() {
+                        closeScoreboardMenu();
+                    });
+
+                    $('#settings-menu').on('click', function(event) {
+                        if (event.target === this) {
+                            closeSettingsMenu(false);
+                        }
+                    });
+                    $('#settings-menu').on('click', '.keybinding-button', function() {
+                        var direction = $(this).attr('data-direction');
+                        beginKeybindingCapture(direction, this);
+                    });
+                    $('#settings-reset-keybindings').on('click', function() {
+                        settingsKeyBindingDraft = cloneKeyBindings(defaultSettings.keyBindings);
+                        awaitingKeyBindingDirection = null;
+                        awaitingKeyBindingButton = null;
+                        clearKeybindingMessageOverride();
+                        updateSettingsKeyBindingUi();
+                    });
+                    $('#settings-menu').on('change', '.touch-binding-select', function() {
+                        var slot = $(this).attr('data-slot');
+                        if (!slot) {
+                            return;
+                        }
+                        if (!settingsTouchBindingDraft) {
+                            settingsTouchBindingDraft = cloneTouchBindings(gameSettings.touchBindings || defaultSettings.touchBindings);
+                        }
+                        var value = $(this).val();
+                        if (!value || !touchDirectionVectors[value]) {
+                            settingsTouchBindingDraft[slot] = defaultSettings.touchBindings[slot];
+                        } else {
+                            settingsTouchBindingDraft[slot] = value;
+                        }
+                        updateSettingsTouchBindingUi();
+                    });
+                    $('#settings-touch-size').on('input change', function() {
+                        var raw = $(this).val();
+                        settingsTouchSizeDraft = sanitizeTouchSize(raw);
+                        updateSettingsTouchSizeUi();
+                    });
+                    $('#settings-reset-touchbindings').on('click', function() {
+                        settingsTouchBindingDraft = cloneTouchBindings(defaultSettings.touchBindings);
+                        settingsTouchSizeDraft = sanitizeTouchSize(defaultSettings.touchSize);
+                        updateSettingsTouchBindingUi();
+                    });
+
+                    $('#scoreboard-menu').on('click', function(event) {
+                        if (event.target === this) {
+                            closeScoreboardMenu();
+                        }
+                    });
+
+                    $('#open-inventory').on('click', function() {
+                        openInventoryMenu();
+                    });
+
+                    $('#open-shop').on('click', function() {
+                        openShopMenu();
+                    });
+
+                    $('#inventory-button').on('click', function() {
+                        openInventoryMenu();
+                    });
+
+                    $('#shop-button').on('click', function() {
+                        openShopMenu();
+                    });
+
+                    $('#inventory-open-shop').on('click', function() {
+                        openShopMenu();
+                    });
+
+                    $('#inventory-close').on('click', function() {
+                        closeInventoryMenu();
+                    });
+
+                    $('#inventory-use-bomb').on('click', function() {
+                        useInventoryBomb();
+                    });
+
+                    $('#inventory-booster-list').on('click', '.inventory-use-booster', function() {
+                        var boosterId = $(this).attr('data-booster-id');
+                        if (boosterId) {
+                            useInventoryBooster(boosterId);
+                        }
+                    });
+
+                    $('#inventory-menu').on('click', function(event) {
+                        if (event.target === this) {
+                            closeInventoryMenu();
+                        }
+                    });
+
+                    $('#shop-close').on('click', function() {
+                        closeShopMenu();
+                    });
+
+                    $('#shop-back').on('click', function() {
+                        var resumeState = shopPreviousState;
+                        closeShopMenu({ skipRestore: true });
+                        if (resumeState) {
+                            inventoryPreviousState = resumeState;
+                        }
+                        openInventoryMenu({ skipStateChange: true });
+                    });
+
+                    $('#shop-items').on('click', '.shop-buy', function() {
+                        var itemId = $(this).attr('data-item-id');
+                        if (itemId) {
+                            purchaseShopItem(itemId);
+                        }
+                    });
+
+                    $('#shop-menu').on('click', function(event) {
+                        if (event.target === this) {
+                            closeShopMenu();
+                        }
+                    });
+
+                    $('#menu-button').on('click', function() {
+                        showStartMenu(true);
+                    });
+
+                    $('#start-menu').on('click', function(event) {
+                        if (event.target === this && hasStartedGame) {
+                            hideStartMenu({restore: true});
+                        }
+                    });
+
+                    KeyboardJS.bind.key('escape', function() {
+                        if ($('#shop-menu:visible').length) {
+                            closeShopMenu();
+                            return;
+                        }
+                        if ($('#inventory-menu:visible').length) {
+                            closeInventoryMenu();
+                            return;
+                        }
+                        if ($('#settings-menu:visible').length) {
+                            closeSettingsMenu(false);
+                            return;
+                        }
+                        if ($('#scoreboard-menu:visible').length) {
+                            closeScoreboardMenu();
+                            return;
+                        }
+                        if ($('#start-menu:visible').length) {
+                            if (hasStartedGame) {
+                                hideStartMenu({restore: true});
+                            }
+                        } else if (hasStartedGame) {
+                            showStartMenu(true);
+                        }
+                    });
+
+                    // Set the initial game state.
+                    gameState = 'menu';
+
+                    // Start the game loop.
+                    requestAnimationFrame(gameLoop);
+
+                });
+
+
+
+
+  };
+})(typeof window !== 'undefined' ? window : globalThis);

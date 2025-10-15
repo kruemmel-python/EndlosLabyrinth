@@ -21,7 +21,14 @@ npm install
 npm run dev
 ```
 
-> Voraussetzung: Node.js ≥ 18 und LM Studio mit aktivem Endpoint (Port 1234)
+> Voraussetzung: Node.js ≥ 18, LM Studio mit aktivem Endpoint (Port 1234) sowie Zugriff auf das npm-Registry.
+
+## Entwicklungs-Workflow
+- `npm run dev` startet die neue React/Vite-Entwicklungsumgebung mit Hot Module Reloading.
+- `npm run build` erstellt einen optimierten Produktionsbuild in `dist/`.
+- `npm run preview` dient zum lokalen Testen des Produktionsbuilds.
+
+Die bestehende Spielelogik wird beim Start der React-App automatisch nachgeladen und initialisiert das Labyrinth auf dem gerenderten DOM.
 
 ## Lizenz
 Dieses Projekt steht unter der MIT-Lizenz (siehe LICENSE).
