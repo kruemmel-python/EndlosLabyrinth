@@ -774,6 +774,38 @@
             </ul>
         </li>
         <li>
+            <h3><code>ensurePlayerInventory(player)</code></h3>
+            <p>Normalizes coin, bomb, and booster counts when loading a player profile so persisted inventory data remains valid across releases.</p>
+        </li>
+        <li>
+            <h3><code>addCoinsToPlayer(amount)</code></h3>
+            <p>Persists collected coins for the active player and refreshes the HUD, inventory, and shop overlays.</p>
+        </li>
+        <li>
+            <h3><code>updateInventoryMenu()</code> &amp; <code>updateShopMenu()</code></h3>
+            <p>Rebuild the inventory and shop overlays with localized labels, current balances, booster stacks, and enabled button states.</p>
+        </li>
+        <li>
+            <h3><code>openInventoryMenu(options)</code> / <code>closeInventoryMenu(options)</code></h3>
+            <p>Toggle the inventory overlay while remembering whether gameplay should resume after it closes.</p>
+        </li>
+        <li>
+            <h3><code>openShopMenu(options)</code> / <code>closeShopMenu(options)</code></h3>
+            <p>Show or hide the coin shop, optionally returning to the inventory overlay and restoring the previous game state.</p>
+        </li>
+        <li>
+            <h3><code>purchaseShopItem(itemId)</code></h3>
+            <p>Spends coins on bombs or boosters, updates the inventory, saves the player profile, and emits localized feedback.</p>
+        </li>
+        <li>
+            <h3><code>useInventoryBomb()</code> &amp; <code>detonateBombAtPlayer()</code></h3>
+            <p>Consumes a bomb, clears adjacent wall tiles, rebuilds the maze mesh, and removes the corresponding Box2D fixtures.</p>
+        </li>
+        <li>
+            <h3><code>useInventoryBooster(boosterId)</code></h3>
+            <p>Activates a stored booster from the inventory and decrements the persisted booster count.</p>
+        </li>
+        <li>
             <h3><code>activateBooster(boosterId)</code></h3>
             <p>Applies the effects of a specified booster and sets a timeout to reset its effects.</p
 <section id="Box2dWeb.min.js">

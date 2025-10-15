@@ -189,6 +189,15 @@
         </ol>
         <p>Die Wahl von JavaScript als Implementierungssprache und die Ausführung im Browser sind durch die Natur von Webanwendungen bedingt. Die modulare Struktur ermöglicht eine einfache Integration in bestehende Projekte und fördert die Wiederverwendbarkeit der Komponenten.</p>
 
+        <h3>4.4. Inventar- und Shop-System</h3>
+        <p>Das neue Inventarsystem verknüpft Münzsammeln mit persistenten Spielerprofilen. Ein HUD-Zähler visualisiert den aktuellen Kontostand, während ein Overlay die Bestände an Bomben und Boostern auflistet.</p>
+        <ul>
+            <li><strong>Münzverwaltung:</strong> <code>addCoinsToPlayer</code> speichert gesammelte Münzen pro Profil und aktualisiert HUD, Inventar und Shop.</li>
+            <li><strong>Inventar-Overlay:</strong> Über Hotkey oder Menü abrufbar, zeigt verfügbare Bomben und Booster und erlaubt deren Aktivierung während des Spiels.</li>
+            <li><strong>Shop:</strong> <code>purchaseShopItem</code> ermöglicht den Tausch von Münzen gegen Bomben oder Booster und liefert unmittelbares Feedback.</li>
+            <li><strong>Bombe als Werkzeug:</strong> Ein ausgelöster Sprengsatz entfernt angrenzende Mauern, aktualisiert die Box2D-Kollisionswelt und eröffnet neue Wege.</li>
+        </ul>
+
         <!-- 5. Evaluation und Testergebnisse -->
         <h2 class="section-title">5. Evaluation und Testergebnisse</h2>
         <p>Eine quantitative Evaluation mit spezifischen Metriken oder Benchmarks ist ohne eine explizite Testsuite oder Leistungsdaten im vorliegenden Code nicht möglich. Eine qualitative Bewertung der Systemstärken kann jedoch vorgenommen werden.</p>
