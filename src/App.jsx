@@ -200,49 +200,66 @@ export default function App() {
             <button id="settings-reset-keybindings" type="button" className="secondary keybinding-reset"></button>
           </div>
 
-          <div className="settings-group">
-            <h3 id="settings-touch-heading"></h3>
-            <p id="settings-touch-description" className="settings-note"></p>
-            <div className="touchbinding-grid">
-              <div className="touchbinding-row">
-                <label className="touchbinding-label" id="settings-touch-up-label" htmlFor="settings-touch-up"></label>
-                <select id="settings-touch-up" className="touch-binding-select" data-slot="up">
-                  <option value="up"></option>
-                  <option value="down"></option>
-                  <option value="left"></option>
-                  <option value="right"></option>
-                </select>
+            <div className="settings-group">
+              <h3 id="settings-touch-heading"></h3>
+              <p id="settings-touch-description" className="settings-note"></p>
+              <div className="touchbinding-grid">
+                <div className="touchbinding-row">
+                  <label className="touchbinding-label" id="settings-touch-up-label" htmlFor="settings-touch-up"></label>
+                  <select id="settings-touch-up" className="touch-binding-select" data-slot="up">
+                    <option value="up"></option>
+                    <option value="down"></option>
+                    <option value="left"></option>
+                    <option value="right"></option>
+                  </select>
+                </div>
+                <div className="touchbinding-row">
+                  <label className="touchbinding-label" id="settings-touch-down-label" htmlFor="settings-touch-down"></label>
+                  <select id="settings-touch-down" className="touch-binding-select" data-slot="down">
+                    <option value="up"></option>
+                    <option value="down"></option>
+                    <option value="left"></option>
+                    <option value="right"></option>
+                  </select>
+                </div>
+                <div className="touchbinding-row">
+                  <label className="touchbinding-label" id="settings-touch-left-label" htmlFor="settings-touch-left"></label>
+                  <select id="settings-touch-left" className="touch-binding-select" data-slot="left">
+                    <option value="up"></option>
+                    <option value="down"></option>
+                    <option value="left"></option>
+                    <option value="right"></option>
+                  </select>
+                </div>
+                <div className="touchbinding-row">
+                  <label className="touchbinding-label" id="settings-touch-right-label" htmlFor="settings-touch-right"></label>
+                  <select id="settings-touch-right" className="touch-binding-select" data-slot="right">
+                    <option value="up"></option>
+                    <option value="down"></option>
+                    <option value="left"></option>
+                    <option value="right"></option>
+                  </select>
+                </div>
+                <div className="touchbinding-row touch-size-row">
+                  <label className="touchbinding-label" id="settings-touch-size-label" htmlFor="settings-touch-size"></label>
+                  <div className="touch-size-control">
+                    <input
+                      id="settings-touch-size"
+                      className="touch-size-input"
+                      type="range"
+                      min="0.6"
+                      max="1.6"
+                      step="0.05"
+                      aria-labelledby="settings-touch-size-label"
+                      role="slider"
+                    />
+                    <span id="settings-touch-size-value" className="touch-size-value" aria-live="polite"></span>
+                  </div>
+                </div>
               </div>
-              <div className="touchbinding-row">
-                <label className="touchbinding-label" id="settings-touch-down-label" htmlFor="settings-touch-down"></label>
-                <select id="settings-touch-down" className="touch-binding-select" data-slot="down">
-                  <option value="up"></option>
-                  <option value="down"></option>
-                  <option value="left"></option>
-                  <option value="right"></option>
-                </select>
-              </div>
-              <div className="touchbinding-row">
-                <label className="touchbinding-label" id="settings-touch-left-label" htmlFor="settings-touch-left"></label>
-                <select id="settings-touch-left" className="touch-binding-select" data-slot="left">
-                  <option value="up"></option>
-                  <option value="down"></option>
-                  <option value="left"></option>
-                  <option value="right"></option>
-                </select>
-              </div>
-              <div className="touchbinding-row">
-                <label className="touchbinding-label" id="settings-touch-right-label" htmlFor="settings-touch-right"></label>
-                <select id="settings-touch-right" className="touch-binding-select" data-slot="right">
-                  <option value="up"></option>
-                  <option value="down"></option>
-                  <option value="left"></option>
-                  <option value="right"></option>
-                </select>
-              </div>
+              <div id="settings-touch-size-hint" className="settings-note touch-size-hint"></div>
+              <button id="settings-reset-touchbindings" type="button" className="secondary touchbinding-reset"></button>
             </div>
-            <button id="settings-reset-touchbindings" type="button" className="secondary touchbinding-reset"></button>
-          </div>
           <div className="menu-buttons">
             <button id="settings-save" type="button"></button>
             <button id="settings-cancel" type="button" className="secondary"></button>

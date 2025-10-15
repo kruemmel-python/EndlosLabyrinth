@@ -115,7 +115,9 @@ bottom: 16px;
 left: 50%;
 width: 160px;
 height: 120px;
-transform: translateX(-50%);
+--touch-control-scale: 1;
+transform: translateX(-50%) scale(var(--touch-control-scale));
+transform-origin: 50% 100%;
 display: none;
 z-index: 4200;
 pointer-events: none;
@@ -495,6 +497,33 @@ to { box-shadow: 0 0 8px rgba(111, 139, 255, 0.6); }
 
 .touchbinding-label {
   font-size: 14px;
+}
+
+.touch-size-row {
+  flex-wrap: wrap;
+  align-items: flex-start;
+}
+
+.touch-size-control {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 6px;
+  flex: 1;
+  min-width: 160px;
+}
+
+.touch-size-input {
+  accent-color: #6f8bff;
+}
+
+.touch-size-value {
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.touch-size-hint {
+  margin-top: 8px;
 }
 
 .touch-binding-select {

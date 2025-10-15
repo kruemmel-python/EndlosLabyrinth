@@ -34,6 +34,7 @@
                     bombKeyBinding = null,
                     settingsKeyBindingDraft = null,
                     settingsTouchBindingDraft = null,
+                    settingsTouchSizeDraft = null,
                     awaitingKeyBindingDirection = null,
                     awaitingKeyBindingButton = null,
                     keybindingMessageOverride = null,
@@ -55,6 +56,7 @@
                     pendingVictoryPromise = null,
                     pendingVictoryMessage = null,
                     displayVictoryRequested = false,
+                    touchSizeRange = { min: 0.6, max: 1.6, step: 0.05 },
 
                     ballTexturePaths = [
                         '/balls/ball.png',
@@ -144,6 +146,9 @@
                                 touchLeft: 'Linke Pfeiltaste',
                                 touchRight: 'Rechte Pfeiltaste',
                                 touchReset: 'Touch-Pfeile zurücksetzen',
+                                touchSizeLabel: 'Größe der Touch-Pfeile',
+                                touchSizeHint: 'Passe an, wie groß die Pfeile auf dem Bildschirm angezeigt werden.',
+                                touchSizeValue: '{percent} %',
                                 touchAria: {
                                     up: 'Nach oben bewegen',
                                     down: 'Nach unten bewegen',
@@ -322,6 +327,9 @@
                                 touchLeft: 'Left arrow',
                                 touchRight: 'Right arrow',
                                 touchReset: 'Reset touch arrows',
+                                touchSizeLabel: 'Touch arrow size',
+                                touchSizeHint: 'Adjust how large the on-screen arrows should appear.',
+                                touchSizeValue: '{percent} %',
                                 touchAria: {
                                     up: 'Move up',
                                     down: 'Move down',
@@ -548,12 +556,13 @@
                         down: 'down',
                         left: 'left',
                         right: 'right'
-                    }
+                    },
+                    touchSize: 1
                 };
 
                 var touchDirectionVectors = {
-                    up: [0, -1],
-                    down: [0, 1],
+                    up: [0, 1],
+                    down: [0, -1],
                     left: [-1, 0],
                     right: [1, 0]
                 };
@@ -825,6 +834,21 @@
                 }
 
 
+                function sanitizeTouchSize(value) {
+                    var numeric = parseFloat(value);
+                    if (isNaN(numeric)) {
+                        numeric = defaultSettings.touchSize;
+                    }
+                    if (numeric < touchSizeRange.min) {
+                        numeric = touchSizeRange.min;
+                    }
+                    if (numeric > touchSizeRange.max) {
+                        numeric = touchSizeRange.max;
+                    }
+                    return Math.round(numeric * 100) / 100;
+                }
+
+
                 function applyTouchBindingsToDom(bindings) {
                     var active = sanitizeTouchBindings(bindings);
                     touchControlSlots.forEach(function(slot) {
@@ -843,6 +867,16 @@
                 }
 
 
+                function applyTouchSizeToDom(size) {
+                    var container = document.getElementById('touch-controls');
+                    if (!container) {
+                        return;
+                    }
+                    var sanitized = sanitizeTouchSize(size);
+                    container.style.setProperty('--touch-control-scale', sanitized.toString());
+                }
+
+
                 function updateSettingsTouchBindingUi() {
                     if (!window.jQuery) {
                         return;
@@ -856,6 +890,44 @@
                         }
                         select.val(active[slot]);
                     });
+                    updateSettingsTouchSizeUi();
+                }
+
+
+                function getActiveTouchSize() {
+                    if (settingsTouchSizeDraft !== null && typeof settingsTouchSizeDraft !== 'undefined') {
+                        return sanitizeTouchSize(settingsTouchSizeDraft);
+                    }
+                    if (gameSettings && typeof gameSettings.touchSize !== 'undefined') {
+                        return sanitizeTouchSize(gameSettings.touchSize);
+                    }
+                    return sanitizeTouchSize(defaultSettings.touchSize);
+                }
+
+
+                function updateSettingsTouchSizeUi() {
+                    if (!window.jQuery) {
+                        return;
+                    }
+                    var activeSize = getActiveTouchSize();
+                    var $slider = jQuery('#settings-touch-size');
+                    var $value = jQuery('#settings-touch-size-value');
+                    if ($slider.length) {
+                        $slider.attr('min', touchSizeRange.min);
+                        $slider.attr('max', touchSizeRange.max);
+                        $slider.attr('step', touchSizeRange.step);
+                        $slider.val(activeSize);
+                        $slider.attr('aria-valuenow', activeSize);
+                    }
+                    if ($value.length) {
+                        var percent = Math.round(activeSize * 100);
+                        var label = t('settings.touchSizeValue', { percent: percent });
+                        $value.text(label);
+                        if ($slider.length) {
+                            $slider.attr('aria-valuetext', label);
+                        }
+                    }
+                    applyTouchSizeToDom(activeSize);
                 }
 
 
@@ -1285,6 +1357,8 @@
                     jQuery('#settings-touch-left-label').text(t('settings.touchLeft'));
                     jQuery('#settings-touch-right-label').text(t('settings.touchRight'));
                     jQuery('#settings-reset-touchbindings').text(t('settings.touchReset'));
+                    jQuery('#settings-touch-size-label').text(t('settings.touchSizeLabel'));
+                    jQuery('#settings-touch-size-hint').text(t('settings.touchSizeHint'));
                     var touchOptionLabels = {
                         up: t('settings.keybindingUp'),
                         down: t('settings.keybindingDown'),
@@ -2465,9 +2539,12 @@
                     }
                     gameSettings.keyBindings = cloneKeyBindings(gameSettings.keyBindings || defaultSettings.keyBindings);
                     gameSettings.touchBindings = cloneTouchBindings(gameSettings.touchBindings || defaultSettings.touchBindings);
+                    gameSettings.touchSize = sanitizeTouchSize(gameSettings.touchSize);
                     applyCustomKeyBindings();
                     applyTouchBindingsToDom(gameSettings.touchBindings);
+                    applyTouchSizeToDom(gameSettings.touchSize);
                     updateSettingsTouchBindingUi();
+                    updateSettingsTouchSizeUi();
                     victoryLlmConfig.enabled = !!gameSettings.victoryLlmEnabled;
                     if (gameSettings.tiltControlEnabled) {
                         enableTiltControl({ silent: true }, function(success) {
@@ -3132,6 +3209,7 @@
                     jQuery('#settings-language').val(gameSettings.language || defaultSettings.language);
                     settingsKeyBindingDraft = cloneKeyBindings(gameSettings.keyBindings || defaultSettings.keyBindings);
                     settingsTouchBindingDraft = cloneTouchBindings(gameSettings.touchBindings || defaultSettings.touchBindings);
+                    settingsTouchSizeDraft = sanitizeTouchSize(typeof gameSettings.touchSize !== 'undefined' ? gameSettings.touchSize : defaultSettings.touchSize);
                     clearKeybindingMessageOverride();
                     awaitingKeyBindingDirection = null;
                     awaitingKeyBindingButton = null;
@@ -3148,13 +3226,17 @@
                         gameSettings.language = jQuery('#settings-language').val() || defaultSettings.language;
                         gameSettings.keyBindings = cloneKeyBindings(settingsKeyBindingDraft || gameSettings.keyBindings || defaultSettings.keyBindings);
                         gameSettings.touchBindings = cloneTouchBindings(settingsTouchBindingDraft || gameSettings.touchBindings || defaultSettings.touchBindings);
+                        gameSettings.touchSize = sanitizeTouchSize(settingsTouchSizeDraft !== null && typeof settingsTouchSizeDraft !== 'undefined' ? settingsTouchSizeDraft : gameSettings.touchSize || defaultSettings.touchSize);
                         applySettings();
                         setLanguage(gameSettings.language, {skipSave: true});
                         saveSettings();
+                    } else {
+                        applyTouchSizeToDom(gameSettings.touchSize || defaultSettings.touchSize);
                     }
                     cancelKeybindingCapture();
                     settingsKeyBindingDraft = null;
                     settingsTouchBindingDraft = null;
+                    settingsTouchSizeDraft = null;
                     jQuery('#settings-menu').fadeOut(150);
                 }
 
@@ -3950,8 +4032,14 @@
                         }
                         updateSettingsTouchBindingUi();
                     });
+                    $('#settings-touch-size').on('input change', function() {
+                        var raw = $(this).val();
+                        settingsTouchSizeDraft = sanitizeTouchSize(raw);
+                        updateSettingsTouchSizeUi();
+                    });
                     $('#settings-reset-touchbindings').on('click', function() {
                         settingsTouchBindingDraft = cloneTouchBindings(defaultSettings.touchBindings);
+                        settingsTouchSizeDraft = sanitizeTouchSize(defaultSettings.touchSize);
                         updateSettingsTouchBindingUi();
                     });
 
